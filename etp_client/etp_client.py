@@ -37,6 +37,25 @@ async def create_dataspace(ws, msg_id, dataspace):
     return ds_uri
 
 
+async def upload_resqml_objects(
+    ws, msg_id, max_payload_size, dataspace, resqml_objects
+):
+    dataspaces = []
+    data_object_types = []
+    uuids = []
+    xmls = []
+    for values in resqml_objects.values():
+        dataspaces.append(dataspace)
+        data_object_types.append(values["data_object_type"])
+        uuids.append(values["uuid"])
+        xmls.append(values["xml"])
+
+    # TODO: Handle possible errors
+    records = await etp_helper.put_data_objects(
+        ws, msg_id, max_payload_size, dataspaces, data_object_types, uuids, xmls
+    )
+
+
 async def upload_resqml_surface(resqml_objects, surface_values, authorization):
     # NOTE: This assumes that there is a single surface with values, and the
     # appropriate amount of RESQML-objects. An alternative is to create an
@@ -65,6 +84,10 @@ async def upload_resqml_surface(resqml_objects, surface_values, authorization):
         ]["item"]
 
         ds_uri = await create_dataspace(ws, msg_id, PSS_DATASPACE)
+
+        await upload_resqml_objects(
+            ws, msg_id, max_payload_size, PSS_DATASPACE, resqml_objects
+        )
 
         await etp_helper.close_session(
             ws, msg_id, "Done uploading from upload_resqml_surface"

@@ -37,6 +37,19 @@ def serialize_message(header_record, body_record, body_schema_key):
     return fo.getvalue()
 
 
+def get_data_object_uri(dataspace, data_object_type, _uuid):
+    if not data_object_type.startswith("resqml20") or not data_object_type.startswith(
+        "eml20"
+    ):
+        data_object_type = (
+            f"resqml20.{data_object_type}"
+            if "EpcExternalPart" not in data_object_type
+            else f"eml20.{data_object_type}"
+        )
+
+    return f"eml:///dataspace('{dataspace}')/{data_object_type}({_uuid})"
+
+
 class MHFlags(enum.Enum):
     # Flags in MessageHeader, see section 23.25 in the ETP 1.2 standard
     FIN = 0x2
@@ -249,4 +262,72 @@ async def put_dataspaces(ws, get_msg_id, dataspaces):
         ws,
         get_msg_id,
         "Energistics.Etp.v12.Protocol.Dataspace.PutDataspacesResponse",
+    )
+
+
+async def put_data_objects(
+    ws,
+    get_msg_id,
+    max_payload_size,
+    dataspaces,
+    data_object_types,
+    uuids,
+    xmls,
+    titles=None,
+):
+    # TODO: Use chunks if the data objects are too large for the websocket payload
+
+    uris = [
+        get_data_object_uri(ds, dot, _uuid)
+        for ds, dot, _uuid in zip(dataspaces, data_object_types, uuids)
+    ]
+
+    if not titles:
+        titles = uris
+
+    xmls = [xml if type(xml) in [str, bytes] else ET.tostring(xml) for xml in xmls]
+
+    time = datetime.datetime.now(datetime.timezone.utc).timestamp()
+
+    mh_record = dict(
+        protocol=4,  # Store
+        messageType=2,  # PutDataObjects
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        # This is in general a multi-part message, but we will here only send
+        # one.
+        messageFlags=MHFlags.FIN.value,
+    )
+
+    pdo_record = dict(
+        dataObjects={
+            title: dict(
+                data=xml,
+                format="xml",
+                blobId=None,
+                resource=dict(
+                    uri=uri,
+                    name=title,
+                    lastChanged=time,
+                    storeCreated=time,
+                    storeLastWrite=time,
+                    activeStatus="Inactive",
+                ),
+            )
+            for title, uri, xml in zip(titles, uris, xmls)
+        },
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            pdo_record,
+            "Energistics.Etp.v12.Protocol.Store.PutDataObjects",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        get_msg_id,
+        "Energistics.Etp.v12.Protocol.Store.PutDataObjectsResponse",
     )
