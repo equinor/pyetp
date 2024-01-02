@@ -5,6 +5,7 @@ import uuid
 import io
 import pprint
 import enum
+import pathlib
 
 import fastavro
 
@@ -12,7 +13,7 @@ import fastavro
 # Read and store ETP-schemas in a global dictionary
 # The file etp.avpr can be downloaded from Energistics here:
 # https://publications.opengroup.org/standards/energistics-standards/energistics-transfer-protocol/v234
-with open("etp.avpr", "r") as foo:
+with open(pathlib.Path("map_api/etp_client/etp.avpr"), "r") as foo:
     jschema = json.load(foo)
 
 
@@ -57,7 +58,7 @@ class ClientMessageId:
             return ret_id
 
 
-async def handle_multipart_response(ws, schema_key):
+async def handle_multipart_response(ws, get_msg_id, schema_key):
     # Note that we only handle ProtocolException errors for now
     records = []
     while True:
@@ -69,24 +70,16 @@ async def handle_multipart_response(ws, schema_key):
             ETP_SCHEMAS["Energistics.Etp.v12.Datatypes.MessageHeader"],
         )
 
-        if mh_record["messageType"] == 1000:
-            # ProtocolException
-            record = fastavro.read.schemaless_reader(
+        records.append(
+            fastavro.read.schemaless_reader(
                 fo,
-                ETP_SCHEMAS["Energistics.Etp.v12.Protocol.Core.ProtocolException"],
+                ETP_SCHEMAS[
+                    schema_key
+                    if mh_record["messageType"] != 1000
+                    else "Energistics.Etp.v12.Protocol.Core.ProtocolException"
+                ],
             )
-            # TODO: Handle this better. We should not need to terminate the
-            # session and the program. Most exceptions are not fatal.
-            # Output error object
-            pprint.pprint(record)
-            # Close the session
-            await close_session(ws, reason=f"Error from protocol '{schema_key}'")
-        else:
-            record = fastavro.read.schemaless_reader(
-                fo,
-                ETP_SCHEMAS[schema_key],
-            )
-            records.append(record)
+        )
 
         if (mh_record["messageFlags"] & MHFlags.FIN.value) != 0:
             # We have received a FIN-bit, i.e., the last reponse has been
@@ -190,7 +183,7 @@ async def request_session(
     # handle_multipart_response-function works just as well for single
     # messages.
     return await handle_multipart_response(
-        ws, "Energistics.Etp.v12.Protocol.Core.OpenSession"
+        ws, get_msg_id, "Energistics.Etp.v12.Protocol.Core.OpenSession"
     )
 
 
@@ -214,4 +207,46 @@ async def close_session(ws, get_msg_id, reason):
 
     await ws.wait_closed()
     assert ws.closed
-    print(f"Websocket close reason: {ws.close_reason}")
+
+
+async def put_dataspaces(ws, get_msg_id, dataspaces):
+    uris = list(map(lambda dataspace: f"eml:///dataspace('{dataspace}')", dataspaces))
+
+    mh_record = dict(
+        protocol=24,  # Dataspace
+        messageType=3,  # PutDataspaces
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,
+    )
+    time = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    pds_record = dict(
+        dataspaces=dict(
+            (
+                uri,
+                dict(
+                    uri=uri,
+                    path=dataspace,
+                    # Here we create the dataspace for the first time, hence last write
+                    # and created are the same
+                    storeLastWrite=time,
+                    storeCreated=time,
+                ),
+            )
+            for uri, dataspace in zip(uris, dataspaces)
+        )
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            pds_record,
+            "Energistics.Etp.v12.Protocol.Dataspace.PutDataspaces",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        get_msg_id,
+        "Energistics.Etp.v12.Protocol.Dataspace.PutDataspacesResponse",
+    )
