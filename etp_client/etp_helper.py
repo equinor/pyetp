@@ -8,6 +8,7 @@ import enum
 import pathlib
 
 import fastavro
+import lxml.etree as ET
 
 
 # Read and store ETP-schemas in a global dictionary
@@ -48,6 +49,15 @@ def get_data_object_uri(dataspace, data_object_type, _uuid):
         )
 
     return f"eml:///dataspace('{dataspace}')/{data_object_type}({_uuid})"
+
+
+def numpy_to_etp_data_array(array):
+    return dict(
+        dimensions=list(array.shape),
+        # See Energistics.Etp.v12.Datatypes.AnyArray for the "item"-key, and
+        # Energistics.Etp.v12.Datatypes.ArrayOfDouble for the "values"-key.
+        data=dict(item=dict(values=array.ravel().tolist())),
+    )
 
 
 class MHFlags(enum.Enum):
@@ -330,4 +340,54 @@ async def put_data_objects(
         ws,
         get_msg_id,
         "Energistics.Etp.v12.Protocol.Store.PutDataObjectsResponse",
+    )
+
+
+async def put_data_arrays(
+    ws,
+    get_msg_id,
+    max_payload_size,
+    dataspaces,
+    data_object_types,
+    uuids,
+    path_in_resources,
+    arrays,
+):
+    uris = [
+        get_data_object_uri(ds, dot, _uuid)
+        for ds, dot, _uuid in zip(dataspaces, data_object_types, uuids)
+    ]
+
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=4,  # PutDataArrays
+        correlationId=0,  # Ignored
+        messageId=await ClientMessageId.get_next_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    pda_record = dict(
+        dataArrays={
+            uri: dict(
+                uid=dict(
+                    uri=uri,
+                    pathInResource=pir,
+                ),
+                array=numpy_to_etp_data_array(array),
+            )
+            for uri, pir, array in zip(uris, path_in_resources, arrays)
+        }
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            pda_record,
+            "Energistics.Etp.v12.Protocol.DataArray.PutDataArrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        get_msg_id,
+        "Energistics.Etp.v12.Protocol.DataArray.PutDataArraysResponse",
     )
