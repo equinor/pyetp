@@ -1,1 +1,1 @@
-from .etp_client import upload_resqml_surface
+from .etp_client import upload_xtgeo_surface_to_rddms
