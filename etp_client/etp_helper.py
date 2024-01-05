@@ -350,7 +350,7 @@ async def put_data_arrays(
     dataspaces,
     data_object_types,
     uuids,
-    path_in_resources,
+    paths_in_resources,
     arrays,
 ):
     uris = [
@@ -362,7 +362,7 @@ async def put_data_arrays(
         protocol=9,  # DataArray
         messageType=4,  # PutDataArrays
         correlationId=0,  # Ignored
-        messageId=await ClientMessageId.get_next_id(),
+        messageId=await get_msg_id(),
         messageFlags=MHFlags.FIN.value,  # Multi-part=False
     )
     pda_record = dict(
@@ -374,7 +374,7 @@ async def put_data_arrays(
                 ),
                 array=numpy_to_etp_data_array(array),
             )
-            for uri, pir, array in zip(uris, path_in_resources, arrays)
+            for uri, pir, array in zip(uris, paths_in_resources, arrays)
         }
     )
 
