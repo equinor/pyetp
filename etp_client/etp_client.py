@@ -30,26 +30,6 @@ with open("package.json", "r") as f:
     APPLICATION_VERSION = jschema["version"]
 
 
-async def create_dataspace(ws, msg_id, dataspace):
-    # An alternate route in this function is to first query for the dataspace and
-    # only create it if it exists. However, we save a call to the server by just trying
-    # to put the dataspace and handle the error if it already exists.
-
-    # The put_dataspaces returns a list of records, one for each dataspace.
-    # However, as we are only adding a single dataspace there should only be a single
-    # record.
-    record = (await etp_helper.put_dataspaces(ws, msg_id, [dataspace]))[0]
-
-    # Get the dataspace URI if the dataspace was created successfully (the leftmost
-    # part of the 'or') or from the 'errors'-attribute if the dataspace already exists.
-    # Note that we are here following the happy-path and assume that the only "error
-    # message" we can get is if the dataspace exists. An alternative would be to create
-    # more proper exception handling for the errors.
-    ds_uri = list(record.get("success") or record["errors"])[0]
-
-    return ds_uri
-
-
 async def upload_resqml_objects(
     ws, msg_id, max_payload_size, dataspace, resqml_objects
 ):
@@ -125,7 +105,17 @@ async def upload_resqml_surface(epc_filename, h5_filename, authorization):
             "MaxWebSocketMessagePayloadSize"
         ]["item"]
 
-        await create_dataspace(ws, msg_id, PSS_DATASPACE)
+        # An alternate route is to first query for the dataspace and
+        # only create it if it exists. However, we save a call to the server by just trying
+        # to put the dataspace and ignore the error if it already exists.
+        records = await etp_helper.put_dataspaces(ws, msg_id, [PSS_DATASPACE])
+        # The put_dataspaces returns a list of records, one for each dataspace.
+        # However, as we are only adding a single dataspace there should only be a single
+        # record.
+        assert len(records) == 1
+        # Note that we are here following the happy-path and assume that the only "error
+        # message" we can get is if the dataspace exists. An alternative would be to create
+        # more proper exception handling for the errors.
 
         resqml_objects = read_epc_file(epc_filename)
 
