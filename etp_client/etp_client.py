@@ -69,8 +69,9 @@ async def upload_resqml_objects(
 async def upload_array_data(
     ws, msg_id, max_payload_size, dataspace, resqml_objects, h5_filename
 ):
-    # NOTE: We assume that there is a single EpcExternalPartReference (i.e., a single Hdf-file)
-    # connected to the surface arrays.
+    # NOTE: We assume that there is a single EpcExternalPartReference (i.e., a single hdf5-file)
+    # connected to the surface arrays. This is the encouraged solution from the RESQML-standard,
+    # but it is not enforced. It also looks like resqpy has support for multiple hdf5-files.
     epc_key = next(filter(lambda x: "EpcExternal" in x, list(resqml_objects)))
     epc_object_type = resqml_objects[epc_key]["data_object_type"]
     epc_uuid = resqml_objects[epc_key]["uuid"]
