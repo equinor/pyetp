@@ -1,0 +1,42 @@
+# Local ETP-server for testing of the map-api
+services:
+  open-etp-server:
+    image: community.opengroup.org:5555/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server/open-etp-server-main:latest
+    # TODO: Use the same image as the published ETP-server
+    environment:
+      RDMS_DATA_PARTITION_MODE: "single"
+      RDMS_DATA_CONNECTIVITY_MODE: "osdu"
+      # Note that port, dbname, user and password are specified in the open-etp-postgres service
+      POSTGRESQL_CONN_STRING: "host=open-etp-postgres port=5432 dbname=pear user=testyuser password=testypass"
+    ports:
+      - 9002:9002
+    networks:
+      - web
+    depends_on:
+      open-etp-postgres:
+        # Wait until postgres server is ready
+        condition: service_healthy
+    command: [ "openETPServer", "server", "--start", "--overwrite", "--authN", "none", "--authZ", "none" ]
+
+  open-etp-postgres:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      # Set postgres username, password and database name
+      POSTGRES_PASSWORD: testypass
+      POSTGRES_USER: testyuser
+      POSTGRES_DB: pear
+    healthcheck:
+      # As we have set a user and database name, we need to specify this in the
+      # pg_isready-command for postgres when checking to see if the database is
+      # ready.
+      test: [ "CMD", "pg_isready", "-U", "testyuser", "-d", "pear" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - web
+
+networks:
+  web:
