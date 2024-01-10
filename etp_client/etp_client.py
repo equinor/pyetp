@@ -15,9 +15,6 @@ import h5py
 import numpy as np
 
 
-ETP_SERVER_URL = "wss://interop-rddms.azure-api.net"
-PSS_DATASPACE = "demo/pss-data-gateway"
-
 # TODO: Is there a limit from pss-data-gateway?
 # The websockets-library seems to a limit that corresponds to the one from
 # the ETP server.
@@ -82,11 +79,13 @@ async def upload_array_data(
     return records
 
 
-async def upload_resqml_surface(epc_filename, h5_filename, authorization):
+async def upload_resqml_surface(
+    epc_filename, h5_filename, url, dataspace, authorization
+):
     headers = {"Authorization": authorization}
 
     async with websockets.connect(
-        ETP_SERVER_URL,
+        url,
         extra_headers=headers,
         subprotocols=["etp12.energistics.org"],
         max_size=MAX_WEBSOCKET_MESSAGE_SIZE,
@@ -108,7 +107,7 @@ async def upload_resqml_surface(epc_filename, h5_filename, authorization):
         # An alternate route is to first query for the dataspace and
         # only create it if it exists. However, we save a call to the server by just trying
         # to put the dataspace and ignore the error if it already exists.
-        records = await etp_helper.put_dataspaces(ws, msg_id, [PSS_DATASPACE])
+        records = await etp_helper.put_dataspaces(ws, msg_id, [dataspace])
         # The put_dataspaces returns a list of records, one for each dataspace.
         # However, as we are only adding a single dataspace there should only be a single
         # record.
@@ -120,11 +119,11 @@ async def upload_resqml_surface(epc_filename, h5_filename, authorization):
         resqml_objects = read_epc_file(epc_filename)
 
         records = await upload_resqml_objects(
-            ws, msg_id, max_payload_size, PSS_DATASPACE, resqml_objects
+            ws, msg_id, max_payload_size, dataspace, resqml_objects
         )
 
         await upload_array_data(
-            ws, msg_id, max_payload_size, PSS_DATASPACE, resqml_objects, h5_filename
+            ws, msg_id, max_payload_size, dataspace, resqml_objects, h5_filename
         )
 
         await etp_helper.close_session(
@@ -134,7 +133,7 @@ async def upload_resqml_surface(epc_filename, h5_filename, authorization):
     return records
 
 
-async def upload_xtgeo_surface_to_rddms(surface, title, authorization):
+async def upload_xtgeo_surface_to_rddms(surface, title, url, dataspace, authorization):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Note, resqpy does not seem to construct the correct xml-objects
         # before they are written to disk. As such, we have to write to
@@ -146,7 +145,9 @@ async def upload_xtgeo_surface_to_rddms(surface, title, authorization):
         epc_filename, h5_filename = convert_xtgeo_surface_to_resqml(
             surface, title, tmpdirname
         )
-        records = await upload_resqml_surface(epc_filename, h5_filename, authorization)
+        records = await upload_resqml_surface(
+            epc_filename, h5_filename, url, dataspace, authorization
+        )
         # TODO: Check if this is the case when chunking is included
         assert len(records) == 1
         # NOTE: I think this should be valid as long as we are following the happy-path
