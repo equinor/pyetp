@@ -17,9 +17,13 @@ import numpy as np
 
 ETP_SERVER_URL = "wss://interop-rddms.azure-api.net"
 PSS_DATASPACE = "demo/pss-data-gateway"
+
+# TODO: Is there a limit from pss-data-gateway?
+# The websockets-library seems to a limit that corresponds to the one from
+# the ETP server.
 MAX_WEBSOCKET_MESSAGE_SIZE = int(1.6e7)  # From the published ETP server
 
-# TODO: Check pathing when the api is called
+
 with open("package.json", "r") as f:
     jschema = json.load(f)
     APPLICATION_NAME = jschema["name"]
