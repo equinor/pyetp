@@ -80,7 +80,7 @@ class ClientMessageId:
             return ret_id
 
 
-async def handle_multipart_response(ws, get_msg_id, schema_key):
+async def handle_multipart_response(ws, schema_key):
     # Note that we only handle ProtocolException errors for now
     records = []
     while True:
@@ -205,7 +205,7 @@ async def request_session(
     # handle_multipart_response-function works just as well for single
     # messages.
     return await handle_multipart_response(
-        ws, get_msg_id, "Energistics.Etp.v12.Protocol.Core.OpenSession"
+        ws, "Energistics.Etp.v12.Protocol.Core.OpenSession"
     )
 
 
@@ -269,7 +269,6 @@ async def put_dataspaces(ws, get_msg_id, dataspaces):
 
     return await handle_multipart_response(
         ws,
-        get_msg_id,
         "Energistics.Etp.v12.Protocol.Dataspace.PutDataspacesResponse",
     )
 
@@ -337,7 +336,6 @@ async def put_data_objects(
 
     return await handle_multipart_response(
         ws,
-        get_msg_id,
         "Energistics.Etp.v12.Protocol.Store.PutDataObjectsResponse",
     )
 
@@ -387,6 +385,5 @@ async def put_data_arrays(
 
     return await handle_multipart_response(
         ws,
-        get_msg_id,
         "Energistics.Etp.v12.Protocol.DataArray.PutDataArraysResponse",
     )
