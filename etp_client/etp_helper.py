@@ -472,3 +472,50 @@ async def get_data_arrays(ws, get_msg_id, max_payload_size, epc_uri, path_in_res
         ws,
         "Energistics.Etp.v12.Protocol.DataArray.GetDataArraysResponse",
     )
+
+
+async def get_data_subarray(
+    ws,
+    get_msg_id,
+    max_payload_size,
+    epc_uri,
+    path_in_resource,
+    starts,
+    counts,
+    key=None,
+):
+    # This method only supports the request of a single subarray.
+    # The protocol from ETP can support the request of multiple subarrays.
+
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=3,  # GetDataSubarrays
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    gds_record = dict(
+        dataSubarrays={
+            key
+            or "0": dict(
+                uid=dict(
+                    uri=epc_uri,
+                    pathInResource=path_in_resource,
+                ),
+                starts=starts,
+                counts=counts,
+            )
+        },
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            gds_record,
+            "Energistics.Etp.v12.Protocol.DataArray.GetDataSubarrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws, "Energistics.Etp.v12.Protocol.DataArray.GetDataSubarraysResponse"
+    )
