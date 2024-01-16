@@ -20,6 +20,11 @@ import numpy as np
 # the ETP server.
 MAX_WEBSOCKET_MESSAGE_SIZE = int(1.6e7)  # From the published ETP server
 
+ENERGISTICS_NAMESPACES = dict(
+    resqml2="http://www.energistics.org/energyml/data/resqmlv2",
+    eml="http://www.energistics.org/energyml/data/commonv2",
+)
+
 
 with open("package.json", "r") as f:
     jschema = json.load(f)
@@ -104,17 +109,19 @@ async def upload_resqml_surface(
             "MaxWebSocketMessagePayloadSize"
         ]["item"]
 
-        # An alternate route is to first query for the dataspace and
-        # only create it if it exists. However, we save a call to the server by just trying
-        # to put the dataspace and ignore the error if it already exists.
+        # An alternate route is to first query for the dataspace and only
+        # create it if it exists. However, we save a call to the server by just
+        # trying to put the dataspace and ignore the error if it already
+        # exists.
         records = await etp_helper.put_dataspaces(ws, msg_id, [dataspace])
         # The put_dataspaces returns a list of records, one for each dataspace.
-        # However, as we are only adding a single dataspace there should only be a single
-        # record.
+        # However, as we are only adding a single dataspace there should only
+        # be a single record.
         assert len(records) == 1
-        # Note that we are here following the happy-path and assume that the only "error
-        # message" we can get is if the dataspace exists. An alternative would be to create
-        # more proper exception handling for the errors.
+        # Note that we are here following the happy-path and assume that the
+        # only "error message" we can get is if the dataspace exists. An
+        # alternative would be to create more proper exception handling for the
+        # errors.
 
         resqml_objects = read_epc_file(epc_filename)
 
@@ -133,32 +140,139 @@ async def upload_resqml_surface(
     return records
 
 
-async def upload_xtgeo_surface_to_rddms(surface, title, url, dataspace, authorization):
+async def download_array_data(ws, msg_id, max_payload_size, resqml_objects):
+    # TODO: Use subarrays in case the arrays are larger than max_payload_size
+    # TODO: Consider asking for data array metadata prior to fetching the array
+    # either in one call or from subarrays.  Otherwise we don't know how large
+    # the array will be in advance.
+
+    # NOTE: We assume that there is a single EpcExternalPartReference in the
+    # resqml_objects.
+
+    epc_uri = next(
+        filter(lambda x: "EpcExternalPartReference" in x, list(resqml_objects))
+    )
+    path_in_resources = {
+        f"{k}{pir.text}": pir.text
+        for k in list(resqml_objects)
+        for pir in get_path_in_resource(resqml_objects[k]["xml"])
+    }
+
+    records = await etp_helper.get_data_arrays(
+        ws, msg_id, max_payload_size, epc_uri, path_in_resources
+    )
+    assert len(records) == 1
+
+    return {
+        key: etp_helper.etp_data_array_to_numpy(val)
+        for key, val in records[0]["dataArrays"].items()
+    }
+
+
+async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authorization):
+    headers = {"Authorization": authorization}
+
+    async with websockets.connect(
+        etp_server_url,
+        extra_headers=headers,
+        subprotocols=["etp12.energistics.org"],
+        max_size=MAX_WEBSOCKET_MESSAGE_SIZE,
+    ) as ws:
+        msg_id = etp_helper.ClientMessageId()
+        records = await etp_helper.request_session(
+            ws,
+            msg_id,
+            max_payload_size=MAX_WEBSOCKET_MESSAGE_SIZE,
+            application_name=APPLICATION_NAME,
+            application_version=APPLICATION_VERSION,
+        )
+        # TODO: Use the max_payload_size to ensure that data is uploaded in
+        # chunks when needed.
+        max_payload_size = records[0]["endpointCapabilities"][
+            "MaxWebSocketMessagePayloadSize"
+        ]["item"]
+
+        # Download the grid object.
+        records = await etp_helper.get_data_objects(
+            ws, msg_id, max_payload_size, rddms_uris
+        )
+        # NOTE: Here we assume that all three objects fit in a single record
+        data_objects = records[0]["dataObjects"]
+        # NOTE: This test will not work in case of too large objects as the
+        # records will be chunks. If so these should be assembled before being
+        # returned here.
+        assert len(data_objects) == len(rddms_uris)
+
+        resqml_objects = {}
+        for uri in rddms_uris:
+            xml = ET.fromstring(data_objects[uri]["data"])
+            resqml_objects[uri] = dict(
+                xml=xml,
+                uuid=xml.attrib["uuid"],
+                data_object_type=ET.QName(xml).localname,
+            )
+
+        # Download array data.
+        arrays = await download_array_data(
+            ws,
+            msg_id,
+            max_payload_size,
+            resqml_objects,
+        )
+        # NOTE: We assume that there is a single array connected to a resqml
+        # surface
+        assert len(arrays) == 1
+        # Fetch array
+        array = arrays.popitem()[1]
+
+        # Close session.
+        await etp_helper.close_session(ws, msg_id, "Done downloading surface array")
+
+    # Return xml's and array
+    return resqml_objects, array
+
+
+async def upload_xtgeo_surface_to_rddms(
+    surface, title, etp_server_url, dataspace, authorization
+):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Note, resqpy does not seem to construct the correct xml-objects
-        # before they are written to disk. As such, we have to write to
-        # disk, then read in again to get the correct values. Here we do
-        # that using a temporary directory to ensure that data on disk is
-        # deleted after the context manager finishes.
+        # before they are written to disk. The problem has to do with namespace
+        # prefixing in XML attributes. I think the problem is on the
+        # open-etp-server and their use of rapidxml_ns which I think does not
+        # support the usage of the full namespace in attributes. As such, we
+        # have to write to disk, then read in again to get the correct values.
+        # Here we do that using a temporary directory to ensure that data on
+        # disk is deleted after the context manager finishes.
 
-        # TODO: Pass in CRS info, project-id (as a title?), description, units, and type
+        # TODO: Pass in CRS info, project-id (as a title?), description, units,
+        # and type
         epc_filename, h5_filename = convert_xtgeo_surface_to_resqml(
             surface, title, tmpdirname
         )
         records = await upload_resqml_surface(
-            epc_filename, h5_filename, url, dataspace, authorization
+            epc_filename, h5_filename, etp_server_url, dataspace, authorization
         )
         # TODO: Check if this is the case when chunking is included
         assert len(records) == 1
-        # NOTE: I think this should be valid as long as we are following the happy-path
-        # and that an xtgeo surface will always be represented by a single
-        # Grid2dRepresentation. This also only includes the url to the grid-object, and
-        # not the crs nor the external reference (h5-link). However, these should be
-        # recoverable from the grid-object.
-        record = records[0]
-        rddms_url = next(filter(lambda x: "Grid2d" in x, list(record["success"])))
+        # NOTE: I think this should be valid as long as an xtgeo surface is
+        # represented by a single Grid2dRepresentation.
+        rddms_urls = list(records[0]["success"])
 
-    return rddms_url
+    return rddms_urls
+
+
+async def download_xtgeo_surface_from_rddms(
+    rddms_urls, etp_server_url, dataspace, authorization
+):
+    resqml_objects, surface_array = await download_resqml_surface(
+        rddms_urls, etp_server_url, dataspace, authorization
+    )
+
+    # Convert resqml-objects and the surface array into an xtgeo
+    # RegularSurface.
+
+    # Return this surface
 
 
 def convert_xtgeo_surface_to_resqml(surf, title, directory):
@@ -209,7 +323,7 @@ def read_epc_file(epc_filename):
     with zipfile.ZipFile(epc_filename, "r") as zfile:
         for zinfo in filter(lambda x: x.filename.startswith("obj_"), zfile.infolist()):
             with zfile.open(zinfo.filename) as f:
-                dot, id = get_object_type_and_uuid(zinfo.filename)
+                dot, _uuid = get_object_type_and_uuid(zinfo.filename)
                 xml = f.read()
                 # NOTE: In general there can be multiple references to a Hdf-file (see
                 # page 31 of the RESQML v2.0.1 standard), but we only support a
@@ -222,7 +336,7 @@ def read_epc_file(epc_filename):
                     )
                 dat[zinfo.filename] = dict(
                     data_object_type=dot,
-                    uuid=id,
+                    uuid=_uuid,
                     xml=xml,
                     pirs=pirs,
                 )
