@@ -3,12 +3,12 @@ import datetime
 import asyncio
 import uuid
 import io
-import pprint
 import enum
 import pathlib
 
 import fastavro
 import lxml.etree as ET
+import numpy as np
 
 
 # Read and store ETP-schemas in a global dictionary
@@ -60,6 +60,12 @@ def numpy_to_etp_data_array(array):
     )
 
 
+def etp_data_array_to_numpy(data_array):
+    return np.asarray(data_array["data"]["item"]["values"]).reshape(
+        data_array["dimensions"]
+    )
+
+
 class MHFlags(enum.Enum):
     # Flags in MessageHeader, see section 23.25 in the ETP 1.2 standard
     FIN = 0x2
@@ -81,7 +87,7 @@ class ClientMessageId:
             return ret_id
 
 
-async def handle_multipart_response(ws, get_msg_id, schema_key):
+async def handle_multipart_response(ws, schema_key):
     # Note that we only handle ProtocolException errors for now
     records = []
     while True:
@@ -206,7 +212,7 @@ async def request_session(
     # handle_multipart_response-function works just as well for single
     # messages.
     return await handle_multipart_response(
-        ws, get_msg_id, "Energistics.Etp.v12.Protocol.Core.OpenSession"
+        ws, "Energistics.Etp.v12.Protocol.Core.OpenSession"
     )
 
 
@@ -270,7 +276,6 @@ async def put_dataspaces(ws, get_msg_id, dataspaces):
 
     return await handle_multipart_response(
         ws,
-        get_msg_id,
         "Energistics.Etp.v12.Protocol.Dataspace.PutDataspacesResponse",
     )
 
@@ -338,8 +343,45 @@ async def put_data_objects(
 
     return await handle_multipart_response(
         ws,
-        get_msg_id,
         "Energistics.Etp.v12.Protocol.Store.PutDataObjectsResponse",
+    )
+
+
+async def get_data_objects(ws, get_msg_id, max_payload_size, uris):
+    # Note, the uris contain the dataspace name, the data object type, and the
+    # uuid. An alternative to passing the complete uris would be to pass in
+    # each part separately. I am unsure what is easiest down the line.
+    # Note also that we use the uri as the name of the data object to ensure
+    # uniqueness.
+
+    # Get data objects
+    # If the number of uris is larger than the websocket size, we must send
+    # multiple GetDataObjects-requests. The returned data objects can also be
+    # too large, and would then require chunking.
+    mh_record = dict(
+        protocol=4,  # Store
+        messageType=1,  # GetDataObjects
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    # Assuming that all uris fit in a single record, for now.
+    gdo_record = dict(
+        uris=dict((uri, uri) for uri in uris),
+        format="xml",
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            gdo_record,
+            "Energistics.Etp.v12.Protocol.Store.GetDataObjects",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        "Energistics.Etp.v12.Protocol.Store.GetDataObjectsResponse",
     )
 
 
@@ -388,6 +430,92 @@ async def put_data_arrays(
 
     return await handle_multipart_response(
         ws,
-        get_msg_id,
         "Energistics.Etp.v12.Protocol.DataArray.PutDataArraysResponse",
+    )
+
+
+async def get_data_arrays(ws, get_msg_id, max_payload_size, epc_uri, path_in_resources):
+    # TODO: Figure out how too large arrays are handled.
+    # Does this protocol respond with an error, and tell us that we need to use
+    # GetDataSubarrays instead, or does it return multiple responses?
+
+    # Get full data array
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=2,  # GetDataArrays
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    gda_record = dict(
+        dataArrays={
+            # Note that we use the pathInResource (pathInHdfFile) from the
+            # Grid2dRepresentation, but the uri is for
+            # EpcExternalPartReference!
+            key: dict(
+                uri=epc_uri,
+                pathInResource=val,
+            )
+            for key, val in path_in_resources.items()
+        },
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            gda_record,
+            "Energistics.Etp.v12.Protocol.DataArray.GetDataArrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        "Energistics.Etp.v12.Protocol.DataArray.GetDataArraysResponse",
+    )
+
+
+async def get_data_subarray(
+    ws,
+    get_msg_id,
+    max_payload_size,
+    epc_uri,
+    path_in_resource,
+    starts,
+    counts,
+    key=None,
+):
+    # This method only supports the request of a single subarray.
+    # The protocol from ETP can support the request of multiple subarrays.
+
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=3,  # GetDataSubarrays
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    gds_record = dict(
+        dataSubarrays={
+            key
+            or "0": dict(
+                uid=dict(
+                    uri=epc_uri,
+                    pathInResource=path_in_resource,
+                ),
+                starts=starts,
+                counts=counts,
+            )
+        },
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            gds_record,
+            "Energistics.Etp.v12.Protocol.DataArray.GetDataSubarrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws, "Energistics.Etp.v12.Protocol.DataArray.GetDataSubarraysResponse"
     )
