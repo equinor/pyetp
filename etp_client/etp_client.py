@@ -20,10 +20,10 @@ PSS_DATASPACE = "demo/pss-data-gateway"
 MAX_WEBSOCKET_MESSAGE_SIZE = int(1.6e7)  # From the published ETP server
 
 # TODO: Check pathing when the api is called
-with open("package.json", "r") as f:
-    jschema = json.load(f)
-    APPLICATION_NAME = jschema["name"]
-    APPLICATION_VERSION = jschema["version"]
+# with open("package.json", "r") as f:
+#     jschema = json.load(f)
+APPLICATION_NAME = "geomint"
+APPLICATION_VERSION = "0.0.1"
 
 
 async def create_dataspace(ws, msg_id, dataspace):
