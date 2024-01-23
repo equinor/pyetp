@@ -20,16 +20,12 @@ import numpy as np
 # the ETP server.
 MAX_WEBSOCKET_MESSAGE_SIZE = int(1.6e7)  # From the published ETP server
 
-ENERGISTICS_NAMESPACES = dict(
-    resqml2="http://www.energistics.org/energyml/data/resqmlv2",
-    eml="http://www.energistics.org/energyml/data/commonv2",
-)
 
-
-with open("package.json", "r") as f:
-    jschema = json.load(f)
-    APPLICATION_NAME = jschema["name"]
-    APPLICATION_VERSION = jschema["version"]
+# TODO: Check pathing when the api is called
+# with open("package.json", "r") as f:
+#     jschema = json.load(f)
+APPLICATION_NAME = "geomint"
+APPLICATION_VERSION = "0.0.1"
 
 
 async def upload_resqml_objects(
