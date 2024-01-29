@@ -48,7 +48,7 @@ async def upload_resqml_objects(
     return records
 
 async def delete_resqml_objects(
-        etp_server_url, msg_id, rddms_uris, authorization
+        etp_server_url, rddms_uris, authorization
 ):
     headers = {"Authorization": authorization}
 
