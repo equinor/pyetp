@@ -39,6 +39,7 @@ def serialize_message(header_record, body_record, body_schema_key):
 
 
 def get_data_object_uri(dataspace, data_object_type, _uuid):
+    # FIXME: Fetch prefix from the namespaces in the resqml-objects.
     if not data_object_type.startswith("resqml20") or not data_object_type.startswith(
         "eml20"
     ):

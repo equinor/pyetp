@@ -1,4 +1,4 @@
-from resqml_objects.generated import (
+from map_api.resqml_objects.generated import (
     ApigammaRayMeasure,
     ApigammaRayUom,
     ApigravityMeasure,
