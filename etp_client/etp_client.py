@@ -108,6 +108,9 @@ async def upload_resqml_surface(
         # FIXME: Handle potential errors in records.
         # TODO: Use the max_payload_size to ensure that data is uploaded in
         # chunks or subarrays when needed.
+        # TODO: Check if we need to include the message header size and the
+        # metadata in the message body. That is, the max payload of uploaded data would then be:
+        #   max_size = max_payload_size - sizeof(metadata)
         max_payload_size = records[0]["endpointCapabilities"][
             "MaxWebSocketMessagePayloadSize"
         ]["item"]
