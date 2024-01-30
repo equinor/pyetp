@@ -45,7 +45,13 @@ async def upload_resqml_objects(
     records = await etp_helper.put_data_objects(
         ws, msg_id, max_payload_size, dataspaces, data_object_types, uuids, xmls
     )
-    return records
+    assert all(key == "success" for record in records for key in record)
+
+    rddms_uris = [
+        etp_helper.get_data_object_uri(dataspace, dot, _uuid)
+        for dataspace, dot, _uuid in zip(dataspaces, data_object_types, uuids)
+    ]
+    return rddms_uris
 
 async def delete_resqml_objects(
         etp_server_url, rddms_uris, authorization
@@ -279,16 +285,11 @@ async def upload_xtgeo_surface_to_rddms(
         epc_filename, h5_filename = convert_xtgeo_surface_to_resqml(
             surface, title, tmpdirname
         )
-        records = await upload_resqml_surface(
+        rddms_uris = await upload_resqml_surface(
             epc_filename, h5_filename, etp_server_url, dataspace, authorization
         )
-        # TODO: Check if this is the case when chunking is included
-        assert len(records) == 1
-        # NOTE: I think this should be valid as long as an xtgeo surface is
-        # represented by a single Grid2dRepresentation.
-        rddms_urls = list(records[0]["success"])
 
-    return rddms_urls
+    return rddms_uris
 
 
 async def download_xtgeo_surface_from_rddms(
