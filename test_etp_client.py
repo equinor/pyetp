@@ -22,10 +22,16 @@ class TestETPClient(unittest.TestCase):
             rotation=33.0,
             values=np.random.random((nrow, ncol)),
         )
+        surface.unrotate()
 
         rddms_urls = asyncio.run(
             etp_client.upload_xtgeo_surface_to_rddms(
-                surface, "test-surface", ETP_SERVER_URL, DATASPACE, ""
+                surface=surface,
+                title="test-surface",
+                projected_epsg=23031,
+                etp_server_url=ETP_SERVER_URL,
+                dataspace=DATASPACE,
+                authorization="",
             )
         )
 
