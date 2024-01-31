@@ -62,9 +62,8 @@ async def upload_resqml_objects(
     ]
     return rddms_uris
 
-async def delete_resqml_objects(
-        etp_server_url, rddms_uris, authorization
-):
+
+async def delete_resqml_objects(etp_server_url, rddms_uris, authorization):
     headers = {"Authorization": authorization}
 
     async with websockets.connect(
@@ -79,7 +78,7 @@ async def delete_resqml_objects(
             msg_id,
             max_payload_size=MAX_WEBSOCKET_MESSAGE_SIZE,
             application_name=APPLICATION_NAME,
-            application_version=APPLICATION_VERSION
+            application_version=APPLICATION_VERSION,
         )
         # TODO: Use the max_payload_size to ensure that data is uploaded in
         # chunks when needed.
@@ -89,7 +88,7 @@ async def delete_resqml_objects(
 
         records = await etp_helper.delete_data_objects(ws, msg_id, rddms_uris)
         assert len(records[0]["deletedUris"]) == len(rddms_uris)
-        
+
         # Close session.
         await etp_helper.close_session(ws, msg_id, "Done deleting resqml objects")
 
