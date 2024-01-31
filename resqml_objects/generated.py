@@ -4,7 +4,7 @@ from typing import List, Optional, Union, Any
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 
-class ApigammaRayUom(Enum):
+class APIGammaRayUom(Enum):
     """
     Properties
     ----------
@@ -15,7 +15,7 @@ class ApigammaRayUom(Enum):
     G_API = "gAPI"
 
 
-class ApigravityUom(Enum):
+class APIGravityUom(Enum):
     """
     Properties
     ----------
@@ -26,7 +26,7 @@ class ApigravityUom(Enum):
     D_API = "dAPI"
 
 
-class ApineutronUom(Enum):
+class APINeutronUom(Enum):
     """
     Properties
     ----------
@@ -570,7 +570,7 @@ class AttenuationPerFrequencyIntervalUom(Enum):
     D_B_O = "dB/O"
 
 
-class AxisOrder2D(Enum):
+class AxisOrder2d(Enum):
     """
     Defines the cordinate system axis order of the global CRS using the axis names
     (from EPSG database).
@@ -6291,7 +6291,7 @@ class AbstractParametricLineArray:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractPoint3DArray:
+class AbstractPoint3dArray:
     """The abstract class of 3D points implemented in a single fashion for the
     schema.
 
@@ -6305,7 +6305,6 @@ class AbstractPoint3DArray:
     """
 
     class Meta:
-        name = "AbstractPoint3dArray"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
@@ -6723,7 +6722,7 @@ class GeneticBoundaryKind(Enum):
     HORIZON = "horizon"
 
 
-class Geobody3DShape(Enum):
+class Geobody3dShape(Enum):
     """
     The enumerated attributes of a horizon.
     """
@@ -6942,7 +6941,7 @@ class IndexableElements(Enum):
     TRIANGLES = "triangles"
 
 
-class Kdirection(Enum):
+class KDirection(Enum):
     """Enumeration used to specify if the direction of the coordinate lines is
     uniquely defined for a grid.
 
@@ -7337,7 +7336,7 @@ class PillarShape(Enum):
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3D:
+class Point3d:
     """
     Defines a point using coordinates in 3D space.
 
@@ -7352,7 +7351,6 @@ class Point3D:
     """
 
     class Meta:
-        name = "Point3d"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     coordinate1: float = field(
@@ -9554,9 +9552,8 @@ class Timestamp:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractObjectType:
+class AbstractObject_Type:
     class Meta:
-        name = "AbstractObject_Type"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
     id: Optional[str] = field(
@@ -9599,9 +9596,8 @@ class CharacterString:
 
 
 @dataclass(slots=True, kw_only=True)
-class CodeListValueType:
+class CodeListValue_Type:
     class Meta:
-        name = "CodeListValue_Type"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
     value: str = field(
@@ -9671,9 +9667,8 @@ class Real:
 
 
 @dataclass(slots=True, kw_only=True)
-class Url:
+class URL:
     class Meta:
-        name = "URL"
         namespace = "http://www.isotc211.org/2005/gmd"
 
     value: str = field(
@@ -9721,7 +9716,7 @@ class CodeType:
     )
 
 
-class NilReasonEnumerationValue(Enum):
+class NilReasonEnumeration_value(Enum):
     INAPPLICABLE = "inapplicable"
     MISSING = "missing"
     TEMPLATE = "template"
@@ -9729,7 +9724,7 @@ class NilReasonEnumerationValue(Enum):
     WITHHELD = "withheld"
 
 
-class RelatedTimeTypeRelativePosition(Enum):
+class RelatedTimeType_relativePosition(Enum):
     BEFORE = "Before"
     AFTER = "After"
     BEGINS = "Begins"
@@ -9746,7 +9741,7 @@ class RelatedTimeTypeRelativePosition(Enum):
 
 
 @dataclass(slots=True, kw_only=True)
-class SecondDefiningParameter1:
+class SecondDefiningParameter_1:
     class Meta:
         name = "SecondDefiningParameter"
         namespace = "http://www.opengis.net/gml/3.2"
@@ -9775,7 +9770,7 @@ class SecondDefiningParameter1:
 
 
 @dataclass(slots=True, kw_only=True)
-class GreenwichLongitude:
+class greenwichLongitude:
     """Gml:greenwichLongitude is the longitude of the prime meridian measured from
     the Greenwich meridian, positive eastward.
 
@@ -9784,7 +9779,6 @@ class GreenwichLongitude:
     """
 
     class Meta:
-        name = "greenwichLongitude"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: float = field(
@@ -9795,7 +9789,7 @@ class GreenwichLongitude:
 
 
 @dataclass(slots=True, kw_only=True)
-class MaximumValue:
+class maximumValue:
     """The gml:minimumValue and gml:maximumValue properties allow the specification
     of minimum and maximum value normally allowed for this axis, in the unit of
     measure for the axis.
@@ -9809,7 +9803,6 @@ class MaximumValue:
     """
 
     class Meta:
-        name = "maximumValue"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: float = field(
@@ -9820,7 +9813,7 @@ class MaximumValue:
 
 
 @dataclass(slots=True, kw_only=True)
-class MinimumValue:
+class minimumValue:
     """The gml:minimumValue and gml:maximumValue properties allow the specification
     of minimum and maximum value normally allowed for this axis, in the unit of
     measure for the axis.
@@ -9834,7 +9827,6 @@ class MinimumValue:
     """
 
     class Meta:
-        name = "minimumValue"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: float = field(
@@ -9845,7 +9837,7 @@ class MinimumValue:
 
 
 @dataclass(slots=True, kw_only=True)
-class OperationVersion:
+class operationVersion:
     """Gml:operationVersion is the version of the coordinate transformation (i.e.,
     instantiation due to the stochastic nature of the parameters).
 
@@ -9854,7 +9846,6 @@ class OperationVersion:
     """
 
     class Meta:
-        name = "operationVersion"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: str = field(
@@ -9866,14 +9857,13 @@ class OperationVersion:
 
 
 @dataclass(slots=True, kw_only=True)
-class RealizationEpoch:
+class realizationEpoch:
     """Gml:realizationEpoch is the time after which this datum definition is valid.
 
     See ISO 19111 Table 32 for details.
     """
 
     class Meta:
-        name = "realizationEpoch"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: XmlDate = field(
@@ -9884,9 +9874,8 @@ class RealizationEpoch:
 
 
 @dataclass(slots=True, kw_only=True)
-class Remarks:
+class remarks:
     class Meta:
-        name = "remarks"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: str = field(
@@ -9898,7 +9887,7 @@ class Remarks:
 
 
 @dataclass(slots=True, kw_only=True)
-class Scope:
+class scope:
     """The gml:scope property provides a description of the usage, or limitations
     of usage, for which this CRS-related object is valid.
 
@@ -9906,7 +9895,6 @@ class Scope:
     """
 
     class Meta:
-        name = "scope"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: str = field(
@@ -9918,7 +9906,7 @@ class Scope:
 
 
 @dataclass(slots=True, kw_only=True)
-class SemiMajorAxis:
+class semiMajorAxis:
     """Gml:semiMajorAxis specifies the length of the semi-major axis of the
     ellipsoid, with its units.
 
@@ -9928,7 +9916,6 @@ class SemiMajorAxis:
     """
 
     class Meta:
-        name = "semiMajorAxis"
         namespace = "http://www.opengis.net/gml/3.2"
 
     value: float = field(
@@ -9938,14 +9925,14 @@ class SemiMajorAxis:
     )
 
 
-class ActuateValue(Enum):
+class actuate_value(Enum):
     ON_LOAD = "onLoad"
     ON_REQUEST = "onRequest"
     OTHER = "other"
     NONE = "none"
 
 
-class ShowValue(Enum):
+class show_value(Enum):
     NEW = "new"
     REPLACE = "replace"
     EMBED = "embed"
@@ -9954,9 +9941,8 @@ class ShowValue(Enum):
 
 
 @dataclass(slots=True, kw_only=True)
-class ApigammaRayMeasure:
+class APIGammaRayMeasure:
     class Meta:
-        name = "APIGammaRayMeasure"
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
     value: float = field(
@@ -9964,7 +9950,7 @@ class ApigammaRayMeasure:
             "required": True,
         }
     )
-    uom: ApigammaRayUom = field(
+    uom: APIGammaRayUom = field(
         metadata={
             "type": "Attribute",
             "required": True,
@@ -9973,9 +9959,8 @@ class ApigammaRayMeasure:
 
 
 @dataclass(slots=True, kw_only=True)
-class ApigravityMeasure:
+class APIGravityMeasure:
     class Meta:
-        name = "APIGravityMeasure"
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
     value: float = field(
@@ -9983,7 +9968,7 @@ class ApigravityMeasure:
             "required": True,
         }
     )
-    uom: ApigravityUom = field(
+    uom: APIGravityUom = field(
         metadata={
             "type": "Attribute",
             "required": True,
@@ -9992,9 +9977,8 @@ class ApigravityMeasure:
 
 
 @dataclass(slots=True, kw_only=True)
-class ApineutronMeasure:
+class APINeutronMeasure:
     class Meta:
-        name = "APINeutronMeasure"
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
     value: float = field(
@@ -10002,7 +9986,7 @@ class ApineutronMeasure:
             "required": True,
         }
     )
-    uom: ApineutronUom = field(
+    uom: APINeutronUom = field(
         metadata={
             "type": "Attribute",
             "required": True,
@@ -13494,7 +13478,7 @@ class AdditionalGridPoints:
             "required": True,
         }
     )
-    points: AbstractPoint3DArray = field(
+    points: AbstractPoint3dArray = field(
         metadata={
             "name": "Points",
             "type": "Element",
@@ -13713,7 +13697,7 @@ class ObjectParameterKey(AbstractParameterKey):
 
 
 @dataclass(slots=True, kw_only=True)
-class Patch1D(Patch):
+class Patch1d(Patch):
     """
     A patch with a single 1D index count.
 
@@ -13724,7 +13708,6 @@ class Patch1D(Patch):
     """
 
     class Meta:
-        name = "Patch1d"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     count: int = field(
@@ -13819,7 +13802,7 @@ class PatchOfPoints:
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-    points: AbstractPoint3DArray = field(
+    points: AbstractPoint3dArray = field(
         metadata={
             "name": "Points",
             "type": "Element",
@@ -14053,16 +14036,15 @@ class SubnodePatch(Patch):
 
 
 @dataclass(slots=True, kw_only=True)
-class ThreePoint3D:
+class ThreePoint3d:
     """
     List of three 3D points.
     """
 
     class Meta:
-        name = "ThreePoint3d"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    point3d: List[Point3D] = field(
+    point3d: List[Point3d] = field(
         default_factory=list,
         metadata={
             "name": "Point3d",
@@ -14230,9 +14212,8 @@ class WitsmlWellboreReference:
 
 
 @dataclass(slots=True, kw_only=True)
-class BooleanPropertyType:
+class Boolean_PropertyType:
     class Meta:
-        name = "Boolean_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
     boolean: Optional[bool] = field(
@@ -14243,7 +14224,7 @@ class BooleanPropertyType:
             "namespace": "http://www.isotc211.org/2005/gco",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14255,9 +14236,8 @@ class BooleanPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class DateTimePropertyType:
+class DateTime_PropertyType:
     class Meta:
-        name = "DateTime_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
     date_time: Optional[XmlDateTime] = field(
@@ -14268,7 +14248,7 @@ class DateTimePropertyType:
             "namespace": "http://www.isotc211.org/2005/gco",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14280,9 +14260,8 @@ class DateTimePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class DatePropertyType:
+class Date_PropertyType:
     class Meta:
-        name = "Date_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
     date: Optional[Union[XmlDate, XmlPeriod]] = field(
@@ -14302,7 +14281,7 @@ class DatePropertyType:
             "namespace": "http://www.isotc211.org/2005/gco",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14314,9 +14293,8 @@ class DatePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class RealPropertyType:
+class Real_PropertyType:
     class Meta:
-        name = "Real_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
     real: Optional[float] = field(
@@ -14327,7 +14305,7 @@ class RealPropertyType:
             "namespace": "http://www.isotc211.org/2005/gco",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14339,51 +14317,44 @@ class RealPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractDqResultType(AbstractObjectType):
+class AbstractDQ_Result_Type(AbstractObject_Type):
     class Meta:
-        name = "AbstractDQ_Result_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiDateTypeCode(CodeListValueType):
+class CI_DateTypeCode(CodeListValue_Type):
     class Meta:
-        name = "CI_DateTypeCode"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiOnLineFunctionCode(CodeListValueType):
+class CI_OnLineFunctionCode(CodeListValue_Type):
     class Meta:
-        name = "CI_OnLineFunctionCode"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiPresentationFormCode(CodeListValueType):
+class CI_PresentationFormCode(CodeListValue_Type):
     class Meta:
-        name = "CI_PresentationFormCode"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiRoleCode(CodeListValueType):
+class CI_RoleCode(CodeListValue_Type):
     class Meta:
-        name = "CI_RoleCode"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class DqEvaluationMethodTypeCode(CodeListValueType):
+class DQ_EvaluationMethodTypeCode(CodeListValue_Type):
     class Meta:
-        name = "DQ_EvaluationMethodTypeCode"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class DqResultPropertyType:
+class DQ_Result_PropertyType:
     class Meta:
-        name = "DQ_Result_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
     type_value: str = field(
@@ -14423,14 +14394,14 @@ class DqResultPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -14443,7 +14414,7 @@ class DqResultPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14455,9 +14426,8 @@ class DqResultPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class ExGeographicExtentPropertyType:
+class EX_GeographicExtent_PropertyType:
     class Meta:
-        name = "EX_GeographicExtent_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
     type_value: str = field(
@@ -14497,14 +14467,14 @@ class ExGeographicExtentPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -14517,7 +14487,7 @@ class ExGeographicExtentPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14529,9 +14499,8 @@ class ExGeographicExtentPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class UrlPropertyType:
+class URL_PropertyType:
     class Meta:
-        name = "URL_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
     url: Optional[str] = field(
@@ -14542,7 +14511,7 @@ class UrlPropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14554,9 +14523,8 @@ class UrlPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class TmPrimitivePropertyType:
+class TM_Primitive_PropertyType:
     class Meta:
-        name = "TM_Primitive_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gts"
 
     type_value: str = field(
@@ -14596,14 +14564,14 @@ class TmPrimitivePropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -14616,7 +14584,7 @@ class TmPrimitivePropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14694,21 +14662,21 @@ class GeneralConversionPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14771,21 +14739,21 @@ class ReferenceType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14843,21 +14811,21 @@ class StringOrRefType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14915,21 +14883,21 @@ class TimePrimitivePropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -14946,7 +14914,7 @@ class TimePrimitivePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class AnchorDefinition(CodeType):
+class anchorDefinition(CodeType):
     """Gml:anchorDefinition is a description, possibly including coordinates, of
     the definition used to anchor the datum to the Earth. Also known as the
     "origin", especially for engineering and image datums. The codeSpace attribute
@@ -14960,12 +14928,11 @@ class AnchorDefinition(CodeType):
     """
 
     class Meta:
-        name = "anchorDefinition"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class AxisAbbrev(CodeType):
+class axisAbbrev(CodeType):
     """Gml:axisAbbrev is the abbreviation used for this coordinate system axis;
     this abbreviation is also used to identify the coordinates in the coordinate
     tuple.
@@ -14975,12 +14942,11 @@ class AxisAbbrev(CodeType):
     """
 
     class Meta:
-        name = "axisAbbrev"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class CoordinateOperationAccuracy:
+class coordinateOperationAccuracy:
     """Gml:coordinateOperationAccuracy is an association role to a
     DQ_PositionalAccuracy object as encoded in ISO/TS 19139, either referencing or
     containing the definition of that positional accuracy.
@@ -14992,7 +14958,6 @@ class CoordinateOperationAccuracy:
     """
 
     class Meta:
-        name = "coordinateOperationAccuracy"
         namespace = "http://www.opengis.net/gml/3.2"
 
     type_value: str = field(
@@ -15032,21 +14997,21 @@ class CoordinateOperationAccuracy:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -15057,7 +15022,7 @@ class CoordinateOperationAccuracy:
 
 
 @dataclass(slots=True, kw_only=True)
-class Name(CodeType):
+class name(CodeType):
     """The gml:name property provides a label or identifier for the object,
     commonly a descriptive name.
 
@@ -15072,12 +15037,11 @@ class Name(CodeType):
     """
 
     class Meta:
-        name = "name"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SecondDefiningParameter2:
+class secondDefiningParameter_2:
     """Gml:secondDefiningParameter is a property containing the definition of the
     second parameter that defines the shape of an ellipsoid.
 
@@ -15090,7 +15054,7 @@ class SecondDefiningParameter2:
         name = "secondDefiningParameter"
         namespace = "http://www.opengis.net/gml/3.2"
 
-    second_defining_parameter: SecondDefiningParameter1 = field(
+    second_defining_parameter: SecondDefiningParameter_1 = field(
         metadata={
             "name": "SecondDefiningParameter",
             "type": "Element",
@@ -15617,7 +15581,7 @@ class ContactIdentity:
 
 
 @dataclass(slots=True, kw_only=True)
-class ContactPatch(Patch1D):
+class ContactPatch(Patch1d):
     """
     A subset of topological elements of an existing contact representation part
     (sealed or non-sealed contact).
@@ -15739,7 +15703,7 @@ class DoubleHdf5Array(AbstractDoubleArray):
 
 
 @dataclass(slots=True, kw_only=True)
-class EdgePatch(Patch1D):
+class EdgePatch(Patch1d):
     """Describes edges that are not linked to any other edge.
 
     Because edges do not have indices, a consecutive pair of nodes is
@@ -16327,7 +16291,7 @@ class Intervals:
 
 
 @dataclass(slots=True, kw_only=True)
-class Kgaps:
+class KGaps:
     """Optional object used to indicate that there are global gaps between layers
     in the grid.
 
@@ -16348,7 +16312,6 @@ class Kgaps:
     """
 
     class Meta:
-        name = "KGaps"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     count: Optional[int] = field(
@@ -16614,7 +16577,7 @@ class ParametricLineIntersections:
 
 
 @dataclass(slots=True, kw_only=True)
-class Point2DHdf5Array(AbstractPoint3DArray):
+class Point2dHdf5Array(AbstractPoint3dArray):
     """An array of explicit XY points stored as two coordinates in an HDF5 dataset.
 
     If needed, the implied Z coordinate is uniformly 0.
@@ -16628,7 +16591,6 @@ class Point2DHdf5Array(AbstractPoint3DArray):
     """
 
     class Meta:
-        name = "Point2dHdf5Array"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     coordinates: Hdf5Dataset = field(
@@ -16642,7 +16604,7 @@ class Point2DHdf5Array(AbstractPoint3DArray):
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3DHdf5Array(AbstractPoint3DArray):
+class Point3dHdf5Array(AbstractPoint3dArray):
     """
     N array of explicit XYZ points stored as three coordinates in an HDF5 dataset.
 
@@ -16655,7 +16617,6 @@ class Point3DHdf5Array(AbstractPoint3DArray):
     """
 
     class Meta:
-        name = "Point3dHdf5Array"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     coordinates: Hdf5Dataset = field(
@@ -16669,7 +16630,7 @@ class Point3DHdf5Array(AbstractPoint3DArray):
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3DOffset:
+class Point3dOffset:
     """Defines the size and sampling in each dimension (direction) of the point 3D
     lattice array.
 
@@ -16689,10 +16650,9 @@ class Point3DOffset:
     """
 
     class Meta:
-        name = "Point3dOffset"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    offset: Point3D = field(
+    offset: Point3d = field(
         metadata={
             "name": "Offset",
             "type": "Element",
@@ -16711,7 +16671,7 @@ class Point3DOffset:
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3DParametricArray(AbstractPoint3DArray):
+class Point3dParametricArray(AbstractPoint3dArray):
     """
     A parametric specification of an array of XYZ points.
 
@@ -16746,7 +16706,6 @@ class Point3DParametricArray(AbstractPoint3DArray):
     """
 
     class Meta:
-        name = "Point3dParametricArray"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     parameters: AbstractValueArray = field(
@@ -16784,7 +16743,7 @@ class Point3DParametricArray(AbstractPoint3DArray):
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3DZvalueArray(AbstractPoint3DArray):
+class Point3dZValueArray(AbstractPoint3dArray):
     """An array of points defined by applying a Z value on top of an existing array
     of points, XYZ, where Z is ignored. Used in these cases:
 
@@ -16800,10 +16759,9 @@ class Point3DZvalueArray(AbstractPoint3DArray):
     """
 
     class Meta:
-        name = "Point3dZValueArray"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    supporting_geometry: AbstractPoint3DArray = field(
+    supporting_geometry: AbstractPoint3dArray = field(
         metadata={
             "name": "SupportingGeometry",
             "type": "Element",
@@ -16863,7 +16821,7 @@ class ResqmlJaggedArray:
 
 
 @dataclass(slots=True, kw_only=True)
-class Seismic2DCoordinates(AbstractSeismicCoordinates):
+class Seismic2dCoordinates(AbstractSeismicCoordinates):
     """A group of 2D seismic coordinates that stores the 1-to-1 mapping between
     geometry patch coordinates (usually X, Y, Z) and trace or inter-trace positions
     on a seismic line.
@@ -16883,7 +16841,6 @@ class Seismic2DCoordinates(AbstractSeismicCoordinates):
     """
 
     class Meta:
-        name = "Seismic2dCoordinates"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     line_abscissa: AbstractDoubleArray = field(
@@ -16905,7 +16862,7 @@ class Seismic2DCoordinates(AbstractSeismicCoordinates):
 
 
 @dataclass(slots=True, kw_only=True)
-class Seismic3DCoordinates(AbstractSeismicCoordinates):
+class Seismic3dCoordinates(AbstractSeismicCoordinates):
     """
     The 1-to-1 mapping between geometry coordinates (usually X, Y, Z or X, Y, TWT)
     and trace or inter-trace positions on a seismic lattice.
@@ -16927,7 +16884,6 @@ class Seismic3DCoordinates(AbstractSeismicCoordinates):
     """
 
     class Meta:
-        name = "Seismic3dCoordinates"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     crossline_coordinates: AbstractDoubleArray = field(
@@ -17334,12 +17290,11 @@ class VolumeRegion:
 
 
 @dataclass(slots=True, kw_only=True)
-class CharacterStringPropertyType:
+class CharacterString_PropertyType:
     class Meta:
-        name = "CharacterString_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gco"
 
-    dq_evaluation_method_type_code: Optional[DqEvaluationMethodTypeCode] = field(
+    dq_evaluation_method_type_code: Optional[DQ_EvaluationMethodTypeCode] = field(
         default=None,
         metadata={
             "name": "DQ_EvaluationMethodTypeCode",
@@ -17347,7 +17302,7 @@ class CharacterStringPropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    ci_presentation_form_code: Optional[CiPresentationFormCode] = field(
+    ci_presentation_form_code: Optional[CI_PresentationFormCode] = field(
         default=None,
         metadata={
             "name": "CI_PresentationFormCode",
@@ -17355,7 +17310,7 @@ class CharacterStringPropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    ci_role_code: Optional[CiRoleCode] = field(
+    ci_role_code: Optional[CI_RoleCode] = field(
         default=None,
         metadata={
             "name": "CI_RoleCode",
@@ -17363,7 +17318,7 @@ class CharacterStringPropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    ci_on_line_function_code: Optional[CiOnLineFunctionCode] = field(
+    ci_on_line_function_code: Optional[CI_OnLineFunctionCode] = field(
         default=None,
         metadata={
             "name": "CI_OnLineFunctionCode",
@@ -17371,7 +17326,7 @@ class CharacterStringPropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    ci_date_type_code: Optional[CiDateTypeCode] = field(
+    ci_date_type_code: Optional[CI_DateTypeCode] = field(
         default=None,
         metadata={
             "name": "CI_DateTypeCode",
@@ -17387,7 +17342,7 @@ class CharacterStringPropertyType:
             "namespace": "http://www.isotc211.org/2005/gco",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -17399,16 +17354,15 @@ class CharacterStringPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractExGeographicExtentType(AbstractObjectType):
+class AbstractEX_GeographicExtent_Type(AbstractObject_Type):
     """
     Geographic area of the dataset.
     """
 
     class Meta:
-        name = "AbstractEX_GeographicExtent_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    extent_type_code: Optional[BooleanPropertyType] = field(
+    extent_type_code: Optional[Boolean_PropertyType] = field(
         default=None,
         metadata={
             "name": "extentTypeCode",
@@ -17419,12 +17373,11 @@ class AbstractExGeographicExtentType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiDateTypeCodePropertyType:
+class CI_DateTypeCode_PropertyType:
     class Meta:
-        name = "CI_DateTypeCode_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_date_type_code: Optional[CiDateTypeCode] = field(
+    ci_date_type_code: Optional[CI_DateTypeCode] = field(
         default=None,
         metadata={
             "name": "CI_DateTypeCode",
@@ -17432,7 +17385,7 @@ class CiDateTypeCodePropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -17444,12 +17397,11 @@ class CiDateTypeCodePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiOnLineFunctionCodePropertyType:
+class CI_OnLineFunctionCode_PropertyType:
     class Meta:
-        name = "CI_OnLineFunctionCode_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_on_line_function_code: Optional[CiOnLineFunctionCode] = field(
+    ci_on_line_function_code: Optional[CI_OnLineFunctionCode] = field(
         default=None,
         metadata={
             "name": "CI_OnLineFunctionCode",
@@ -17457,7 +17409,7 @@ class CiOnLineFunctionCodePropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -17469,12 +17421,11 @@ class CiOnLineFunctionCodePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiPresentationFormCodePropertyType:
+class CI_PresentationFormCode_PropertyType:
     class Meta:
-        name = "CI_PresentationFormCode_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_presentation_form_code: Optional[CiPresentationFormCode] = field(
+    ci_presentation_form_code: Optional[CI_PresentationFormCode] = field(
         default=None,
         metadata={
             "name": "CI_PresentationFormCode",
@@ -17482,7 +17433,7 @@ class CiPresentationFormCodePropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -17494,12 +17445,11 @@ class CiPresentationFormCodePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiRoleCodePropertyType:
+class CI_RoleCode_PropertyType:
     class Meta:
-        name = "CI_RoleCode_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_role_code: Optional[CiRoleCode] = field(
+    ci_role_code: Optional[CI_RoleCode] = field(
         default=None,
         metadata={
             "name": "CI_RoleCode",
@@ -17507,7 +17457,7 @@ class CiRoleCodePropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -17519,12 +17469,11 @@ class CiRoleCodePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class DqEvaluationMethodTypeCodePropertyType:
+class DQ_EvaluationMethodTypeCode_PropertyType:
     class Meta:
-        name = "DQ_EvaluationMethodTypeCode_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    dq_evaluation_method_type_code: Optional[DqEvaluationMethodTypeCode] = field(
+    dq_evaluation_method_type_code: Optional[DQ_EvaluationMethodTypeCode] = field(
         default=None,
         metadata={
             "name": "DQ_EvaluationMethodTypeCode",
@@ -17532,7 +17481,7 @@ class DqEvaluationMethodTypeCodePropertyType:
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -17544,16 +17493,15 @@ class DqEvaluationMethodTypeCodePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class ExTemporalExtentType(AbstractObjectType):
+class EX_TemporalExtent_Type(AbstractObject_Type):
     """
     Time period covered by the content of the dataset.
     """
 
     class Meta:
-        name = "EX_TemporalExtent_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    extent: TmPrimitivePropertyType = field(
+    extent: TM_Primitive_PropertyType = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
@@ -17563,16 +17511,15 @@ class ExTemporalExtentType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class ExVerticalExtentType(AbstractObjectType):
+class EX_VerticalExtent_Type(AbstractObject_Type):
     """
     Vertical domain of dataset.
     """
 
     class Meta:
-        name = "EX_VerticalExtent_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    minimum_value: RealPropertyType = field(
+    minimum_value: Real_PropertyType = field(
         metadata={
             "name": "minimumValue",
             "type": "Element",
@@ -17580,7 +17527,7 @@ class ExVerticalExtentType(AbstractObjectType):
             "required": True,
         }
     )
-    maximum_value: RealPropertyType = field(
+    maximum_value: Real_PropertyType = field(
         metadata={
             "name": "maximumValue",
             "type": "Element",
@@ -17588,7 +17535,7 @@ class ExVerticalExtentType(AbstractObjectType):
             "required": True,
         }
     )
-    vertical_crs: "ScCrsPropertyType" = field(
+    vertical_crs: "SC_CRS_PropertyType" = field(
         metadata={
             "name": "verticalCRS",
             "type": "Element",
@@ -17612,7 +17559,7 @@ class RelatedTimeType(TimePrimitivePropertyType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    relative_position: Optional[RelatedTimeTypeRelativePosition] = field(
+    relative_position: Optional[RelatedTimeType_relativePosition] = field(
         default=None,
         metadata={
             "name": "relativePosition",
@@ -17622,7 +17569,7 @@ class RelatedTimeType(TimePrimitivePropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class AxisDirection(CodeWithAuthorityType):
+class axisDirection(CodeWithAuthorityType):
     """Gml:axisDirection is the direction of this coordinate system axis (or in the
     case of Cartesian projected coordinates, the direction of this coordinate
     system axis at the origin).
@@ -17638,24 +17585,22 @@ class AxisDirection(CodeWithAuthorityType):
     """
 
     class Meta:
-        name = "axisDirection"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class Conversion(GeneralConversionPropertyType):
+class conversion(GeneralConversionPropertyType):
     """
     Gml:conversion is an association role to the coordinate conversion used to
     define the derived CRS.
     """
 
     class Meta:
-        name = "conversion"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class Description(StringOrRefType):
+class description(StringOrRefType):
     """The value of this property is a text description of the object.
 
     gml:description uses gml:StringOrRefType as its content model, so it
@@ -17666,12 +17611,11 @@ class Description(StringOrRefType):
     """
 
     class Meta:
-        name = "description"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class DescriptionReference(ReferenceType):
+class descriptionReference(ReferenceType):
     """The value of this property is a remote text description of the object.
 
     The xlink:href attribute of the gml:descriptionReference property
@@ -17679,12 +17623,11 @@ class DescriptionReference(ReferenceType):
     """
 
     class Meta:
-        name = "descriptionReference"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class Identifier(CodeWithAuthorityType):
+class identifier(CodeWithAuthorityType):
     """Often, a special identifier is assigned to an object by the maintaining
     authority with the intention that it is used in references to the object For
     such cases, the codeSpace shall be provided.
@@ -17695,12 +17638,11 @@ class Identifier(CodeWithAuthorityType):
     """
 
     class Meta:
-        name = "identifier"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class RangeMeaning(CodeWithAuthorityType):
+class rangeMeaning(CodeWithAuthorityType):
     """Gml:rangeMeaning describes the meaning of axis value range specified by
     gml:minimumValue and gml:maximumValue.
 
@@ -17714,12 +17656,11 @@ class RangeMeaning(CodeWithAuthorityType):
     """
 
     class Meta:
-        name = "rangeMeaning"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ProjectedCrs1(AbstractCitedDataObject):
+class ProjectedCrs_1(AbstractCitedDataObject):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
     """
@@ -17728,7 +17669,7 @@ class ProjectedCrs1(AbstractCitedDataObject):
         name = "ProjectedCrs"
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
-    axis_order: AxisOrder2D = field(
+    axis_order: AxisOrder2d = field(
         metadata={
             "name": "AxisOrder",
             "type": "Element",
@@ -17753,7 +17694,7 @@ class ProjectedCrs1(AbstractCitedDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCrs1(AbstractCitedDataObject):
+class VerticalCrs_1(AbstractCitedDataObject):
     class Meta:
         name = "VerticalCrs"
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -17783,7 +17724,7 @@ class VerticalCrs1(AbstractCitedDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjEpcExternalPartReference(AbstractCitedDataObject):
+class obj_EpcExternalPartReference(AbstractCitedDataObject):
     """It defines a proxy for external part of the EPC package.
 
     It must be used at least for external HDF parts.
@@ -17797,7 +17738,6 @@ class ObjEpcExternalPartReference(AbstractCitedDataObject):
     """
 
     class Meta:
-        name = "obj_EpcExternalPartReference"
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
     mime_type: str = field(
@@ -18273,7 +18213,7 @@ class ParametricLineArray(AbstractParametricLineArray):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-    control_points: AbstractPoint3DArray = field(
+    control_points: AbstractPoint3dArray = field(
         metadata={
             "name": "ControlPoints",
             "type": "Element",
@@ -18297,7 +18237,7 @@ class ParametricLineArray(AbstractParametricLineArray):
             "required": True,
         }
     )
-    tangent_vectors: Optional[AbstractPoint3DArray] = field(
+    tangent_vectors: Optional[AbstractPoint3dArray] = field(
         default=None,
         metadata={
             "name": "TangentVectors",
@@ -18349,7 +18289,7 @@ class PatchOfGeometry:
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3DLatticeArray(AbstractPoint3DArray):
+class Point3dLatticeArray(AbstractPoint3dArray):
     """Describes a lattice array of points obtained by sampling from along a multi-
     dimensional lattice.
 
@@ -18371,7 +18311,6 @@ class Point3DLatticeArray(AbstractPoint3DArray):
     """
 
     class Meta:
-        name = "Point3dLatticeArray"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     all_dimensions_are_orthogonal: Optional[bool] = field(
@@ -18382,7 +18321,7 @@ class Point3DLatticeArray(AbstractPoint3DArray):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-    origin: Point3D = field(
+    origin: Point3d = field(
         metadata={
             "name": "Origin",
             "type": "Element",
@@ -18390,7 +18329,7 @@ class Point3DLatticeArray(AbstractPoint3DArray):
             "required": True,
         }
     )
-    offset: List[Point3DOffset] = field(
+    offset: List[Point3dOffset] = field(
         default_factory=list,
         metadata={
             "name": "Offset",
@@ -18411,7 +18350,7 @@ class PointGeometry(AbstractGeometry):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    points: AbstractPoint3DArray = field(
+    points: AbstractPoint3dArray = field(
         metadata={
             "name": "Points",
             "type": "Element",
@@ -18646,7 +18585,7 @@ class StreamlinePolylineSetPatch(Patch):
 
 
 @dataclass(slots=True, kw_only=True)
-class SubRepresentationPatch(Patch1D):
+class SubRepresentationPatch(Patch1d):
     """Each sub-representation patch has its own list of representation indices,
     drawn from the supporting representation.
 
@@ -18857,16 +18796,15 @@ class UnstructuredColumnEdges:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiAddressType(AbstractObjectType):
+class CI_Address_Type(AbstractObject_Type):
     """
     Location of the responsible individual or organisation.
     """
 
     class Meta:
-        name = "CI_Address_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    delivery_point: List[CharacterStringPropertyType] = field(
+    delivery_point: List[CharacterString_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "deliveryPoint",
@@ -18874,14 +18812,14 @@ class CiAddressType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    city: Optional[CharacterStringPropertyType] = field(
+    city: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    administrative_area: Optional[CharacterStringPropertyType] = field(
+    administrative_area: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "administrativeArea",
@@ -18889,7 +18827,7 @@ class CiAddressType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    postal_code: Optional[CharacterStringPropertyType] = field(
+    postal_code: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "postalCode",
@@ -18897,14 +18835,14 @@ class CiAddressType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    country: Optional[CharacterStringPropertyType] = field(
+    country: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    electronic_mail_address: List[CharacterStringPropertyType] = field(
+    electronic_mail_address: List[CharacterString_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "electronicMailAddress",
@@ -18915,19 +18853,18 @@ class CiAddressType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiDateType(AbstractObjectType):
+class CI_Date_Type(AbstractObject_Type):
     class Meta:
-        name = "CI_Date_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    date: DatePropertyType = field(
+    date: Date_PropertyType = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
         }
     )
-    date_type: CiDateTypeCodePropertyType = field(
+    date_type: CI_DateTypeCode_PropertyType = field(
         metadata={
             "name": "dateType",
             "type": "Element",
@@ -18938,31 +18875,30 @@ class CiDateType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiOnlineResourceType(AbstractObjectType):
+class CI_OnlineResource_Type(AbstractObject_Type):
     """
     Information about online sources from which the dataset, specification, or
     community profile name and extended metadata elements can be obtained.
     """
 
     class Meta:
-        name = "CI_OnlineResource_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    linkage: UrlPropertyType = field(
+    linkage: URL_PropertyType = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
         }
     )
-    protocol: Optional[CharacterStringPropertyType] = field(
+    protocol: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    application_profile: Optional[CharacterStringPropertyType] = field(
+    application_profile: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "applicationProfile",
@@ -18970,21 +18906,21 @@ class CiOnlineResourceType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    name: Optional[CharacterStringPropertyType] = field(
+    name: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    description: Optional[CharacterStringPropertyType] = field(
+    description: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    function: Optional[CiOnLineFunctionCodePropertyType] = field(
+    function: Optional[CI_OnLineFunctionCode_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
@@ -18994,19 +18930,18 @@ class CiOnlineResourceType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiSeriesType(AbstractObjectType):
+class CI_Series_Type(AbstractObject_Type):
     class Meta:
-        name = "CI_Series_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    name: Optional[CharacterStringPropertyType] = field(
+    name: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    issue_identification: Optional[CharacterStringPropertyType] = field(
+    issue_identification: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "issueIdentification",
@@ -19014,7 +18949,7 @@ class CiSeriesType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    page: Optional[CharacterStringPropertyType] = field(
+    page: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
@@ -19024,23 +18959,22 @@ class CiSeriesType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiTelephoneType(AbstractObjectType):
+class CI_Telephone_Type(AbstractObject_Type):
     """
     Telephone numbers for contacting the responsible individual or organisation.
     """
 
     class Meta:
-        name = "CI_Telephone_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    voice: List[CharacterStringPropertyType] = field(
+    voice: List[CharacterString_PropertyType] = field(
         default_factory=list,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    facsimile: List[CharacterStringPropertyType] = field(
+    facsimile: List[CharacterString_PropertyType] = field(
         default_factory=list,
         metadata={
             "type": "Element",
@@ -19050,33 +18984,30 @@ class CiTelephoneType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class ExTemporalExtent(ExTemporalExtentType):
+class EX_TemporalExtent(EX_TemporalExtent_Type):
     class Meta:
-        name = "EX_TemporalExtent"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class ExVerticalExtent(ExVerticalExtentType):
+class EX_VerticalExtent(EX_VerticalExtent_Type):
     class Meta:
-        name = "EX_VerticalExtent"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractGmltype:
+class AbstractGMLType:
     class Meta:
-        name = "AbstractGMLType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    description: Optional[Description] = field(
+    description: Optional[description] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    description_reference: Optional[DescriptionReference] = field(
+    description_reference: Optional[descriptionReference] = field(
         default=None,
         metadata={
             "name": "descriptionReference",
@@ -19084,14 +19015,14 @@ class AbstractGmltype:
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    identifier: Optional[Identifier] = field(
+    identifier: Optional[identifier] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    name: List[Name] = field(
+    name: List[name] = field(
         default_factory=list,
         metadata={
             "type": "Element",
@@ -19108,7 +19039,7 @@ class AbstractGmltype:
 
 
 @dataclass(slots=True, kw_only=True)
-class EpcExternalPartReference(ObjEpcExternalPartReference):
+class EpcExternalPartReference(obj_EpcExternalPartReference):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/commonv2"
 
@@ -19184,7 +19115,7 @@ class AbstractGridGeometry(PointGeometry):
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractLocal3DCrs(AbstractResqmlDataObject):
+class AbstractLocal3dCrs(AbstractResqmlDataObject):
     """Defines a local 2D+1D coordinate reference system, by translation and
     rotation, whose origin is located at the (X,Y,Z) Offset from the Projected and
     Vertical 2D+1D CRS. The units of measure in XY follow the Projected Crs. The
@@ -19247,7 +19178,6 @@ class AbstractLocal3DCrs(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "AbstractLocal3dCrs"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     yoffset: float = field(
@@ -19274,7 +19204,7 @@ class AbstractLocal3DCrs(AbstractResqmlDataObject):
             "required": True,
         }
     )
-    projected_axis_order: AxisOrder2D = field(
+    projected_axis_order: AxisOrder2d = field(
         metadata={
             "name": "ProjectedAxisOrder",
             "type": "Element",
@@ -19513,7 +19443,7 @@ class ColumnLayerSubnodeTopology(SubnodeTopology):
 
 
 @dataclass(slots=True, kw_only=True)
-class Grid2DPatch(Patch):
+class Grid2dPatch(Patch):
     """Patch representing a single 2D grid and its geometry.
 
     The FastestAxisCount and the SlowestAxisCount determine the indexing
@@ -19533,7 +19463,6 @@ class Grid2DPatch(Patch):
     """
 
     class Meta:
-        name = "Grid2dPatch"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     fastest_axis_count: int = field(
@@ -19641,7 +19570,7 @@ class IjGaps:
 
 
 @dataclass(slots=True, kw_only=True)
-class NodePatch(Patch1D):
+class NodePatch(Patch1d):
     """
     Patch representing a list of nodes to which geometry may be attached.
     """
@@ -19800,7 +19729,7 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-    control_points: AbstractPoint3DArray = field(
+    control_points: AbstractPoint3dArray = field(
         metadata={
             "name": "ControlPoints",
             "type": "Element",
@@ -19824,7 +19753,7 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
             "required": True,
         }
     )
-    tangent_vectors: Optional[AbstractPoint3DArray] = field(
+    tangent_vectors: Optional[AbstractPoint3dArray] = field(
         default=None,
         metadata={
             "name": "TangentVectors",
@@ -19835,7 +19764,7 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3DFromRepresentationLatticeArray(AbstractPoint3DArray):
+class Point3dFromRepresentationLatticeArray(AbstractPoint3dArray):
     """A lattice array of points extracted from an existing representation.
 
     BUSINESS RULE: The supporting representation must have nodes as indexable elements
@@ -19851,7 +19780,6 @@ class Point3DFromRepresentationLatticeArray(AbstractPoint3DArray):
     """
 
     class Meta:
-        name = "Point3dFromRepresentationLatticeArray"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     node_indices_on_supporting_representation: IntegerLatticeArray = field(
@@ -19991,7 +19919,7 @@ class TiltedPlaneGeometry(AbstractPlaneGeometry):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    plane: List[ThreePoint3D] = field(
+    plane: List[ThreePoint3d] = field(
         default_factory=list,
         metadata={
             "name": "Plane",
@@ -20003,7 +19931,7 @@ class TiltedPlaneGeometry(AbstractPlaneGeometry):
 
 
 @dataclass(slots=True, kw_only=True)
-class TrianglePatch(Patch1D):
+class TrianglePatch(Patch1d):
     """Patch made of triangles, where the number of triangles is given by the patch count.
     BUSINESS RULE: Within a patch, all the triangles must be contiguous.
     The patch contains:
@@ -20149,13 +20077,12 @@ class WellboreMarker(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjActivity(AbstractResqmlDataObject):
+class obj_Activity(AbstractResqmlDataObject):
     """
     Instance of a given activity.
     """
 
     class Meta:
-        name = "obj_Activity"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     parent: Optional[DataObjectReference] = field(
@@ -20186,13 +20113,12 @@ class ObjActivity(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjActivityTemplate(AbstractResqmlDataObject):
+class obj_ActivityTemplate(AbstractResqmlDataObject):
     """
     Description of one type of activity.
     """
 
     class Meta:
-        name = "obj_ActivityTemplate"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     parameter: List[ParameterTemplate] = field(
@@ -20207,14 +20133,13 @@ class ObjActivityTemplate(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGlobalChronostratigraphicColumn(AbstractResqmlDataObject):
+class obj_GlobalChronostratigraphicColumn(AbstractResqmlDataObject):
     """
     Chronological successions of some chronostratigraphic units organized into 1 to
     n chronological ranks.
     """
 
     class Meta:
-        name = "obj_GlobalChronostratigraphicColumn"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     chronostratigraphic_column_component: List[ChronostratigraphicRank] = field(
@@ -20229,7 +20154,7 @@ class ObjGlobalChronostratigraphicColumn(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjLocalGridSet(AbstractResqmlDataObject):
+class obj_LocalGridSet(AbstractResqmlDataObject):
     """Used to activate and/or deactivate the specified children grids as local
     grids on their parents.
 
@@ -20242,7 +20167,6 @@ class ObjLocalGridSet(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "obj_LocalGridSet"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     activation: Optional[Activation] = field(
@@ -20265,7 +20189,7 @@ class ObjLocalGridSet(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjMdDatum(AbstractResqmlDataObject):
+class obj_MdDatum(AbstractResqmlDataObject):
     """Specifies the location of the measured depth = 0 reference point.
 
     The location of this reference point is defined with respect to a
@@ -20281,10 +20205,9 @@ class ObjMdDatum(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "obj_MdDatum"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    location: Point3D = field(
+    location: Point3d = field(
         metadata={
             "name": "Location",
             "type": "Element",
@@ -20311,7 +20234,7 @@ class ObjMdDatum(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPropertyKind(AbstractResqmlDataObject):
+class obj_PropertyKind(AbstractResqmlDataObject):
     """A description of a property name relative to a standard definition.
 
     For example, you may specify if the property kind is abstract, the
@@ -20346,7 +20269,6 @@ class ObjPropertyKind(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "obj_PropertyKind"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     naming_system: str = field(
@@ -20384,7 +20306,7 @@ class ObjPropertyKind(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPropertySet(AbstractResqmlDataObject):
+class obj_PropertySet(AbstractResqmlDataObject):
     """A set of properties collected together for a specific purpose.
 
     For example, a property set can be used to collect all the
@@ -20406,7 +20328,6 @@ class ObjPropertySet(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "obj_PropertySet"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     time_set_kind: TimeSetKind = field(
@@ -20453,7 +20374,7 @@ class ObjPropertySet(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStratigraphicColumn(AbstractResqmlDataObject):
+class obj_StratigraphicColumn(AbstractResqmlDataObject):
     """A global interpretation of the stratigraphy, which can be made up of several
     ranks of stratigraphic unit interpretations.
 
@@ -20461,7 +20382,6 @@ class ObjStratigraphicColumn(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "obj_StratigraphicColumn"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     ranks: List[DataObjectReference] = field(
@@ -20476,7 +20396,7 @@ class ObjStratigraphicColumn(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjTimeSeries(AbstractResqmlDataObject):
+class obj_TimeSeries(AbstractResqmlDataObject):
     """Stores an ordered list of times, for example, for time-dependent properties,
     geometries, or representations.
 
@@ -20492,7 +20412,6 @@ class ObjTimeSeries(AbstractResqmlDataObject):
     """
 
     class Meta:
-        name = "obj_TimeSeries"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     time: List[Timestamp] = field(
@@ -20515,47 +20434,41 @@ class ObjTimeSeries(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiAddress(CiAddressType):
+class CI_Address(CI_Address_Type):
     class Meta:
-        name = "CI_Address"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiDate(CiDateType):
+class CI_Date(CI_Date_Type):
     class Meta:
-        name = "CI_Date"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiOnlineResource(CiOnlineResourceType):
+class CI_OnlineResource(CI_OnlineResource_Type):
     class Meta:
-        name = "CI_OnlineResource"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiSeries(CiSeriesType):
+class CI_Series(CI_Series_Type):
     class Meta:
-        name = "CI_Series"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiTelephone(CiTelephoneType):
+class CI_Telephone(CI_Telephone_Type):
     class Meta:
-        name = "CI_Telephone"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class ExTemporalExtentPropertyType:
+class EX_TemporalExtent_PropertyType:
     class Meta:
-        name = "EX_TemporalExtent_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ex_temporal_extent: Optional[ExTemporalExtent] = field(
+    ex_temporal_extent: Optional[EX_TemporalExtent] = field(
         default=None,
         metadata={
             "name": "EX_TemporalExtent",
@@ -20600,14 +20513,14 @@ class ExTemporalExtentPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -20620,7 +20533,7 @@ class ExTemporalExtentPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -20632,12 +20545,11 @@ class ExTemporalExtentPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class ExVerticalExtentPropertyType:
+class EX_VerticalExtent_PropertyType:
     class Meta:
-        name = "EX_VerticalExtent_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ex_vertical_extent: Optional[ExVerticalExtent] = field(
+    ex_vertical_extent: Optional[EX_VerticalExtent] = field(
         default=None,
         metadata={
             "name": "EX_VerticalExtent",
@@ -20682,14 +20594,14 @@ class ExVerticalExtentPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -20702,7 +20614,7 @@ class ExVerticalExtentPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -20714,17 +20626,17 @@ class ExVerticalExtentPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractTimeObjectType(AbstractGmltype):
+class AbstractTimeObjectType(AbstractGMLType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class DefinitionBaseType(AbstractGmltype):
+class DefinitionBaseType(AbstractGMLType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    identifier: Identifier = field(
+    identifier: identifier = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
@@ -20882,13 +20794,13 @@ class AbstractValuesProperty(AbstractProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class Activity(ObjActivity):
+class Activity(obj_Activity):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ActivityTemplate(ObjActivityTemplate):
+class ActivityTemplate(obj_ActivityTemplate):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -20989,7 +20901,7 @@ class ColumnLayerParentWindow(AbstractParentWindow):
 
 
 @dataclass(slots=True, kw_only=True)
-class GlobalChronostratigraphicColumn(ObjGlobalChronostratigraphicColumn):
+class GlobalChronostratigraphicColumn(obj_GlobalChronostratigraphicColumn):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -21059,25 +20971,25 @@ class IjkParentWindow(AbstractParentWindow):
 
 
 @dataclass(slots=True, kw_only=True)
-class LocalGridSet(ObjLocalGridSet):
+class LocalGridSet(obj_LocalGridSet):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class MdDatum(ObjMdDatum):
+class MdDatum(obj_MdDatum):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class PropertyKind(ObjPropertyKind):
+class PropertyKind(obj_PropertyKind):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class PropertySet(ObjPropertySet):
+class PropertySet(obj_PropertySet):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -21142,13 +21054,13 @@ class SplitNodePatch(Patch):
 
 
 @dataclass(slots=True, kw_only=True)
-class StratigraphicColumn(ObjStratigraphicColumn):
+class StratigraphicColumn(obj_StratigraphicColumn):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class TimeSeries(ObjTimeSeries):
+class TimeSeries(obj_TimeSeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -21255,7 +21167,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjBoundaryFeatureInterpretation(AbstractFeatureInterpretation):
+class obj_BoundaryFeatureInterpretation(AbstractFeatureInterpretation):
     """The main class for data describing an opinion of a surface feature between
     two volumes.
 
@@ -21263,12 +21175,11 @@ class ObjBoundaryFeatureInterpretation(AbstractFeatureInterpretation):
     """
 
     class Meta:
-        name = "obj_BoundaryFeatureInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjDeviationSurveyRepresentation(AbstractRepresentation):
+class obj_DeviationSurveyRepresentation(AbstractRepresentation):
     """Specifies the station data from a deviation survey.
 
     The deviation survey does not provide a complete specification of
@@ -21319,7 +21230,6 @@ class ObjDeviationSurveyRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_DeviationSurveyRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     witsml_deviation_survey: Optional[DataObjectReference] = field(
@@ -21362,7 +21272,7 @@ class ObjDeviationSurveyRepresentation(AbstractRepresentation):
             "required": True,
         }
     )
-    first_station_location: Point3D = field(
+    first_station_location: Point3d = field(
         metadata={
             "name": "FirstStationLocation",
             "type": "Element",
@@ -21413,7 +21323,7 @@ class ObjDeviationSurveyRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjDoubleTableLookup(AbstractPropertyLookup):
+class obj_DoubleTableLookup(AbstractPropertyLookup):
     """Defines a function for table lookups.
 
     For example, used for linear interpolation, such as PVT. Used for
@@ -21421,7 +21331,6 @@ class ObjDoubleTableLookup(AbstractPropertyLookup):
     """
 
     class Meta:
-        name = "obj_DoubleTableLookup"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     value: List[DoubleLookup] = field(
@@ -21436,13 +21345,12 @@ class ObjDoubleTableLookup(AbstractPropertyLookup):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjEarthModelInterpretation(AbstractFeatureInterpretation):
+class obj_EarthModelInterpretation(AbstractFeatureInterpretation):
     """An earth model interpretation has a specific role: it gathers a maximum of one of each of these other organization interpretations: structural organization interpretation, stratigraphic organization interpretation, and/or fluid organization interpretation.
     BUSINESS RULE: An earth model Interpretation interprets only an earth model feature.
     """
 
     class Meta:
-        name = "obj_EarthModelInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     stratigraphic_occurrences: List[DataObjectReference] = field(
@@ -21480,21 +21388,19 @@ class ObjEarthModelInterpretation(AbstractFeatureInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGenericFeatureInterpretation(AbstractFeatureInterpretation):
+class obj_GenericFeatureInterpretation(AbstractFeatureInterpretation):
     class Meta:
-        name = "obj_GenericFeatureInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGeologicUnitInterpretation(AbstractFeatureInterpretation):
+class obj_GeologicUnitInterpretation(AbstractFeatureInterpretation):
     """
     The main class for data describing an opinion of a volume-based geologic
     feature or unit.
     """
 
     class Meta:
-        name = "obj_GeologicUnitInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     geologic_unit_composition: Optional[GeologicUnitComposition] = field(
@@ -21518,7 +21424,7 @@ class ObjGeologicUnitInterpretation(AbstractFeatureInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGridConnectionSetRepresentation(AbstractRepresentation):
+class obj_GridConnectionSetRepresentation(AbstractRepresentation):
     """Representation which consists of a list of connections between grid cells,
     potentially on different grids.
 
@@ -21553,7 +21459,6 @@ class ObjGridConnectionSetRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_GridConnectionSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     count: int = field(
@@ -21608,7 +21513,7 @@ class ObjGridConnectionSetRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjLocalDepth3DCrs(AbstractLocal3DCrs):
+class obj_LocalDepth3dCrs(AbstractLocal3dCrs):
     """Defines a local depth coordinate system, the geometrical origin and location
     is defined by the elements of the base class AbstractLocal3dCRS.
 
@@ -21617,12 +21522,11 @@ class ObjLocalDepth3DCrs(AbstractLocal3DCrs):
     """
 
     class Meta:
-        name = "obj_LocalDepth3dCrs"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjLocalTime3DCrs(AbstractLocal3DCrs):
+class obj_LocalTime3dCrs(AbstractLocal3dCrs):
     """Defines a local time coordinate system, the geometrical origin and location
     is defined by the elements of the base class AbstractLocal3dCRS.
 
@@ -21637,7 +21541,6 @@ class ObjLocalTime3DCrs(AbstractLocal3DCrs):
     """
 
     class Meta:
-        name = "obj_LocalTime3dCrs"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     time_uom: TimeUom = field(
@@ -21651,7 +21554,7 @@ class ObjLocalTime3DCrs(AbstractLocal3DCrs):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPointSetRepresentation(AbstractRepresentation):
+class obj_PointSetRepresentation(AbstractRepresentation):
     """A representation that consists of one or more node patches.
 
     Each node patch is an array of XYZ coordinates for the 3D points.
@@ -21659,7 +21562,6 @@ class ObjPointSetRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_PointSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     node_patch: List[NodePatch] = field(
@@ -21674,7 +21576,7 @@ class ObjPointSetRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPointsProperty(AbstractProperty):
+class obj_PointsProperty(AbstractProperty):
     """
     Represents the geometric information that should *not* be used as
     representation geometry, but should be used in another context where the
@@ -21682,7 +21584,6 @@ class ObjPointsProperty(AbstractProperty):
     """
 
     class Meta:
-        name = "obj_PointsProperty"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     patch_of_points: List[PatchOfPoints] = field(
@@ -21697,7 +21598,7 @@ class ObjPointsProperty(AbstractProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPolylineRepresentation(AbstractRepresentation):
+class obj_PolylineRepresentation(AbstractRepresentation):
     """A representation made up of a single polyline or "polygonal chain", which
     may be closed or not.
 
@@ -21710,7 +21611,6 @@ class ObjPolylineRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_PolylineRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     line_role: Optional[LineRole] = field(
@@ -21740,7 +21640,7 @@ class ObjPolylineRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPolylineSetRepresentation(AbstractRepresentation):
+class obj_PolylineSetRepresentation(AbstractRepresentation):
     """A representation made up of a set of polylines or a set of polygonal chains
     (for more information, see PolylineRepresentation).
 
@@ -21752,7 +21652,6 @@ class ObjPolylineSetRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_PolylineSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     line_role: Optional[LineRole] = field(
@@ -21775,7 +21674,7 @@ class ObjPolylineSetRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjRedefinedGeometryRepresentation(AbstractRepresentation):
+class obj_RedefinedGeometryRepresentation(AbstractRepresentation):
     """A representation derived from an existing representation by redefining its
     geometry.
 
@@ -21784,7 +21683,6 @@ class ObjRedefinedGeometryRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_RedefinedGeometryRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     patch_of_geometry: List[PatchOfGeometry] = field(
@@ -21807,7 +21705,7 @@ class ObjRedefinedGeometryRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjRepresentationSetRepresentation(AbstractRepresentation):
+class obj_RepresentationSetRepresentation(AbstractRepresentation):
     """The parent class of the framework representations.
 
     It is used to group together individual representations which may be
@@ -21829,7 +21727,6 @@ class ObjRepresentationSetRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_RepresentationSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     is_homogeneous: bool = field(
@@ -21852,7 +21749,7 @@ class ObjRepresentationSetRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStreamlinesRepresentation(AbstractRepresentation):
+class obj_StreamlinesRepresentation(AbstractRepresentation):
     """Representation of streamlines associated with a streamline feature and
     interpretation.
 
@@ -21869,7 +21766,6 @@ class ObjStreamlinesRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_StreamlinesRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     line_count: int = field(
@@ -21899,12 +21795,11 @@ class ObjStreamlinesRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStringTableLookup(AbstractPropertyLookup):
+class obj_StringTableLookup(AbstractPropertyLookup):
     """Defines an integer-to-string lookup table, for example, stores facies properties, where a facies index is associated with a facies name. .
     Used for categorical properties, which also may use a double table lookup."""
 
     class Meta:
-        name = "obj_StringTableLookup"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     value: List[StringLookup] = field(
@@ -21919,7 +21814,7 @@ class ObjStringTableLookup(AbstractPropertyLookup):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjWellboreFrameRepresentation(AbstractRepresentation):
+class obj_WellboreFrameRepresentation(AbstractRepresentation):
     """Representation of a wellbore that is organized along a wellbore trajectory
     by its MD values.
 
@@ -21941,7 +21836,6 @@ class ObjWellboreFrameRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_WellboreFrameRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     node_count: int = field(
@@ -21995,7 +21889,7 @@ class ObjWellboreFrameRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjWellboreInterpretation(AbstractFeatureInterpretation):
+class obj_WellboreInterpretation(AbstractFeatureInterpretation):
     """This class contains the data describing an opinion of a borehole.
 
     This interpretation is relative to one particular well trajectory.
@@ -22011,7 +21905,6 @@ class ObjWellboreInterpretation(AbstractFeatureInterpretation):
     """
 
     class Meta:
-        name = "obj_WellboreInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     is_drilled: bool = field(
@@ -22025,7 +21918,7 @@ class ObjWellboreInterpretation(AbstractFeatureInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjWellboreTrajectoryRepresentation(AbstractRepresentation):
+class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
     """
     Representation of a wellbore trajectory.
 
@@ -22057,7 +21950,6 @@ class ObjWellboreTrajectoryRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_WellboreTrajectoryRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     start_md: float = field(
@@ -22135,12 +22027,11 @@ class ObjWellboreTrajectoryRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiAddressPropertyType:
+class CI_Address_PropertyType:
     class Meta:
-        name = "CI_Address_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_address: Optional[CiAddress] = field(
+    ci_address: Optional[CI_Address] = field(
         default=None,
         metadata={
             "name": "CI_Address",
@@ -22185,14 +22076,14 @@ class CiAddressPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -22205,7 +22096,7 @@ class CiAddressPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -22217,12 +22108,11 @@ class CiAddressPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiDatePropertyType:
+class CI_Date_PropertyType:
     class Meta:
-        name = "CI_Date_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_date: Optional[CiDate] = field(
+    ci_date: Optional[CI_Date] = field(
         default=None,
         metadata={
             "name": "CI_Date",
@@ -22267,14 +22157,14 @@ class CiDatePropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -22287,7 +22177,7 @@ class CiDatePropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -22299,12 +22189,11 @@ class CiDatePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiOnlineResourcePropertyType:
+class CI_OnlineResource_PropertyType:
     class Meta:
-        name = "CI_OnlineResource_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_online_resource: Optional[CiOnlineResource] = field(
+    ci_online_resource: Optional[CI_OnlineResource] = field(
         default=None,
         metadata={
             "name": "CI_OnlineResource",
@@ -22349,14 +22238,14 @@ class CiOnlineResourcePropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -22369,7 +22258,7 @@ class CiOnlineResourcePropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -22381,12 +22270,11 @@ class CiOnlineResourcePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiSeriesPropertyType:
+class CI_Series_PropertyType:
     class Meta:
-        name = "CI_Series_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_series: Optional[CiSeries] = field(
+    ci_series: Optional[CI_Series] = field(
         default=None,
         metadata={
             "name": "CI_Series",
@@ -22431,14 +22319,14 @@ class CiSeriesPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -22451,7 +22339,7 @@ class CiSeriesPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -22463,12 +22351,11 @@ class CiSeriesPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiTelephonePropertyType:
+class CI_Telephone_PropertyType:
     class Meta:
-        name = "CI_Telephone_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_telephone: Optional[CiTelephone] = field(
+    ci_telephone: Optional[CI_Telephone] = field(
         default=None,
         metadata={
             "name": "CI_Telephone",
@@ -22513,14 +22400,14 @@ class CiTelephonePropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -22533,7 +22420,7 @@ class CiTelephonePropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -22545,23 +22432,22 @@ class CiTelephonePropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class ExExtentType(AbstractObjectType):
+class EX_Extent_Type(AbstractObject_Type):
     """
     Information about spatial, vertical, and temporal extent.
     """
 
     class Meta:
-        name = "EX_Extent_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    description: Optional[CharacterStringPropertyType] = field(
+    description: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    geographic_element: List[ExGeographicExtentPropertyType] = field(
+    geographic_element: List[EX_GeographicExtent_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "geographicElement",
@@ -22569,7 +22455,7 @@ class ExExtentType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    temporal_element: List[ExTemporalExtentPropertyType] = field(
+    temporal_element: List[EX_TemporalExtent_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "temporalElement",
@@ -22577,7 +22463,7 @@ class ExExtentType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    vertical_element: List[ExVerticalExtentPropertyType] = field(
+    vertical_element: List[EX_VerticalExtent_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "verticalElement",
@@ -22670,7 +22556,7 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    kdirection: Kdirection = field(
+    kdirection: KDirection = field(
         metadata={
             "name": "KDirection",
             "type": "Element",
@@ -22821,7 +22707,7 @@ class AbstractStratigraphicOrganizationInterpretation(
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractSurfaceFrameworkRepresentation(ObjRepresentationSetRepresentation):
+class AbstractSurfaceFrameworkRepresentation(obj_RepresentationSetRepresentation):
     """Parent class for a sealed or non-sealed surface framework representation.
 
     Each one instantiates a representation set representation. The
@@ -22960,37 +22846,37 @@ class AdditionalGridTopology:
 
 
 @dataclass(slots=True, kw_only=True)
-class BoundaryFeatureInterpretation(ObjBoundaryFeatureInterpretation):
+class BoundaryFeatureInterpretation(obj_BoundaryFeatureInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class DeviationSurveyRepresentation(ObjDeviationSurveyRepresentation):
+class DeviationSurveyRepresentation(obj_DeviationSurveyRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class DoubleTableLookup(ObjDoubleTableLookup):
+class DoubleTableLookup(obj_DoubleTableLookup):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class EarthModelInterpretation(ObjEarthModelInterpretation):
+class EarthModelInterpretation(obj_EarthModelInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GenericFeatureInterpretation(ObjGenericFeatureInterpretation):
+class GenericFeatureInterpretation(obj_GenericFeatureInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeologicUnitInterpretation(ObjGeologicUnitInterpretation):
+class GeologicUnitInterpretation(obj_GeologicUnitInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -23032,93 +22918,91 @@ class GpGridUnstructuredGridPatch(Patch):
 
 
 @dataclass(slots=True, kw_only=True)
-class GridConnectionSetRepresentation(ObjGridConnectionSetRepresentation):
+class GridConnectionSetRepresentation(obj_GridConnectionSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class LocalDepth3DCrs(ObjLocalDepth3DCrs):
-    class Meta:
-        name = "LocalDepth3dCrs"
-        namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
-
-@dataclass(slots=True, kw_only=True)
-class LocalTime3DCrs(ObjLocalTime3DCrs):
-    class Meta:
-        name = "LocalTime3dCrs"
-        namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
-
-@dataclass(slots=True, kw_only=True)
-class PointSetRepresentation(ObjPointSetRepresentation):
+class LocalDepth3dCrs(obj_LocalDepth3dCrs):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class PointsProperty(ObjPointsProperty):
+class LocalTime3dCrs(obj_LocalTime3dCrs):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class PolylineRepresentation(ObjPolylineRepresentation):
+class PointSetRepresentation(obj_PointSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class PolylineSetRepresentation(ObjPolylineSetRepresentation):
+class PointsProperty(obj_PointsProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class RedefinedGeometryRepresentation(ObjRedefinedGeometryRepresentation):
+class PolylineRepresentation(obj_PolylineRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class RepresentationSetRepresentation(ObjRepresentationSetRepresentation):
+class PolylineSetRepresentation(obj_PolylineSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StreamlinesRepresentation(ObjStreamlinesRepresentation):
+class RedefinedGeometryRepresentation(obj_RedefinedGeometryRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StringTableLookup(ObjStringTableLookup):
+class RepresentationSetRepresentation(obj_RepresentationSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class WellboreFrameRepresentation(ObjWellboreFrameRepresentation):
+class StreamlinesRepresentation(obj_StreamlinesRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class WellboreInterpretation(ObjWellboreInterpretation):
+class StringTableLookup(obj_StringTableLookup):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class WellboreTrajectoryRepresentation(ObjWellboreTrajectoryRepresentation):
+class WellboreFrameRepresentation(obj_WellboreFrameRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjBlockedWellboreRepresentation(ObjWellboreFrameRepresentation):
+class WellboreInterpretation(obj_WellboreInterpretation):
+    class Meta:
+        namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
+
+@dataclass(slots=True, kw_only=True)
+class WellboreTrajectoryRepresentation(obj_WellboreTrajectoryRepresentation):
+    class Meta:
+        namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
+
+@dataclass(slots=True, kw_only=True)
+class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
     """
     The information that allows you to locate, on one or several grids (existing or
     planned), the intersection of volume (cells) and surface (faces) elements with
@@ -23145,7 +23029,6 @@ class ObjBlockedWellboreRepresentation(ObjWellboreFrameRepresentation):
     """
 
     class Meta:
-        name = "obj_BlockedWellboreRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     cell_count: int = field(
@@ -23192,19 +23075,18 @@ class ObjBlockedWellboreRepresentation(ObjWellboreFrameRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjBoundaryFeature(AbstractGeologicFeature):
+class obj_BoundaryFeature(AbstractGeologicFeature):
     """An interface between two geological objects, such as horizons and faults.
 
     It is a surface object.
     """
 
     class Meta:
-        name = "obj_BoundaryFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjCategoricalProperty(AbstractValuesProperty):
+class obj_CategoricalProperty(AbstractValuesProperty):
     """Information specific to one categorical property. Contains discrete integer.
 
     This type of property is associated either as:
@@ -23213,7 +23095,6 @@ class ObjCategoricalProperty(AbstractValuesProperty):
     """
 
     class Meta:
-        name = "obj_CategoricalProperty"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     lookup: DataObjectReference = field(
@@ -23227,7 +23108,7 @@ class ObjCategoricalProperty(AbstractValuesProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjCommentProperty(AbstractValuesProperty):
+class obj_CommentProperty(AbstractValuesProperty):
     """Information specific to one comment property.
 
     Used to capture comments or annotations associated with a given
@@ -23242,7 +23123,6 @@ class ObjCommentProperty(AbstractValuesProperty):
     """
 
     class Meta:
-        name = "obj_CommentProperty"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     language: Optional[str] = field(
@@ -23256,7 +23136,7 @@ class ObjCommentProperty(AbstractValuesProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjContinuousProperty(AbstractValuesProperty):
+class obj_ContinuousProperty(AbstractValuesProperty):
     """Most common type of property used for storing rock or fluid attributes; all
     are represented as doubles.
 
@@ -23276,7 +23156,6 @@ class ObjContinuousProperty(AbstractValuesProperty):
     """
 
     class Meta:
-        name = "obj_ContinuousProperty"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     minimum_value: List[float] = field(
@@ -23306,7 +23185,7 @@ class ObjContinuousProperty(AbstractValuesProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjDiscreteProperty(AbstractValuesProperty):
+class obj_DiscreteProperty(AbstractValuesProperty):
     """Contains discrete integer values; typically used to store any type of index.
 
     So that the value range can be known before accessing all values, it
@@ -23323,7 +23202,6 @@ class ObjDiscreteProperty(AbstractValuesProperty):
     """
 
     class Meta:
-        name = "obj_DiscreteProperty"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     minimum_value: List[int] = field(
@@ -23345,7 +23223,7 @@ class ObjDiscreteProperty(AbstractValuesProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjFaultInterpretation(ObjBoundaryFeatureInterpretation):
+class obj_FaultInterpretation(obj_BoundaryFeatureInterpretation):
     """
     A type of boundary feature, this class contains the data describing an opinion
     about the characterization of the fault, which includes the attributes listed
@@ -23364,7 +23242,6 @@ class ObjFaultInterpretation(ObjBoundaryFeatureInterpretation):
     """
 
     class Meta:
-        name = "obj_FaultInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     is_listric: Optional[bool] = field(
@@ -23410,7 +23287,7 @@ class ObjFaultInterpretation(ObjBoundaryFeatureInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjFrontierFeature(AbstractTechnicalFeature):
+class obj_FrontierFeature(AbstractTechnicalFeature):
     """
     Identifies a frontier or boundary in the earth model that is not a geological
     feature but an arbitrary geographic/geometric surface used to delineate the
@@ -23418,19 +23295,17 @@ class ObjFrontierFeature(AbstractTechnicalFeature):
     """
 
     class Meta:
-        name = "obj_FrontierFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGeobodyBoundaryInterpretation(ObjBoundaryFeatureInterpretation):
+class obj_GeobodyBoundaryInterpretation(obj_BoundaryFeatureInterpretation):
     """
     A type of boundary feature, this class identifies if the boundary is a geobody
     and the type of the boundary.
     """
 
     class Meta:
-        name = "obj_GeobodyBoundaryInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     boundary_relation: List[BoundaryRelation] = field(
@@ -23444,17 +23319,16 @@ class ObjGeobodyBoundaryInterpretation(ObjBoundaryFeatureInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGeobodyInterpretation(ObjGeologicUnitInterpretation):
+class obj_GeobodyInterpretation(obj_GeologicUnitInterpretation):
     """
     A type of rock feature, this class identifies if a rock feature is a geobody
     with any qualifications on the interpretation of the geobody.
     """
 
     class Meta:
-        name = "obj_GeobodyInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    geobody3d_shape: Optional[Geobody3DShape] = field(
+    geobody3d_shape: Optional[Geobody3dShape] = field(
         default=None,
         metadata={
             "name": "Geobody3dShape",
@@ -23465,7 +23339,7 @@ class ObjGeobodyInterpretation(ObjGeologicUnitInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGeologicUnitFeature(AbstractGeologicFeature):
+class obj_GeologicUnitFeature(AbstractGeologicFeature):
     """A volume of rock located between one or more boundary features.
 
     The limiting boundary features should be genetic boundary features
@@ -23473,12 +23347,11 @@ class ObjGeologicUnitFeature(AbstractGeologicFeature):
     """
 
     class Meta:
-        name = "obj_GeologicUnitFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGrid2DRepresentation(AbstractSurfaceRepresentation):
+class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
     """Representation based on a 2D grid.
 
     For definitions of slowest and fastest axes of the array, see
@@ -23486,10 +23359,9 @@ class ObjGrid2DRepresentation(AbstractSurfaceRepresentation):
     """
 
     class Meta:
-        name = "obj_Grid2dRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    grid2d_patch: Grid2DPatch = field(
+    grid2d_patch: Grid2dPatch = field(
         metadata={
             "name": "Grid2dPatch",
             "type": "Element",
@@ -23500,17 +23372,16 @@ class ObjGrid2DRepresentation(AbstractSurfaceRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGrid2DSetRepresentation(AbstractSurfaceRepresentation):
+class obj_Grid2dSetRepresentation(AbstractSurfaceRepresentation):
     """Set of representations based on a 2D grid.
 
     Each 2D grid representation corresponds to one patch of the set.
     """
 
     class Meta:
-        name = "obj_Grid2dSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    grid2d_patch: List[Grid2DPatch] = field(
+    grid2d_patch: List[Grid2dPatch] = field(
         default_factory=list,
         metadata={
             "name": "Grid2dPatch",
@@ -23522,7 +23393,7 @@ class ObjGrid2DSetRepresentation(AbstractSurfaceRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjHorizonInterpretation(ObjBoundaryFeatureInterpretation):
+class obj_HorizonInterpretation(obj_BoundaryFeatureInterpretation):
     """A type of boundary feature, the class specifies if the boundary feature is a
     horizon.
 
@@ -23533,7 +23404,6 @@ class ObjHorizonInterpretation(ObjBoundaryFeatureInterpretation):
     """
 
     class Meta:
-        name = "obj_HorizonInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     boundary_relation: List[BoundaryRelation] = field(
@@ -23555,7 +23425,7 @@ class ObjHorizonInterpretation(ObjBoundaryFeatureInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjOrganizationFeature(AbstractGeologicFeature):
+class obj_OrganizationFeature(AbstractGeologicFeature):
     """The explicit description of the relationships between geologic features,
     such as rock features (e.g., stratigraphic units, geobodies, phase unit) and
     boundary features (e.g., genetic, tectonic, and fluid boundaries).
@@ -23564,7 +23434,6 @@ class ObjOrganizationFeature(AbstractGeologicFeature):
     """
 
     class Meta:
-        name = "obj_OrganizationFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     organization_kind: OrganizationKind = field(
@@ -23578,7 +23447,7 @@ class ObjOrganizationFeature(AbstractGeologicFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjPlaneSetRepresentation(AbstractSurfaceRepresentation):
+class obj_PlaneSetRepresentation(AbstractSurfaceRepresentation):
     """Defines a plane representation, which can be made up of multiple patches.
 
     Commonly represented features are fluid contacts or frontiers. Common geometries of this representation are titled or horizontal planes.
@@ -23586,7 +23455,6 @@ class ObjPlaneSetRepresentation(AbstractSurfaceRepresentation):
     """
 
     class Meta:
-        name = "obj_PlaneSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     planes: List[AbstractPlaneGeometry] = field(
@@ -23601,13 +23469,12 @@ class ObjPlaneSetRepresentation(AbstractSurfaceRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjRockFluidOrganizationInterpretation(AbstractOrganizationInterpretation):
+class obj_RockFluidOrganizationInterpretation(AbstractOrganizationInterpretation):
     """
     Interpretation of the fluid organization units.
     """
 
     class Meta:
-        name = "obj_RockFluidOrganizationInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     rock_fluid_unit_index: RockFluidUnitInterpretationIndex = field(
@@ -23621,14 +23488,13 @@ class ObjRockFluidOrganizationInterpretation(AbstractOrganizationInterpretation)
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjRockFluidUnitInterpretation(ObjGeologicUnitInterpretation):
+class obj_RockFluidUnitInterpretation(obj_GeologicUnitInterpretation):
     """
     A type of rock fluid feature interpretation , this class identifies if a rock
     fluid feature by its phase.
     """
 
     class Meta:
-        name = "obj_RockFluidUnitInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     phase: Optional[Phase] = field(
@@ -23642,7 +23508,7 @@ class ObjRockFluidUnitInterpretation(ObjGeologicUnitInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjSealedVolumeFrameworkRepresentation(ObjRepresentationSetRepresentation):
+class obj_SealedVolumeFrameworkRepresentation(obj_RepresentationSetRepresentation):
     """A strict boundary representation (BREP), which represents the volume region
     by assembling together shells.
 
@@ -23650,7 +23516,6 @@ class ObjSealedVolumeFrameworkRepresentation(ObjRepresentationSetRepresentation)
     """
 
     class Meta:
-        name = "obj_SealedVolumeFrameworkRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     based_on: DataObjectReference = field(
@@ -23682,7 +23547,7 @@ class ObjSealedVolumeFrameworkRepresentation(ObjRepresentationSetRepresentation)
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStratigraphicUnitInterpretation(ObjGeologicUnitInterpretation):
+class obj_StratigraphicUnitInterpretation(obj_GeologicUnitInterpretation):
     """
     Interpretation of a stratigraphic unit which includes the knowledge of the top,
     the bottom, the deposition mode.
@@ -23698,7 +23563,6 @@ class ObjStratigraphicUnitInterpretation(ObjGeologicUnitInterpretation):
     """
 
     class Meta:
-        name = "obj_StratigraphicUnitInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     deposition_mode: Optional[DepositionMode] = field(
@@ -23728,7 +23592,7 @@ class ObjStratigraphicUnitInterpretation(ObjGeologicUnitInterpretation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStreamlinesFeature(AbstractTechnicalFeature):
+class obj_StreamlinesFeature(AbstractTechnicalFeature):
     """Specification of the vector field upon which the streamlines are based.
 
     Streamlines are commonly used to trace the flow of phases (water /
@@ -23750,7 +23614,6 @@ class ObjStreamlinesFeature(AbstractTechnicalFeature):
     """
 
     class Meta:
-        name = "obj_StreamlinesFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     flux: StreamlineFlux = field(
@@ -23780,7 +23643,7 @@ class ObjStreamlinesFeature(AbstractTechnicalFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStructuralOrganizationInterpretation(AbstractOrganizationInterpretation):
+class obj_StructuralOrganizationInterpretation(AbstractOrganizationInterpretation):
     """
     One of the main types of RESQML organizations, this class gathers boundary
     interpretations (e.g., horizons and faults) plus frontier features and their
@@ -23789,7 +23652,6 @@ class ObjStructuralOrganizationInterpretation(AbstractOrganizationInterpretation
     """
 
     class Meta:
-        name = "obj_StructuralOrganizationInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     ordering_criteria: OrderingCriteria = field(
@@ -23843,7 +23705,7 @@ class ObjStructuralOrganizationInterpretation(AbstractOrganizationInterpretation
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjTriangulatedSetRepresentation(AbstractSurfaceRepresentation):
+class obj_TriangulatedSetRepresentation(AbstractSurfaceRepresentation):
     """A representation based on set of triangulated mesh patches, which gets its
     geometry from a 1D array of points.
 
@@ -23851,7 +23713,6 @@ class ObjTriangulatedSetRepresentation(AbstractSurfaceRepresentation):
     """
 
     class Meta:
-        name = "obj_TriangulatedSetRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     triangle_patch: List[TrianglePatch] = field(
@@ -23866,7 +23727,7 @@ class ObjTriangulatedSetRepresentation(AbstractSurfaceRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjUnstructuredGridRepresentation(AbstractGridRepresentation):
+class obj_UnstructuredGridRepresentation(AbstractGridRepresentation):
     """Unstructured grid representation characterized by a cell count, and
     potentially nothing else.
 
@@ -23881,7 +23742,6 @@ class ObjUnstructuredGridRepresentation(AbstractGridRepresentation):
     """
 
     class Meta:
-        name = "obj_UnstructuredGridRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     cell_count: int = field(
@@ -23903,7 +23763,7 @@ class ObjUnstructuredGridRepresentation(AbstractGridRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjWellboreFeature(AbstractTechnicalFeature):
+class obj_WellboreFeature(AbstractTechnicalFeature):
     """May refer to one of these:
     wellbore. A unique, oriented path from the bottom of a drilled borehole to the surface of the earth. The path must not overlap or cross itself.
     borehole. A hole excavated in the earth as a result of drilling or boring operations. The borehole may represent the hole of an entire wellbore (when no sidetracks are present), or a sidetrack extension. A borehole extends from an originating point (the surface location for the initial borehole or kickoff point for sidetracks) to a terminating (bottomhole) point.
@@ -23911,7 +23771,6 @@ class ObjWellboreFeature(AbstractTechnicalFeature):
     """
 
     class Meta:
-        name = "obj_WellboreFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     witsml_wellbore: Optional[WitsmlWellboreReference] = field(
@@ -23925,13 +23784,12 @@ class ObjWellboreFeature(AbstractTechnicalFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjWellboreMarkerFrameRepresentation(ObjWellboreFrameRepresentation):
+class obj_WellboreMarkerFrameRepresentation(obj_WellboreFrameRepresentation):
     """
     A well log frame where each entry represents a well marker.
     """
 
     class Meta:
-        name = "obj_WellboreMarkerFrameRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     wellbore_marker: List[WellboreMarker] = field(
@@ -23946,31 +23804,30 @@ class ObjWellboreMarkerFrameRepresentation(ObjWellboreFrameRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiContactType(AbstractObjectType):
+class CI_Contact_Type(AbstractObject_Type):
     """
     Information required enabling contact with the  responsible person and/or
     organisation.
     """
 
     class Meta:
-        name = "CI_Contact_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    phone: Optional[CiTelephonePropertyType] = field(
+    phone: Optional[CI_Telephone_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    address: Optional[CiAddressPropertyType] = field(
+    address: Optional[CI_Address_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    online_resource: Optional[CiOnlineResourcePropertyType] = field(
+    online_resource: Optional[CI_OnlineResource_PropertyType] = field(
         default=None,
         metadata={
             "name": "onlineResource",
@@ -23978,7 +23835,7 @@ class CiContactType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    hours_of_service: Optional[CharacterStringPropertyType] = field(
+    hours_of_service: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "hoursOfService",
@@ -23986,7 +23843,7 @@ class CiContactType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    contact_instructions: Optional[CharacterStringPropertyType] = field(
+    contact_instructions: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "contactInstructions",
@@ -23997,9 +23854,8 @@ class CiContactType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class ExExtent(ExExtentType):
+class EX_Extent(EX_Extent_Type):
     class Meta:
-        name = "EX_Extent"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
@@ -24054,87 +23910,85 @@ class IdentifiedObjectType(DefinitionType):
 
 
 @dataclass(slots=True, kw_only=True)
-class BlockedWellboreRepresentation(ObjBlockedWellboreRepresentation):
+class BlockedWellboreRepresentation(obj_BlockedWellboreRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class BoundaryFeature(ObjBoundaryFeature):
+class BoundaryFeature(obj_BoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class CategoricalProperty(ObjCategoricalProperty):
+class CategoricalProperty(obj_CategoricalProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class CommentProperty(ObjCommentProperty):
+class CommentProperty(obj_CommentProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ContinuousProperty(ObjContinuousProperty):
+class ContinuousProperty(obj_ContinuousProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class DiscreteProperty(ObjDiscreteProperty):
+class DiscreteProperty(obj_DiscreteProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class FaultInterpretation(ObjFaultInterpretation):
+class FaultInterpretation(obj_FaultInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class FrontierFeature(ObjFrontierFeature):
+class FrontierFeature(obj_FrontierFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeobodyBoundaryInterpretation(ObjGeobodyBoundaryInterpretation):
+class GeobodyBoundaryInterpretation(obj_GeobodyBoundaryInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeobodyInterpretation(ObjGeobodyInterpretation):
+class GeobodyInterpretation(obj_GeobodyInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeologicUnitFeature(ObjGeologicUnitFeature):
+class GeologicUnitFeature(obj_GeologicUnitFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class Grid2DRepresentation(ObjGrid2DRepresentation):
+class Grid2dRepresentation(obj_Grid2dRepresentation):
     class Meta:
-        name = "Grid2dRepresentation"
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class Grid2DSetRepresentation(ObjGrid2DSetRepresentation):
+class Grid2dSetRepresentation(obj_Grid2dSetRepresentation):
     class Meta:
-        name = "Grid2dSetRepresentation"
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class HorizonInterpretation(ObjHorizonInterpretation):
+class HorizonInterpretation(obj_HorizonInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -24175,13 +24029,13 @@ class IjkGridGeometry(AbstractColumnLayerGridGeometry):
 
 
 @dataclass(slots=True, kw_only=True)
-class OrganizationFeature(ObjOrganizationFeature):
+class OrganizationFeature(obj_OrganizationFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class PlaneSetRepresentation(ObjPlaneSetRepresentation):
+class PlaneSetRepresentation(obj_PlaneSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -24233,19 +24087,19 @@ class RepresentationIdentity:
 
 
 @dataclass(slots=True, kw_only=True)
-class RockFluidOrganizationInterpretation(ObjRockFluidOrganizationInterpretation):
+class RockFluidOrganizationInterpretation(obj_RockFluidOrganizationInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class RockFluidUnitInterpretation(ObjRockFluidUnitInterpretation):
+class RockFluidUnitInterpretation(obj_RockFluidUnitInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SealedVolumeFrameworkRepresentation(ObjSealedVolumeFrameworkRepresentation):
+class SealedVolumeFrameworkRepresentation(obj_SealedVolumeFrameworkRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -24262,25 +24116,25 @@ class SeismicLatticeSetFeature(AbstractSeismicSurveyFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class StratigraphicUnitInterpretation(ObjStratigraphicUnitInterpretation):
+class StratigraphicUnitInterpretation(obj_StratigraphicUnitInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StreamlinesFeature(ObjStreamlinesFeature):
+class StreamlinesFeature(obj_StreamlinesFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StructuralOrganizationInterpretation(ObjStructuralOrganizationInterpretation):
+class StructuralOrganizationInterpretation(obj_StructuralOrganizationInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class TriangulatedSetRepresentation(ObjTriangulatedSetRepresentation):
+class TriangulatedSetRepresentation(obj_TriangulatedSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -24359,25 +24213,25 @@ class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
 
 
 @dataclass(slots=True, kw_only=True)
-class UnstructuredGridRepresentation(ObjUnstructuredGridRepresentation):
+class UnstructuredGridRepresentation(obj_UnstructuredGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class WellboreFeature(ObjWellboreFeature):
+class WellboreFeature(obj_WellboreFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class WellboreMarkerFrameRepresentation(ObjWellboreMarkerFrameRepresentation):
+class WellboreMarkerFrameRepresentation(obj_WellboreMarkerFrameRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjCategoricalPropertySeries(ObjCategoricalProperty):
+class obj_CategoricalPropertySeries(obj_CategoricalProperty):
     """Information specific to one comment property.
 
     Used to capture comments or annotations associated with a given
@@ -24396,7 +24250,6 @@ class ObjCategoricalPropertySeries(ObjCategoricalProperty):
     """
 
     class Meta:
-        name = "obj_CategoricalPropertySeries"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     realization_indices: Optional[AbstractIntegerArray] = field(
@@ -24418,7 +24271,7 @@ class ObjCategoricalPropertySeries(ObjCategoricalProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjCommentPropertySeries(ObjCommentProperty):
+class obj_CommentPropertySeries(obj_CommentProperty):
     """Information specific to one comment property.
 
     Used to capture comments or annotations associated with a given
@@ -24437,7 +24290,6 @@ class ObjCommentPropertySeries(ObjCommentProperty):
     """
 
     class Meta:
-        name = "obj_CommentPropertySeries"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     realization_indices: Optional[AbstractIntegerArray] = field(
@@ -24459,7 +24311,7 @@ class ObjCommentPropertySeries(ObjCommentProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjContinuousPropertySeries(ObjContinuousProperty):
+class obj_ContinuousPropertySeries(obj_ContinuousProperty):
     """Information specific to one comment property.
 
     Used to capture comments or annotations associated with a given
@@ -24478,7 +24330,6 @@ class ObjContinuousPropertySeries(ObjContinuousProperty):
     """
 
     class Meta:
-        name = "obj_ContinuousPropertySeries"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     realization_indices: Optional[AbstractIntegerArray] = field(
@@ -24500,7 +24351,7 @@ class ObjContinuousPropertySeries(ObjContinuousProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjDiscretePropertySeries(ObjDiscreteProperty):
+class obj_DiscretePropertySeries(obj_DiscreteProperty):
     """Information specific to one comment property.
 
     Used to capture comments or annotations associated with a given
@@ -24519,7 +24370,6 @@ class ObjDiscretePropertySeries(ObjDiscreteProperty):
     """
 
     class Meta:
-        name = "obj_DiscretePropertySeries"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     realization_indices: Optional[AbstractIntegerArray] = field(
@@ -24541,7 +24391,7 @@ class ObjDiscretePropertySeries(ObjDiscreteProperty):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjFluidBoundaryFeature(ObjBoundaryFeature):
+class obj_FluidBoundaryFeature(obj_BoundaryFeature):
     """A boundary (usually a plane) separating two fluid phases, such as a gas-oil
     contact (GOC), a water-oil contact (WOC), a gas-oil contact (GOC), or others.
 
@@ -24549,7 +24399,6 @@ class ObjFluidBoundaryFeature(ObjBoundaryFeature):
     """
 
     class Meta:
-        name = "obj_FluidBoundaryFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     fluid_contact: FluidContact = field(
@@ -24563,7 +24412,7 @@ class ObjFluidBoundaryFeature(ObjBoundaryFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGeneticBoundaryFeature(ObjBoundaryFeature):
+class obj_GeneticBoundaryFeature(obj_BoundaryFeature):
     """A boundary between two units produced by a contrast between two deposits
     that occurred at two different geologic time periods.
 
@@ -24571,7 +24420,6 @@ class ObjGeneticBoundaryFeature(ObjBoundaryFeature):
     """
 
     class Meta:
-        name = "obj_GeneticBoundaryFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     genetic_boundary_kind: GeneticBoundaryKind = field(
@@ -24593,7 +24441,7 @@ class ObjGeneticBoundaryFeature(ObjBoundaryFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGeobodyFeature(ObjGeologicUnitFeature):
+class obj_GeobodyFeature(obj_GeologicUnitFeature):
     """A volume of rock that is identified based on some specific attribute, like
     its mineral content or other physical characteristic.
 
@@ -24602,12 +24450,11 @@ class ObjGeobodyFeature(ObjGeologicUnitFeature):
     """
 
     class Meta:
-        name = "obj_GeobodyFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjNonSealedSurfaceFrameworkRepresentation(
+class obj_NonSealedSurfaceFrameworkRepresentation(
     AbstractSurfaceFrameworkRepresentation
 ):
     """A collection of contact representations parts, which are a list of contact
@@ -24619,7 +24466,6 @@ class ObjNonSealedSurfaceFrameworkRepresentation(
     """
 
     class Meta:
-        name = "obj_NonSealedSurfaceFrameworkRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     non_sealed_contact_representation: List[AbstractContactRepresentationPart] = field(
@@ -24633,7 +24479,7 @@ class ObjNonSealedSurfaceFrameworkRepresentation(
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjRockFluidUnitFeature(ObjGeologicUnitFeature):
+class obj_RockFluidUnitFeature(obj_GeologicUnitFeature):
     """A fluid phase plus one or more stratigraphic units.
 
     A unit may correspond to a pair of horizons that are not adjacent
@@ -24642,7 +24488,6 @@ class ObjRockFluidUnitFeature(ObjGeologicUnitFeature):
     """
 
     class Meta:
-        name = "obj_RockFluidUnitFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     phase: Phase = field(
@@ -24672,7 +24517,7 @@ class ObjRockFluidUnitFeature(ObjGeologicUnitFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjSealedSurfaceFrameworkRepresentation(AbstractSurfaceFrameworkRepresentation):
+class obj_SealedSurfaceFrameworkRepresentation(AbstractSurfaceFrameworkRepresentation):
     """A collection of contact representations parts, which are a list of contact
     patches and their identities.
 
@@ -24682,7 +24527,6 @@ class ObjSealedSurfaceFrameworkRepresentation(AbstractSurfaceFrameworkRepresenta
     """
 
     class Meta:
-        name = "obj_SealedSurfaceFrameworkRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     sealed_contact_representation: List[SealedContactRepresentationPart] = field(
@@ -24696,7 +24540,7 @@ class ObjSealedSurfaceFrameworkRepresentation(AbstractSurfaceFrameworkRepresenta
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjSeismicLineFeature(AbstractSeismicSurveyFeature):
+class obj_SeismicLineFeature(AbstractSeismicSurveyFeature):
     """Defined by one lateral dimension: trace (lateral). Seismic trace of the 3D seismic survey.
     To specify its location, the seismic feature can be associated with the seismic coordinates of the points of a representation.
 
@@ -24712,7 +24556,6 @@ class ObjSeismicLineFeature(AbstractSeismicSurveyFeature):
     """
 
     class Meta:
-        name = "obj_SeismicLineFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     first_trace_index: int = field(
@@ -24750,19 +24593,18 @@ class ObjSeismicLineFeature(AbstractSeismicSurveyFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjSeismicLineSetFeature(AbstractSeismicSurveyFeature):
+class obj_SeismicLineSetFeature(AbstractSeismicSurveyFeature):
     """An unordered set of several seismic lines.
 
     Generally, it has no direct interpretation or representation.
     """
 
     class Meta:
-        name = "obj_SeismicLineSetFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStratigraphicColumnRankInterpretation(
+class obj_StratigraphicColumnRankInterpretation(
     AbstractStratigraphicOrganizationInterpretation
 ):
     """
@@ -24771,7 +24613,6 @@ class ObjStratigraphicColumnRankInterpretation(
     """
 
     class Meta:
-        name = "obj_StratigraphicColumnRankInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     index: int = field(
@@ -24794,7 +24635,7 @@ class ObjStratigraphicColumnRankInterpretation(
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStratigraphicOccurrenceInterpretation(
+class obj_StratigraphicOccurrenceInterpretation(
     AbstractStratigraphicOrganizationInterpretation
 ):
     """A local Interpretation—it could be along a well, on a 2D map, or on a 2D
@@ -24806,7 +24647,6 @@ class ObjStratigraphicOccurrenceInterpretation(
     """
 
     class Meta:
-        name = "obj_StratigraphicOccurrenceInterpretation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     is_occurrence_of: Optional[DataObjectReference] = field(
@@ -24828,7 +24668,7 @@ class ObjStratigraphicOccurrenceInterpretation(
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjStratigraphicUnitFeature(ObjGeologicUnitFeature):
+class obj_StratigraphicUnitFeature(obj_GeologicUnitFeature):
     """A stratigraphic unit that can have a well-known (e.g., "Jurassic")
     chronostratigraphic top and chronostratigraphic bottom.
 
@@ -24837,7 +24677,6 @@ class ObjStratigraphicUnitFeature(ObjGeologicUnitFeature):
     """
 
     class Meta:
-        name = "obj_StratigraphicUnitFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     chronostratigraphic_bottom: Optional[DataObjectReference] = field(
@@ -24859,7 +24698,7 @@ class ObjStratigraphicUnitFeature(ObjGeologicUnitFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjSubRepresentation(AbstractRepresentation):
+class obj_SubRepresentation(AbstractRepresentation):
     """An ordered list of indexable elements and/or indexable element pairs of an
     existing representation.
 
@@ -24875,7 +24714,6 @@ class ObjSubRepresentation(AbstractRepresentation):
     """
 
     class Meta:
-        name = "obj_SubRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     additional_grid_topology: Optional[AdditionalGridTopology] = field(
@@ -24906,7 +24744,7 @@ class ObjSubRepresentation(AbstractRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjTectonicBoundaryFeature(ObjBoundaryFeature):
+class obj_TectonicBoundaryFeature(obj_BoundaryFeature):
     """A boundary caused by tectonic movement or metamorphism, such as a fault or a
     fracture.
 
@@ -24914,7 +24752,6 @@ class ObjTectonicBoundaryFeature(ObjBoundaryFeature):
     """
 
     class Meta:
-        name = "obj_TectonicBoundaryFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     tectonic_boundary_kind: TectonicBoundaryKind = field(
@@ -24928,9 +24765,8 @@ class ObjTectonicBoundaryFeature(ObjBoundaryFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiContact(CiContactType):
+class CI_Contact(CI_Contact_Type):
     class Meta:
-        name = "CI_Contact"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
@@ -24939,7 +24775,7 @@ class CoordinateSystemAxisType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    axis_abbrev: AxisAbbrev = field(
+    axis_abbrev: axisAbbrev = field(
         metadata={
             "name": "axisAbbrev",
             "type": "Element",
@@ -24947,7 +24783,7 @@ class CoordinateSystemAxisType(IdentifiedObjectType):
             "required": True,
         }
     )
-    axis_direction: AxisDirection = field(
+    axis_direction: axisDirection = field(
         metadata={
             "name": "axisDirection",
             "type": "Element",
@@ -24971,7 +24807,7 @@ class CoordinateSystemAxisType(IdentifiedObjectType):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    range_meaning: Optional[RangeMeaning] = field(
+    range_meaning: Optional[rangeMeaning] = field(
         default=None,
         metadata={
             "name": "rangeMeaning",
@@ -24994,7 +24830,7 @@ class EllipsoidType(IdentifiedObjectType):
             "required": True,
         }
     )
-    second_defining_parameter: SecondDefiningParameter2 = field(
+    second_defining_parameter: secondDefiningParameter_2 = field(
         metadata={
             "name": "secondDefiningParameter",
             "type": "Element",
@@ -25020,7 +24856,7 @@ class PrimeMeridianType(IdentifiedObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class DomainOfValidity:
+class domainOfValidity:
     """
     The gml:domainOfValidity property implements an association role to an
     EX_Extent object as encoded in ISO/TS 19139, either referencing or containing
@@ -25028,10 +24864,9 @@ class DomainOfValidity:
     """
 
     class Meta:
-        name = "domainOfValidity"
         namespace = "http://www.opengis.net/gml/3.2"
 
-    ex_extent: Optional[ExExtent] = field(
+    ex_extent: Optional[EX_Extent] = field(
         default=None,
         metadata={
             "name": "EX_Extent",
@@ -25076,21 +24911,21 @@ class DomainOfValidity:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -25101,43 +24936,43 @@ class DomainOfValidity:
 
 
 @dataclass(slots=True, kw_only=True)
-class CategoricalPropertySeries(ObjCategoricalPropertySeries):
+class CategoricalPropertySeries(obj_CategoricalPropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class CommentPropertySeries(ObjCommentPropertySeries):
+class CommentPropertySeries(obj_CommentPropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ContinuousPropertySeries(ObjContinuousPropertySeries):
+class ContinuousPropertySeries(obj_ContinuousPropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class DiscretePropertySeries(ObjDiscretePropertySeries):
+class DiscretePropertySeries(obj_DiscretePropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class FluidBoundaryFeature(ObjFluidBoundaryFeature):
+class FluidBoundaryFeature(obj_FluidBoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeneticBoundaryFeature(ObjGeneticBoundaryFeature):
+class GeneticBoundaryFeature(obj_GeneticBoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeobodyFeature(ObjGeobodyFeature):
+class GeobodyFeature(obj_GeobodyFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
@@ -25256,68 +25091,68 @@ class GpGridUnstructuredColumnLayerGridPatch(Patch):
 
 @dataclass(slots=True, kw_only=True)
 class NonSealedSurfaceFrameworkRepresentation(
-    ObjNonSealedSurfaceFrameworkRepresentation
+    obj_NonSealedSurfaceFrameworkRepresentation
 ):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class RockFluidUnitFeature(ObjRockFluidUnitFeature):
+class RockFluidUnitFeature(obj_RockFluidUnitFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SealedSurfaceFrameworkRepresentation(ObjSealedSurfaceFrameworkRepresentation):
+class SealedSurfaceFrameworkRepresentation(obj_SealedSurfaceFrameworkRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SeismicLineFeature(ObjSeismicLineFeature):
+class SeismicLineFeature(obj_SeismicLineFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SeismicLineSetFeature(ObjSeismicLineSetFeature):
+class SeismicLineSetFeature(obj_SeismicLineSetFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StratigraphicColumnRankInterpretation(ObjStratigraphicColumnRankInterpretation):
+class StratigraphicColumnRankInterpretation(obj_StratigraphicColumnRankInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StratigraphicOccurrenceInterpretation(ObjStratigraphicOccurrenceInterpretation):
+class StratigraphicOccurrenceInterpretation(obj_StratigraphicOccurrenceInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class StratigraphicUnitFeature(ObjStratigraphicUnitFeature):
+class StratigraphicUnitFeature(obj_StratigraphicUnitFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SubRepresentation(ObjSubRepresentation):
+class SubRepresentation(obj_SubRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class TectonicBoundaryFeature(ObjTectonicBoundaryFeature):
+class TectonicBoundaryFeature(obj_TectonicBoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjIjkGridRepresentation(AbstractColumnLayerGridRepresentation):
+class obj_IjkGridRepresentation(AbstractColumnLayerGridRepresentation):
     """Grid whose topology is characterized by structured column indices (I,J) and
     a layer index, K.
 
@@ -25346,7 +25181,6 @@ class ObjIjkGridRepresentation(AbstractColumnLayerGridRepresentation):
     """
 
     class Meta:
-        name = "obj_IjkGridRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     ni: int = field(
@@ -25373,7 +25207,7 @@ class ObjIjkGridRepresentation(AbstractColumnLayerGridRepresentation):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-    kgaps: Optional[Kgaps] = field(
+    kgaps: Optional[KGaps] = field(
         default=None,
         metadata={
             "name": "KGaps",
@@ -25392,13 +25226,12 @@ class ObjIjkGridRepresentation(AbstractColumnLayerGridRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjRepresentationIdentitySet(AbstractResqmlDataObject):
+class obj_RepresentationIdentitySet(AbstractResqmlDataObject):
     """
     A collection of representation identities.
     """
 
     class Meta:
-        name = "obj_RepresentationIdentitySet"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     representation_identity: List[RepresentationIdentity] = field(
@@ -25413,7 +25246,7 @@ class ObjRepresentationIdentitySet(AbstractResqmlDataObject):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjSeismicLatticeFeature(AbstractSeismicSurveyFeature):
+class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
     """Defined by two lateral ordered dimensions: inline (lateral), crossline (lateral and orthogonal to the inline dimension), which are fixed.
     To specify its location, a seismic feature can be associated with the seismic coordinates of the points of a representation.
 
@@ -25437,7 +25270,6 @@ class ObjSeismicLatticeFeature(AbstractSeismicSurveyFeature):
     """
 
     class Meta:
-        name = "obj_SeismicLatticeFeature"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     crossline_count: int = field(
@@ -25499,7 +25331,9 @@ class ObjSeismicLatticeFeature(AbstractSeismicSurveyFeature):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjTruncatedIjkGridRepresentation(AbstractTruncatedColumnLayerGridRepresentation):
+class obj_TruncatedIjkGridRepresentation(
+    AbstractTruncatedColumnLayerGridRepresentation
+):
     """Grid class with an underlying IJK topology, together with a 1D split cell
     list.
 
@@ -25517,7 +25351,6 @@ class ObjTruncatedIjkGridRepresentation(AbstractTruncatedColumnLayerGridRepresen
     """
 
     class Meta:
-        name = "obj_TruncatedIjkGridRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     ni: int = field(
@@ -25547,7 +25380,7 @@ class ObjTruncatedIjkGridRepresentation(AbstractTruncatedColumnLayerGridRepresen
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjTruncatedUnstructuredColumnLayerGridRepresentation(
+class obj_TruncatedUnstructuredColumnLayerGridRepresentation(
     AbstractTruncatedColumnLayerGridRepresentation
 ):
     """Grid class with an underlying unstructured column layer topology, together
@@ -25565,7 +25398,6 @@ class ObjTruncatedUnstructuredColumnLayerGridRepresentation(
     """
 
     class Meta:
-        name = "obj_TruncatedUnstructuredColumnLayerGridRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     column_count: int = field(
@@ -25587,7 +25419,7 @@ class ObjTruncatedUnstructuredColumnLayerGridRepresentation(
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjUnstructuredColumnLayerGridRepresentation(
+class obj_UnstructuredColumnLayerGridRepresentation(
     AbstractColumnLayerGridRepresentation
 ):
     """Grid whose topology is characterized by an unstructured column index and a
@@ -25604,7 +25436,6 @@ class ObjUnstructuredColumnLayerGridRepresentation(
     """
 
     class Meta:
-        name = "obj_UnstructuredColumnLayerGridRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     column_count: int = field(
@@ -25626,12 +25457,11 @@ class ObjUnstructuredColumnLayerGridRepresentation(
 
 
 @dataclass(slots=True, kw_only=True)
-class CiContactPropertyType:
+class CI_Contact_PropertyType:
     class Meta:
-        name = "CI_Contact_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_contact: Optional[CiContact] = field(
+    ci_contact: Optional[CI_Contact] = field(
         default=None,
         metadata={
             "name": "CI_Contact",
@@ -25676,14 +25506,14 @@ class CiContactPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -25696,7 +25526,7 @@ class CiContactPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -25708,12 +25538,11 @@ class CiContactPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractCrstype(IdentifiedObjectType):
+class AbstractCRSType(IdentifiedObjectType):
     class Meta:
-        name = "AbstractCRSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    domain_of_validity: List[DomainOfValidity] = field(
+    domain_of_validity: List[domainOfValidity] = field(
         default_factory=list,
         metadata={
             "name": "domainOfValidity",
@@ -25736,7 +25565,7 @@ class AbstractDatumType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    domain_of_validity: Optional[DomainOfValidity] = field(
+    domain_of_validity: Optional[domainOfValidity] = field(
         default=None,
         metadata={
             "name": "domainOfValidity",
@@ -25752,7 +25581,7 @@ class AbstractDatumType(IdentifiedObjectType):
             "min_occurs": 1,
         },
     )
-    anchor_definition: Optional[AnchorDefinition] = field(
+    anchor_definition: Optional[anchorDefinition] = field(
         default=None,
         metadata={
             "name": "anchorDefinition",
@@ -25781,7 +25610,7 @@ class CoordinateSystemAxis(CoordinateSystemAxisType):
 
 
 @dataclass(slots=True, kw_only=True)
-class Ellipsoid1(EllipsoidType):
+class Ellipsoid_1(EllipsoidType):
     """A gml:Ellipsoid is a geometric figure that may be used to describe the
     approximate shape of the earth.
 
@@ -25795,7 +25624,7 @@ class Ellipsoid1(EllipsoidType):
 
 
 @dataclass(slots=True, kw_only=True)
-class PrimeMeridian1(PrimeMeridianType):
+class PrimeMeridian_1(PrimeMeridianType):
     """A gml:PrimeMeridian defines the origin from which longitude values are
     determined.
 
@@ -25835,7 +25664,7 @@ class GpGridColumnLayerGrid:
             "required": True,
         }
     )
-    kgaps: Optional[Kgaps] = field(
+    kgaps: Optional[KGaps] = field(
         default=None,
         metadata={
             "name": "KGaps",
@@ -25864,32 +25693,32 @@ class GpGridColumnLayerGrid:
 
 
 @dataclass(slots=True, kw_only=True)
-class IjkGridRepresentation(ObjIjkGridRepresentation):
+class IjkGridRepresentation(obj_IjkGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class RepresentationIdentitySet(ObjRepresentationIdentitySet):
+class RepresentationIdentitySet(obj_RepresentationIdentitySet):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SeismicLatticeFeature(ObjSeismicLatticeFeature):
+class SeismicLatticeFeature(obj_SeismicLatticeFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class TruncatedIjkGridRepresentation(ObjTruncatedIjkGridRepresentation):
+class TruncatedIjkGridRepresentation(obj_TruncatedIjkGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
 class TruncatedUnstructuredColumnLayerGridRepresentation(
-    ObjTruncatedUnstructuredColumnLayerGridRepresentation
+    obj_TruncatedUnstructuredColumnLayerGridRepresentation
 ):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
@@ -25897,24 +25726,23 @@ class TruncatedUnstructuredColumnLayerGridRepresentation(
 
 @dataclass(slots=True, kw_only=True)
 class UnstructuredColumnLayerGridRepresentation(
-    ObjUnstructuredColumnLayerGridRepresentation
+    obj_UnstructuredColumnLayerGridRepresentation
 ):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiResponsiblePartyType(AbstractObjectType):
+class CI_ResponsibleParty_Type(AbstractObject_Type):
     """
     Identification of, and means of communication with, person(s) and organisations
     associated with the dataset.
     """
 
     class Meta:
-        name = "CI_ResponsibleParty_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    individual_name: Optional[CharacterStringPropertyType] = field(
+    individual_name: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "individualName",
@@ -25922,7 +25750,7 @@ class CiResponsiblePartyType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    organisation_name: Optional[CharacterStringPropertyType] = field(
+    organisation_name: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "organisationName",
@@ -25930,7 +25758,7 @@ class CiResponsiblePartyType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    position_name: Optional[CharacterStringPropertyType] = field(
+    position_name: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "positionName",
@@ -25938,7 +25766,7 @@ class CiResponsiblePartyType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    contact_info: Optional[CiContactPropertyType] = field(
+    contact_info: Optional[CI_Contact_PropertyType] = field(
         default=None,
         metadata={
             "name": "contactInfo",
@@ -25946,7 +25774,7 @@ class CiResponsiblePartyType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    role: CiRoleCodePropertyType = field(
+    role: CI_RoleCode_PropertyType = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
@@ -25956,12 +25784,11 @@ class CiResponsiblePartyType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractGeneralDerivedCrstype(AbstractCrstype):
+class AbstractGeneralDerivedCRSType(AbstractCRSType):
     class Meta:
-        name = "AbstractGeneralDerivedCRSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    conversion: Conversion = field(
+    conversion: conversion = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
@@ -26026,21 +25853,21 @@ class CoordinateSystemAxisPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26060,7 +25887,7 @@ class EllipsoidPropertyType:
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    ellipsoid: Optional[Ellipsoid1] = field(
+    ellipsoid: Optional[Ellipsoid_1] = field(
         default=None,
         metadata={
             "name": "Ellipsoid",
@@ -26105,21 +25932,21 @@ class EllipsoidPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26140,7 +25967,7 @@ class PrimeMeridianPropertyType:
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    prime_meridian: Optional[PrimeMeridian1] = field(
+    prime_meridian: Optional[PrimeMeridian_1] = field(
         default=None,
         metadata={
             "name": "PrimeMeridian",
@@ -26185,21 +26012,21 @@ class PrimeMeridianPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26216,7 +26043,7 @@ class VerticalDatumType(AbstractDatumType):
 
 
 @dataclass(slots=True, kw_only=True)
-class ObjGpGridRepresentation(AbstractGridRepresentation):
+class obj_GpGridRepresentation(AbstractGridRepresentation):
     """General purpose (GP) grid representation, which includes and/or extends the
     features from all other grid representations.
 
@@ -26226,7 +26053,6 @@ class ObjGpGridRepresentation(AbstractGridRepresentation):
     """
 
     class Meta:
-        name = "obj_GpGridRepresentation"
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     column_layer_grid: List[GpGridColumnLayerGrid] = field(
@@ -26248,14 +26074,13 @@ class ObjGpGridRepresentation(AbstractGridRepresentation):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiResponsibleParty(CiResponsiblePartyType):
+class CI_ResponsibleParty(CI_ResponsibleParty_Type):
     class Meta:
-        name = "CI_ResponsibleParty"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalDatum1(VerticalDatumType):
+class VerticalDatum_1(VerticalDatumType):
     """
     Gml:VerticalDatum is a textual description and/or a set of parameters
     identifying a particular reference level surface used as a zero-height surface,
@@ -26269,7 +26094,7 @@ class VerticalDatum1(VerticalDatumType):
 
 
 @dataclass(slots=True, kw_only=True)
-class Axis(CoordinateSystemAxisPropertyType):
+class axis(CoordinateSystemAxisPropertyType):
     """The gml:axis property is an association role (ordered sequence) to the
     coordinate system axes included in this coordinate system.
 
@@ -26281,12 +26106,11 @@ class Axis(CoordinateSystemAxisPropertyType):
     """
 
     class Meta:
-        name = "axis"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class Ellipsoid2(EllipsoidPropertyType):
+class ellipsoid_2(EllipsoidPropertyType):
     """
     Gml:ellipsoid is an association role to the ellipsoid used by this geodetic
     datum.
@@ -26298,7 +26122,7 @@ class Ellipsoid2(EllipsoidPropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class PrimeMeridian2(PrimeMeridianPropertyType):
+class primeMeridian_2(PrimeMeridianPropertyType):
     """
     Gml:primeMeridian is an association role to the prime meridian used by this
     geodetic datum.
@@ -26310,18 +26134,17 @@ class PrimeMeridian2(PrimeMeridianPropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class GpGridRepresentation(ObjGpGridRepresentation):
+class GpGridRepresentation(obj_GpGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
 @dataclass(slots=True, kw_only=True)
-class CiResponsiblePartyPropertyType:
+class CI_ResponsibleParty_PropertyType:
     class Meta:
-        name = "CI_ResponsibleParty_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_responsible_party: Optional[CiResponsibleParty] = field(
+    ci_responsible_party: Optional[CI_ResponsibleParty] = field(
         default=None,
         metadata={
             "name": "CI_ResponsibleParty",
@@ -26366,14 +26189,14 @@ class CiResponsiblePartyPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -26386,7 +26209,7 @@ class CiResponsiblePartyPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26402,7 +26225,7 @@ class AbstractCoordinateSystemType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    axis: List[Axis] = field(
+    axis: List[axis] = field(
         default_factory=list,
         metadata={
             "type": "Element",
@@ -26424,7 +26247,7 @@ class GeodeticDatumType(AbstractDatumType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    prime_meridian: PrimeMeridian2 = field(
+    prime_meridian: primeMeridian_2 = field(
         metadata={
             "name": "primeMeridian",
             "type": "Element",
@@ -26432,7 +26255,7 @@ class GeodeticDatumType(AbstractDatumType):
             "required": True,
         }
     )
-    ellipsoid: Ellipsoid2 = field(
+    ellipsoid: ellipsoid_2 = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
@@ -26451,7 +26274,7 @@ class VerticalDatumPropertyType:
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    vertical_datum: Optional[VerticalDatum1] = field(
+    vertical_datum: Optional[VerticalDatum_1] = field(
         default=None,
         metadata={
             "name": "VerticalDatum",
@@ -26496,21 +26319,21 @@ class VerticalDatumPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26521,23 +26344,22 @@ class VerticalDatumPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CiCitationType(AbstractObjectType):
+class CI_Citation_Type(AbstractObject_Type):
     """
     Standardized resource reference.
     """
 
     class Meta:
-        name = "CI_Citation_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    title: CharacterStringPropertyType = field(
+    title: CharacterString_PropertyType = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
         }
     )
-    alternate_title: List[CharacterStringPropertyType] = field(
+    alternate_title: List[CharacterString_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "alternateTitle",
@@ -26545,7 +26367,7 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    date: List[CiDatePropertyType] = field(
+    date: List[CI_Date_PropertyType] = field(
         default_factory=list,
         metadata={
             "type": "Element",
@@ -26553,14 +26375,14 @@ class CiCitationType(AbstractObjectType):
             "min_occurs": 1,
         },
     )
-    edition: Optional[CharacterStringPropertyType] = field(
+    edition: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    edition_date: Optional[DatePropertyType] = field(
+    edition_date: Optional[Date_PropertyType] = field(
         default=None,
         metadata={
             "name": "editionDate",
@@ -26568,14 +26390,14 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    identifier: List["MdIdentifierPropertyType"] = field(
+    identifier: List["MD_Identifier_PropertyType"] = field(
         default_factory=list,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    cited_responsible_party: List[CiResponsiblePartyPropertyType] = field(
+    cited_responsible_party: List[CI_ResponsibleParty_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "citedResponsibleParty",
@@ -26583,7 +26405,7 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    presentation_form: List[CiPresentationFormCodePropertyType] = field(
+    presentation_form: List[CI_PresentationFormCode_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "presentationForm",
@@ -26591,14 +26413,14 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    series: Optional[CiSeriesPropertyType] = field(
+    series: Optional[CI_Series_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    other_citation_details: Optional[CharacterStringPropertyType] = field(
+    other_citation_details: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "otherCitationDetails",
@@ -26606,7 +26428,7 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    collective_title: Optional[CharacterStringPropertyType] = field(
+    collective_title: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "collectiveTitle",
@@ -26614,7 +26436,7 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    isbn: Optional[CharacterStringPropertyType] = field(
+    isbn: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "ISBN",
@@ -26622,7 +26444,7 @@ class CiCitationType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    issn: Optional[CharacterStringPropertyType] = field(
+    issn: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "ISSN",
@@ -26633,21 +26455,19 @@ class CiCitationType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CartesianCstype(AbstractCoordinateSystemType):
+class CartesianCSType(AbstractCoordinateSystemType):
     class Meta:
-        name = "CartesianCSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class EllipsoidalCstype(AbstractCoordinateSystemType):
+class EllipsoidalCSType(AbstractCoordinateSystemType):
     class Meta:
-        name = "EllipsoidalCSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeodeticDatum1(GeodeticDatumType):
+class GeodeticDatum_1(GeodeticDatumType):
     """
     Gml:GeodeticDatum is a geodetic datum defines the precise location and
     orientation in 3-dimensional space of a defined ellipsoid (or sphere), or of a
@@ -26660,21 +26480,19 @@ class GeodeticDatum1(GeodeticDatumType):
 
 
 @dataclass(slots=True, kw_only=True)
-class SphericalCstype(AbstractCoordinateSystemType):
+class SphericalCSType(AbstractCoordinateSystemType):
     class Meta:
-        name = "SphericalCSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCstype(AbstractCoordinateSystemType):
+class VerticalCSType(AbstractCoordinateSystemType):
     class Meta:
-        name = "VerticalCSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalDatum2(VerticalDatumPropertyType):
+class verticalDatum_2(VerticalDatumPropertyType):
     """
     Gml:verticalDatum is an association role to the vertical datum used by this
     CRS.
@@ -26686,14 +26504,13 @@ class VerticalDatum2(VerticalDatumPropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiCitation(CiCitationType):
+class CI_Citation(CI_Citation_Type):
     class Meta:
-        name = "CI_Citation"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class CartesianCs1(CartesianCstype):
+class CartesianCS_1(CartesianCSType):
     """Gml:CartesianCS is a 1-, 2-, or 3-dimensional coordinate system.
 
     In the 1-dimensional case, it contains a single straight coordinate
@@ -26709,7 +26526,7 @@ class CartesianCs1(CartesianCstype):
 
 
 @dataclass(slots=True, kw_only=True)
-class EllipsoidalCs1(EllipsoidalCstype):
+class EllipsoidalCS_1(EllipsoidalCSType):
     """Gml:EllipsoidalCS is a two- or three-dimensional coordinate system in which
     position is specified by geodetic latitude, geodetic longitude, and (in the
     three-dimensional case) ellipsoidal height.
@@ -26733,7 +26550,7 @@ class GeodeticDatumPropertyType:
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    geodetic_datum: Optional[GeodeticDatum1] = field(
+    geodetic_datum: Optional[GeodeticDatum_1] = field(
         default=None,
         metadata={
             "name": "GeodeticDatum",
@@ -26778,21 +26595,21 @@ class GeodeticDatumPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26803,7 +26620,7 @@ class GeodeticDatumPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class SphericalCs1(SphericalCstype):
+class SphericalCS_1(SphericalCSType):
     """Gml:SphericalCS is a three-dimensional coordinate system with one distance
     measured from the origin and two angular coordinates.
 
@@ -26816,7 +26633,7 @@ class SphericalCs1(SphericalCstype):
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCs1(VerticalCstype):
+class VerticalCS_1(VerticalCSType):
     """Gml:VerticalCS is a one-dimensional coordinate system used to record the
     heights or depths of points.
 
@@ -26832,12 +26649,11 @@ class VerticalCs1(VerticalCstype):
 
 
 @dataclass(slots=True, kw_only=True)
-class CiCitationPropertyType:
+class CI_Citation_PropertyType:
     class Meta:
-        name = "CI_Citation_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    ci_citation: Optional[CiCitation] = field(
+    ci_citation: Optional[CI_Citation] = field(
         default=None,
         metadata={
             "name": "CI_Citation",
@@ -26882,14 +26698,14 @@ class CiCitationPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -26902,7 +26718,7 @@ class CiCitationPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26914,7 +26730,7 @@ class CiCitationPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class CartesianCspropertyType:
+class CartesianCSPropertyType:
     """
     Gml:CartesianCSPropertyType is a property type for association roles to a
     Cartesian coordinate system, either referencing or containing the definition of
@@ -26922,10 +26738,9 @@ class CartesianCspropertyType:
     """
 
     class Meta:
-        name = "CartesianCSPropertyType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    cartesian_cs: Optional[CartesianCs1] = field(
+    cartesian_cs: Optional[CartesianCS_1] = field(
         default=None,
         metadata={
             "name": "CartesianCS",
@@ -26970,21 +26785,21 @@ class CartesianCspropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -26995,7 +26810,7 @@ class CartesianCspropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class EllipsoidalCspropertyType:
+class EllipsoidalCSPropertyType:
     """
     Gml:EllipsoidalCSPropertyType is a property type for association roles to an
     ellipsoidal coordinate system, either referencing or containing the definition
@@ -27003,10 +26818,9 @@ class EllipsoidalCspropertyType:
     """
 
     class Meta:
-        name = "EllipsoidalCSPropertyType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    ellipsoidal_cs: Optional[EllipsoidalCs1] = field(
+    ellipsoidal_cs: Optional[EllipsoidalCS_1] = field(
         default=None,
         metadata={
             "name": "EllipsoidalCS",
@@ -27051,21 +26865,21 @@ class EllipsoidalCspropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -27076,7 +26890,7 @@ class EllipsoidalCspropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class SphericalCspropertyType:
+class SphericalCSPropertyType:
     """
     Gml:SphericalCSPropertyType is property type for association roles to a
     spherical coordinate system, either referencing or containing the definition of
@@ -27084,10 +26898,9 @@ class SphericalCspropertyType:
     """
 
     class Meta:
-        name = "SphericalCSPropertyType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    spherical_cs: Optional[SphericalCs1] = field(
+    spherical_cs: Optional[SphericalCS_1] = field(
         default=None,
         metadata={
             "name": "SphericalCS",
@@ -27132,21 +26945,21 @@ class SphericalCspropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -27157,7 +26970,7 @@ class SphericalCspropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCspropertyType:
+class VerticalCSPropertyType:
     """
     Gml:VerticalCSPropertyType is a property type for association roles to a
     vertical coordinate system, either referencing or containing the definition of
@@ -27165,10 +26978,9 @@ class VerticalCspropertyType:
     """
 
     class Meta:
-        name = "VerticalCSPropertyType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    vertical_cs: Optional[VerticalCs1] = field(
+    vertical_cs: Optional[VerticalCS_1] = field(
         default=None,
         metadata={
             "name": "VerticalCS",
@@ -27213,21 +27025,21 @@ class VerticalCspropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -27238,7 +27050,7 @@ class VerticalCspropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class GeodeticDatum2(GeodeticDatumPropertyType):
+class geodeticDatum_2(GeodeticDatumPropertyType):
     """
     Gml:geodeticDatum is an association role to the geodetic datum used by this
     CRS.
@@ -27250,19 +27062,18 @@ class GeodeticDatum2(GeodeticDatumPropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class MdIdentifierType(AbstractObjectType):
+class MD_Identifier_Type(AbstractObject_Type):
     class Meta:
-        name = "MD_Identifier_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    authority: Optional[CiCitationPropertyType] = field(
+    authority: Optional[CI_Citation_PropertyType] = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    code: CharacterStringPropertyType = field(
+    code: CharacterString_PropertyType = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
@@ -27272,7 +27083,7 @@ class MdIdentifierType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CartesianCs2(CartesianCspropertyType):
+class cartesianCS_2(CartesianCSPropertyType):
     """
     Gml:cartesianCS is an association role to the Cartesian coordinate system used
     by this CRS.
@@ -27284,7 +27095,7 @@ class CartesianCs2(CartesianCspropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class EllipsoidalCs2(EllipsoidalCspropertyType):
+class ellipsoidalCS_2(EllipsoidalCSPropertyType):
     """
     Gml:ellipsoidalCS is an association role to the ellipsoidal coordinate system
     used by this CRS.
@@ -27296,7 +27107,7 @@ class EllipsoidalCs2(EllipsoidalCspropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class SphericalCs2(SphericalCspropertyType):
+class sphericalCS_2(SphericalCSPropertyType):
     """
     Gml:sphericalCS is an association role to the spherical coordinate system used
     by this CRS.
@@ -27308,7 +27119,7 @@ class SphericalCs2(SphericalCspropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCs2(VerticalCspropertyType):
+class verticalCS_2(VerticalCSPropertyType):
     """
     Gml:verticalCS is an association role to the vertical coordinate system used by
     this CRS.
@@ -27320,23 +27131,21 @@ class VerticalCs2(VerticalCspropertyType):
 
 
 @dataclass(slots=True, kw_only=True)
-class MdIdentifier(MdIdentifierType):
+class MD_Identifier(MD_Identifier_Type):
     class Meta:
-        name = "MD_Identifier"
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class GeodeticCrstype(AbstractCrstype):
+class GeodeticCRSType(AbstractCRSType):
     """
     Gml:GeodeticCRS is a coordinate reference system based on a geodetic datum.
     """
 
     class Meta:
-        name = "GeodeticCRSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    ellipsoidal_cs: Optional[EllipsoidalCs2] = field(
+    ellipsoidal_cs: Optional[ellipsoidalCS_2] = field(
         default=None,
         metadata={
             "name": "ellipsoidalCS",
@@ -27344,7 +27153,7 @@ class GeodeticCrstype(AbstractCrstype):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    cartesian_cs: Optional[CartesianCs2] = field(
+    cartesian_cs: Optional[cartesianCS_2] = field(
         default=None,
         metadata={
             "name": "cartesianCS",
@@ -27352,7 +27161,7 @@ class GeodeticCrstype(AbstractCrstype):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    spherical_cs: Optional[SphericalCs2] = field(
+    spherical_cs: Optional[sphericalCS_2] = field(
         default=None,
         metadata={
             "name": "sphericalCS",
@@ -27360,7 +27169,7 @@ class GeodeticCrstype(AbstractCrstype):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    geodetic_datum: GeodeticDatum2 = field(
+    geodetic_datum: geodeticDatum_2 = field(
         metadata={
             "name": "geodeticDatum",
             "type": "Element",
@@ -27371,12 +27180,11 @@ class GeodeticCrstype(AbstractCrstype):
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCrstype(AbstractCrstype):
+class VerticalCRSType(AbstractCRSType):
     class Meta:
-        name = "VerticalCRSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    vertical_cs: VerticalCs2 = field(
+    vertical_cs: verticalCS_2 = field(
         metadata={
             "name": "verticalCS",
             "type": "Element",
@@ -27384,7 +27192,7 @@ class VerticalCrstype(AbstractCrstype):
             "required": True,
         }
     )
-    vertical_datum: VerticalDatum2 = field(
+    vertical_datum: verticalDatum_2 = field(
         metadata={
             "name": "verticalDatum",
             "type": "Element",
@@ -27403,7 +27211,7 @@ class GmlVerticalCrsDefinition(AbstractVerticalCrs):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
-    gml_vertical_crs_definition: VerticalCrstype = field(
+    gml_vertical_crs_definition: VerticalCRSType = field(
         metadata={
             "name": "GmlVerticalCrsDefinition",
             "type": "Element",
@@ -27414,12 +27222,11 @@ class GmlVerticalCrsDefinition(AbstractVerticalCrs):
 
 
 @dataclass(slots=True, kw_only=True)
-class MdIdentifierPropertyType:
+class MD_Identifier_PropertyType:
     class Meta:
-        name = "MD_Identifier_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    md_identifier: Optional[MdIdentifier] = field(
+    md_identifier: Optional[MD_Identifier] = field(
         default=None,
         metadata={
             "name": "MD_Identifier",
@@ -27464,14 +27271,14 @@ class MdIdentifierPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -27484,7 +27291,7 @@ class MdIdentifierPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -27496,14 +27303,13 @@ class MdIdentifierPropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class GeodeticCrs(GeodeticCrstype):
+class GeodeticCRS(GeodeticCRSType):
     class Meta:
-        name = "GeodeticCRS"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class VerticalCrs(VerticalCrstype):
+class VerticalCRS(VerticalCRSType):
     """Gml:VerticalCRS is a 1D coordinate reference system used for recording
     heights or depths.
 
@@ -27517,17 +27323,15 @@ class VerticalCrs(VerticalCrstype):
     """
 
     class Meta:
-        name = "VerticalCRS"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractDqElementType(AbstractObjectType):
+class AbstractDQ_Element_Type(AbstractObject_Type):
     class Meta:
-        name = "AbstractDQ_Element_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
-    name_of_measure: List[CharacterStringPropertyType] = field(
+    name_of_measure: List[CharacterString_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "nameOfMeasure",
@@ -27535,7 +27339,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    measure_identification: Optional[MdIdentifierPropertyType] = field(
+    measure_identification: Optional[MD_Identifier_PropertyType] = field(
         default=None,
         metadata={
             "name": "measureIdentification",
@@ -27543,7 +27347,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    measure_description: Optional[CharacterStringPropertyType] = field(
+    measure_description: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "measureDescription",
@@ -27551,7 +27355,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    evaluation_method_type: Optional[DqEvaluationMethodTypeCodePropertyType] = field(
+    evaluation_method_type: Optional[DQ_EvaluationMethodTypeCode_PropertyType] = field(
         default=None,
         metadata={
             "name": "evaluationMethodType",
@@ -27559,7 +27363,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    evaluation_method_description: Optional[CharacterStringPropertyType] = field(
+    evaluation_method_description: Optional[CharacterString_PropertyType] = field(
         default=None,
         metadata={
             "name": "evaluationMethodDescription",
@@ -27567,7 +27371,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    evaluation_procedure: Optional[CiCitationPropertyType] = field(
+    evaluation_procedure: Optional[CI_Citation_PropertyType] = field(
         default=None,
         metadata={
             "name": "evaluationProcedure",
@@ -27575,7 +27379,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    date_time: List[DateTimePropertyType] = field(
+    date_time: List[DateTime_PropertyType] = field(
         default_factory=list,
         metadata={
             "name": "dateTime",
@@ -27583,7 +27387,7 @@ class AbstractDqElementType(AbstractObjectType):
             "namespace": "http://www.isotc211.org/2005/gmd",
         },
     )
-    result: List[DqResultPropertyType] = field(
+    result: List[DQ_Result_PropertyType] = field(
         default_factory=list,
         metadata={
             "type": "Element",
@@ -27595,7 +27399,7 @@ class AbstractDqElementType(AbstractObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class CrspropertyType:
+class CRSPropertyType:
     """
     Gml:CRSPropertyType is a property type for association roles to a CRS abstract
     coordinate reference system, either referencing or containing the definition of
@@ -27603,10 +27407,9 @@ class CrspropertyType:
     """
 
     class Meta:
-        name = "CRSPropertyType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    vertical_crs: Optional[VerticalCrs] = field(
+    vertical_crs: Optional[VerticalCRS] = field(
         default=None,
         metadata={
             "name": "VerticalCRS",
@@ -27614,7 +27417,7 @@ class CrspropertyType:
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    projected_crs: Optional["ProjectedCrs"] = field(
+    projected_crs: Optional["ProjectedCRS"] = field(
         default=None,
         metadata={
             "name": "ProjectedCRS",
@@ -27622,7 +27425,7 @@ class CrspropertyType:
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    geodetic_crs: Optional[GeodeticCrs] = field(
+    geodetic_crs: Optional[GeodeticCRS] = field(
         default=None,
         metadata={
             "name": "GeodeticCRS",
@@ -27667,21 +27470,21 @@ class CrspropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -27692,7 +27495,7 @@ class CrspropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class GeodeticCrspropertyType:
+class GeodeticCRSPropertyType:
     """
     Gml:GeodeticCRSPropertyType is a property type for association roles to a
     geodetic coordinate reference system, either referencing or containing the
@@ -27700,10 +27503,9 @@ class GeodeticCrspropertyType:
     """
 
     class Meta:
-        name = "GeodeticCRSPropertyType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    geodetic_crs: Optional[GeodeticCrs] = field(
+    geodetic_crs: Optional[GeodeticCRS] = field(
         default=None,
         metadata={
             "name": "GeodeticCRS",
@@ -27748,21 +27550,21 @@ class GeodeticCrspropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
@@ -27773,45 +27575,41 @@ class GeodeticCrspropertyType:
 
 
 @dataclass(slots=True, kw_only=True)
-class AbstractDqPositionalAccuracyType(AbstractDqElementType):
+class AbstractDQ_PositionalAccuracy_Type(AbstractDQ_Element_Type):
     class Meta:
-        name = "AbstractDQ_PositionalAccuracy_Type"
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
 
 @dataclass(slots=True, kw_only=True)
-class BaseGeodeticCrs(GeodeticCrspropertyType):
+class baseGeodeticCRS(GeodeticCRSPropertyType):
     """
     Gml:baseGeodeticCRS is an association role to the geodetic coordinate reference
     system used by this projected CRS.
     """
 
     class Meta:
-        name = "baseGeodeticCRS"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class SourceCrs(CrspropertyType):
+class sourceCRS(CRSPropertyType):
     """
     Gml:sourceCRS is an association role to the source CRS (coordinate reference
     system) of this coordinate operation.
     """
 
     class Meta:
-        name = "sourceCRS"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class TargetCrs(CrspropertyType):
+class targetCRS(CRSPropertyType):
     """
     Gml:targetCRS is an association role to the target CRS (coordinate reference
     system) of this coordinate operation.
     """
 
     class Meta:
-        name = "targetCRS"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
@@ -27820,7 +27618,7 @@ class AbstractCoordinateOperationType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    domain_of_validity: Optional[DomainOfValidity] = field(
+    domain_of_validity: Optional[domainOfValidity] = field(
         default=None,
         metadata={
             "name": "domainOfValidity",
@@ -27844,7 +27642,7 @@ class AbstractCoordinateOperationType(IdentifiedObjectType):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    coordinate_operation_accuracy: List[CoordinateOperationAccuracy] = field(
+    coordinate_operation_accuracy: List[coordinateOperationAccuracy] = field(
         default_factory=list,
         metadata={
             "name": "coordinateOperationAccuracy",
@@ -27852,7 +27650,7 @@ class AbstractCoordinateOperationType(IdentifiedObjectType):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    source_crs: Optional[SourceCrs] = field(
+    source_crs: Optional[sourceCRS] = field(
         default=None,
         metadata={
             "name": "sourceCRS",
@@ -27860,7 +27658,7 @@ class AbstractCoordinateOperationType(IdentifiedObjectType):
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    target_crs: Optional[TargetCrs] = field(
+    target_crs: Optional[targetCRS] = field(
         default=None,
         metadata={
             "name": "targetCRS",
@@ -27871,12 +27669,11 @@ class AbstractCoordinateOperationType(IdentifiedObjectType):
 
 
 @dataclass(slots=True, kw_only=True)
-class ProjectedCrstype(AbstractGeneralDerivedCrstype):
+class ProjectedCRSType(AbstractGeneralDerivedCRSType):
     class Meta:
-        name = "ProjectedCRSType"
         target_namespace = "http://www.opengis.net/gml/3.2"
 
-    base_geodetic_crs: BaseGeodeticCrs = field(
+    base_geodetic_crs: baseGeodeticCRS = field(
         metadata={
             "name": "baseGeodeticCRS",
             "type": "Element",
@@ -27884,7 +27681,7 @@ class ProjectedCrstype(AbstractGeneralDerivedCrstype):
             "required": True,
         }
     )
-    cartesian_cs: CartesianCs2 = field(
+    cartesian_cs: cartesianCS_2 = field(
         metadata={
             "name": "cartesianCS",
             "type": "Element",
@@ -27903,7 +27700,7 @@ class GmlProjectedCrsDefinition(AbstractProjectedCrs):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
-    gml_projected_crs_definition: ProjectedCrstype = field(
+    gml_projected_crs_definition: ProjectedCRSType = field(
         metadata={
             "name": "GmlProjectedCrsDefinition",
             "type": "Element",
@@ -27936,7 +27733,7 @@ class AbstractGeneralConversionType(AbstractCoordinateOperationType):
             "type": "Ignore",
         },
     )
-    identifier: Identifier = field(
+    identifier: identifier = field(
         metadata={
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
@@ -27946,7 +27743,7 @@ class AbstractGeneralConversionType(AbstractCoordinateOperationType):
 
 
 @dataclass(slots=True, kw_only=True)
-class ProjectedCrs(ProjectedCrstype):
+class ProjectedCRS(ProjectedCRSType):
     """Gml:ProjectedCRS is a 2D coordinate reference system used to approximate the
     shape of the earth on a planar surface, but in such a way that the distortion
     that is inherent to the approximation is carefully controlled and known.
@@ -27957,17 +27754,15 @@ class ProjectedCrs(ProjectedCrstype):
     """
 
     class Meta:
-        name = "ProjectedCRS"
         namespace = "http://www.opengis.net/gml/3.2"
 
 
 @dataclass(slots=True, kw_only=True)
-class ScCrsPropertyType:
+class SC_CRS_PropertyType:
     class Meta:
-        name = "SC_CRS_PropertyType"
         target_namespace = "http://www.isotc211.org/2005/gsr"
 
-    vertical_crs: Optional[VerticalCrs] = field(
+    vertical_crs: Optional[VerticalCRS] = field(
         default=None,
         metadata={
             "name": "VerticalCRS",
@@ -27975,7 +27770,7 @@ class ScCrsPropertyType:
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    projected_crs: Optional[ProjectedCrs] = field(
+    projected_crs: Optional[ProjectedCRS] = field(
         default=None,
         metadata={
             "name": "ProjectedCRS",
@@ -27983,7 +27778,7 @@ class ScCrsPropertyType:
             "namespace": "http://www.opengis.net/gml/3.2",
         },
     )
-    geodetic_crs: Optional[GeodeticCrs] = field(
+    geodetic_crs: Optional[GeodeticCRS] = field(
         default=None,
         metadata={
             "name": "GeodeticCRS",
@@ -28028,14 +27823,14 @@ class ScCrsPropertyType:
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    show: Optional[ShowValue] = field(
+    show: Optional[show_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
             "namespace": "http://www.w3.org/1999/xlink",
         },
     )
-    actuate: Optional[ActuateValue] = field(
+    actuate: Optional[actuate_value] = field(
         default=None,
         metadata={
             "type": "Attribute",
@@ -28048,7 +27843,7 @@ class ScCrsPropertyType:
             "type": "Attribute",
         },
     )
-    nil_reason: Optional[Union[str, NilReasonEnumerationValue]] = field(
+    nil_reason: Optional[Union[str, NilReasonEnumeration_value]] = field(
         default=None,
         metadata={
             "name": "nilReason",
