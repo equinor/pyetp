@@ -385,6 +385,38 @@ async def get_data_objects(ws, get_msg_id, max_payload_size, uris):
         "Energistics.Etp.v12.Protocol.Store.GetDataObjectsResponse",
     )
 
+async def delete_data_objects(ws, get_msg_id, uris, pruneContainedObjects=False):
+    mh_record = dict(
+        protocol=4, # Store
+        messageType=3, # DeleteDataObjects
+        correlationId=0, # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value, # Multi-part=False
+    )
+
+    ddo_record = dict(
+        uris=dict((uri, uri) for uri in uris),
+        # -- pruneContainedObjects:
+        # let ETP server delete contained or related objects that are
+        # not contained by any other data objects
+        # Consider to set this to always be True when deleting
+        # a map
+        # FIXME: doesn't seem to be working correctly yet; consider filing 
+        # an issue for ETP server
+        pruneContainedObjects=pruneContainedObjects 
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            ddo_record,
+            "Energistics.Etp.v12.Protocol.Store.DeleteDataObjects"
+        )
+    )
+    return await handle_multipart_response(
+        ws, "Energistics.Etp.v12.Protocol.Store.DeleteDataObjectsResponse"
+    )
+
 
 async def put_data_arrays(
     ws,
