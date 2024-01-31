@@ -258,14 +258,30 @@ async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authori
         # returned here.
         assert len(data_objects) == len(rddms_uris)
 
-        resqml_objects = {}
-        for uri in rddms_uris:
-            xml = ET.fromstring(data_objects[uri]["data"])
-            resqml_objects[uri] = dict(
-                xml=xml,
-                uuid=xml.attrib["uuid"],
-                data_object_type=ET.QName(xml).localname,
+        returned_resqml = read_returned_resqml_objects(data_objects)
+
+        # NOTE: In case there are multiple objects of a single type (not in
+        # this call, but in other functions) we can replace "next" by "list"
+        # (or just keep the generator from "filter" as-is) to sort out all the
+        # relevant objects.
+        epc = next(
+            filter(
+                lambda x: isinstance(x, resqml_objects.EpcExternalPartReference),
+                returned_resqml,
             )
+        )
+        crs = next(
+            filter(
+                lambda x: isinstance(x, resqml_objects.LocalDepth3dCrs),
+                returned_resqml,
+            )
+        )
+        gri = next(
+            filter(
+                lambda x: isinstance(x, resqml_objects.Grid2dRepresentation),
+                returned_resqml,
+            )
+        )
 
         # Download array data.
         arrays = await download_array_data(
@@ -312,23 +328,11 @@ async def upload_xtgeo_surface_to_rddms(
 
 
 def get_data_object_type(obj):
-    # NOTE: The name of the xsdata-generated dataclasses uses Python naming
-    # convention (captical camel-case for classes), and the proper
-    # data-object-type as recognized by RESQML and ETP is kept in the
-    # internal Meta-class of the objects (if the name has changed).
-    # This means that the data-object-type of a RESQML-object is _either_
-    # just the class-name (if the name remains unchanged from the
-    # xsdata-generation as in the EpcExternalPartReference-case), or it is
-    # kept in <object>.Meta.name (as in the both the Grid2dRepresentation
-    # and LocalDepth3dCrs cases).
-    # A robust way of fetch the right data-object-type irrespective of where the name is kept is to use
-    #
-    #   data_object_type = getattr(<object>.Meta, "name", "") or <object>.__class__.__name__
-    #
-    # This fetches the name from <object>.Meta.name if that exists,
-    # otherwise we use the the class-name (which will be the same as in the
-    # RESQML-standard).
-    return getattr(obj.Meta, "name", "") or obj.__class__.__name__
+    # This assumes that obj is instantiated.
+    # Using auto-generated objects from xsdata with the object names preserved
+    # from the schema-definition files we know that the class name is the same
+    # as the RESQML-object name.
+    return obj.__class__.__name__
 
 
 def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
@@ -357,7 +361,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
 
     assert np.abs(surf.get_rotation()) < 1e-7
 
-    crs = resqml_objects.LocalDepth3DCrs(
+    crs = resqml_objects.LocalDepth3dCrs(
         citation=resqml_objects.Citation(
             title=f"CRS for {title}",
             **common_citation_fields,
@@ -375,7 +379,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
             uom=resqml_objects.PlaneAngleUom.DEGA,
         ),
         # NOTE: Verify that this is the projected axis order
-        projected_axis_order=resqml_objects.AxisOrder2D.EASTING_NORTHING,
+        projected_axis_order=resqml_objects.AxisOrder2d.EASTING_NORTHING,
         projected_uom=resqml_objects.LengthUom.M,
         vertical_uom=resqml_objects.LengthUom.M,
         zincreasing_downward=True,
@@ -399,7 +403,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
     nx = surf.ncol
     ny = surf.nrow
 
-    gri = resqml_objects.Grid2DRepresentation(
+    gri = resqml_objects.Grid2dRepresentation(
         uuid=(grid_uuid := str(uuid.uuid4())),
         schema_version=schema_version,
         surface_role=resqml_objects.SurfaceRole.MAP,
@@ -407,7 +411,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
             title=title,
             **common_citation_fields,
         ),
-        grid2d_patch=resqml_objects.Grid2DPatch(
+        grid2d_patch=resqml_objects.Grid2dPatch(
             # TODO: Perhaps we can use this for tiling?
             patch_index=0,
             # NumPy-arrays are C-ordered, meaning that the last index is
@@ -427,17 +431,17 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
                     title=crs.citation.title,
                     uuid=crs.uuid,
                 ),
-                points=resqml_objects.Point3DZvalueArray(
-                    supporting_geometry=resqml_objects.Point3DLatticeArray(
-                        origin=resqml_objects.Point3D(
+                points=resqml_objects.Point3dZValueArray(
+                    supporting_geometry=resqml_objects.Point3dLatticeArray(
+                        origin=resqml_objects.Point3d(
                             coordinate1=x0,
                             coordinate2=y0,
                             coordinate3=0.0,
                         ),
                         offset=[
                             # Offset for the x-direction, i.e., the slowest axis
-                            resqml_objects.Point3DOffset(
-                                offset=resqml_objects.Point3D(
+                            resqml_objects.Point3dOffset(
+                                offset=resqml_objects.Point3d(
                                     coordinate1=1.0,
                                     coordinate2=0.0,
                                     coordinate3=0.0,
@@ -448,8 +452,8 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
                                 ),
                             ),
                             # Offset for the y-direction, i.e., the fastest axis
-                            resqml_objects.Point3DOffset(
-                                offset=resqml_objects.Point3D(
+                            resqml_objects.Point3dOffset(
+                                offset=resqml_objects.Point3d(
                                     coordinate1=0.0,
                                     coordinate2=1.0,
                                     coordinate3=0.0,
@@ -480,3 +484,24 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
     surf_array = surf.values.filled(np.nan)
 
     return epc, crs, gri, surf_array
+
+
+def read_returned_resqml_objects(data_objects):
+    # This function creates a list of resqml-objects from the returned xml from
+    # the ETP-server. It dynamically finds the relevant resqml dataclass using
+    # the object name found in the xml. Its intention is to be used after
+    # calling the get_data_objects-protocol.
+
+    # Set up an XML-parser from xsdata.
+    parser = XmlParser(context=XmlContext())
+
+    return [
+        parser.from_bytes(
+            data_object["data"],
+            getattr(
+                resqml_objects,
+                ET.QName(ET.fromstring(data_object["data"]).tag).localname,
+            ),
+        )
+        for data_object in data_objects.values()
+    ]
