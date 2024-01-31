@@ -53,7 +53,7 @@ async def upload_resqml_objects(
 
     # FIXME: Handle possible errors from the ETP-server.
     records = await etp_helper.put_data_objects(
-        ws, msg_id, max_payload_size, dataspaces, data_object_types, uuids, xmls
+        ws, msg_id, dataspaces, data_object_types, uuids, xmls
     )
     assert all(key == "success" for record in records for key in record)
 
@@ -362,9 +362,7 @@ async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authori
         ]["item"]
 
         # Download the grid objects.
-        records = await etp_helper.get_data_objects(
-            ws, msg_id, max_payload_size, rddms_uris
-        )
+        records = await etp_helper.get_data_objects(ws, msg_id, rddms_uris)
         # NOTE: Here we assume that all three objects fit in a single record
         data_objects = records[0]["dataObjects"]
         # NOTE: This test will not work in case of too large objects as the

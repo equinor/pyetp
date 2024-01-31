@@ -288,7 +288,6 @@ async def put_dataspaces(ws, get_msg_id, dataspaces):
 async def put_data_objects(
     ws,
     get_msg_id,
-    max_payload_size,
     dataspaces,
     data_object_types,
     uuids,
@@ -352,7 +351,7 @@ async def put_data_objects(
     )
 
 
-async def get_data_objects(ws, get_msg_id, max_payload_size, uris):
+async def get_data_objects(ws, get_msg_id, uris):
     # Note, the uris contain the dataspace name, the data object type, and the
     # uuid. An alternative to passing the complete uris would be to pass in
     # each part separately. I am unsure what is easiest down the line.
@@ -713,7 +712,6 @@ async def get_data_subarrays(
 async def get_data_subarray(
     ws,
     get_msg_id,
-    max_payload_size,
     epc_uri,
     path_in_resource,
     starts,
