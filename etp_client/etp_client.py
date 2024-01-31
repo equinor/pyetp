@@ -1,4 +1,5 @@
 import datetime
+import math
 import json
 import tempfile
 import zipfile
@@ -23,7 +24,7 @@ from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
 
 # TODO: Is there a limit from pss-data-gateway?
-# The websockets-library seems to a limit that corresponds to the one from
+# The websockets-library seems to have a limit that corresponds to the one from
 # the ETP server.
 MAX_WEBSOCKET_MESSAGE_SIZE = int(1.6e7)  # From the published ETP server
 
@@ -96,25 +97,77 @@ async def delete_resqml_objects(etp_server_url, rddms_uris, authorization):
 
 
 async def upload_array(
-    ws, msg_id, max_payload_size, dataspace, epc, path_in_hdf_file, array
+    ws, msg_id, max_payload_size, dataspace, epc, path_in_resource, array
 ):
-    # NOTE: The intention of this function is to upload a single array that
-    # might potentially be oversized. It should then upload the array using
-    # several put_data_subarray-calls.
+    # This function uploads a single array that might potentially be oversized.
 
-    # FIXME: Handle errors.
-    records = await etp_helper.put_data_arrays(
+    # NOTE: For now the array should be in float32 as the ETP server does not
+    # yet seem to support float64. The values will at least be converted to
+    # float32, so take care when values are returned in case float64 is
+    # uploaded.
+    arr_size = array.size * array.dtype.itemsize
+
+    # Check if we can upload the full array in one go.
+    if arr_size < max_payload_size:
+        # Upload the full array.
+
+        # FIXME: Handle errors.
+        records = await etp_helper.put_data_arrays(
+            ws,
+            msg_id,
+            [dataspace],
+            [get_data_object_type(epc)],
+            [epc.uuid],
+            [path_in_resource],
+            [array],
+        )
+        # Verify that the upload was a success.
+        assert len(records) == 1
+        assert list(records[0])[0] == "success"
+
+        return
+
+    # Upload the array in several subarrays due to it being oversized.
+    records = await etp_helper.put_uninitialized_data_arrays(
         ws,
         msg_id,
-        max_payload_size,
-        [dataspace],
-        [get_data_object_type(epc)],
-        [epc.uuid],
-        [path_in_hdf_file],
-        [array],
+        dataspace,
+        get_data_object_type(epc),
+        epc.uuid,
+        [path_in_resource],
+        [array.shape],
+    )
+    # Verify that the upload was a success
+    assert len(records) == 1
+    assert len(list(records[0])) == 1
+    assert list(records[0])[0] == "success"
+
+    # Split matrix on axis 0, i.e., preserve the remaining shapes for each
+    # block.
+    blocks = np.array_split(
+        array,
+        int(np.ceil(arr_size / max_payload_size)),
     )
 
-    return records
+    # Upload each block separately.
+    starts = [0] * len(array.shape)
+    for block in blocks:
+        records = await etp_helper.put_data_subarrays(
+            ws,
+            msg_id,
+            dataspace,
+            get_data_object_type(epc),
+            epc.uuid,
+            [path_in_resource],
+            [block],
+            [starts],
+        )
+        # Verify that the upload was a success
+        assert len(records) == 1
+        assert list(records[0])[0] == "success"
+
+        # Increment row index to the next block.
+        starts[0] += block.shape[0]
 
 
 async def upload_resqml_surface(
@@ -182,41 +235,102 @@ async def upload_resqml_surface(
     return rddms_urls
 
 
-async def download_array_data(ws, msg_id, max_payload_size, resqml_objects):
-    # TODO: Use subarrays in case the arrays are larger than max_payload_size
-    # TODO: Consider asking for data array metadata prior to fetching the array
-    # either in one call or from subarrays.  Otherwise we don't know how large
-    # the array will be in advance.
+async def download_array(
+    ws, msg_id, max_payload_size, dataspace, epc, path_in_resource
+):
+    # This function downloads a single array from the ETP-server connected to
+    # the EpcExternalPartReference-object passed in with "path_in_resource" as
+    # the key in hdf5-file. The point of this function is to use subarrays if
+    # the request array is too large for a single websocket message.
 
-    # NOTE: We assume that there is a single EpcExternalPartReference in the
-    # resqml_objects.
-
-    epc_uri = next(
-        filter(lambda x: "EpcExternalPartReference" in x, list(resqml_objects))
-    )
-    path_in_resources = {
-        f"{k}{pir.text}": pir.text
-        for k in list(resqml_objects)
-        for pir in get_path_in_resource(resqml_objects[k]["xml"])
-    }
-
-    records = await etp_helper.get_data_arrays(
-        ws, msg_id, max_payload_size, epc_uri, path_in_resources
+    records = await etp_helper.get_data_array_metadata(
+        ws,
+        msg_id,
+        dataspace,
+        get_data_object_type(epc),
+        epc.uuid,
+        [path_in_resource],
     )
     assert len(records) == 1
+    assert len(list(records[0]["arrayMetadata"])) == 1
 
-    return {
-        key: etp_helper.etp_data_array_to_numpy(val)
-        for key, val in records[0]["dataArrays"].items()
-    }
+    metadata = records[0]["arrayMetadata"].popitem()[1]
+    arr_shape = metadata["dimensions"]
+    # NOTE: We can in theory also retrieve the data type of the array, however,
+    # the ETP-server seems for now to only support float32. Therefore, all data
+    # will be interpreted as float32. That is, each element in the array will
+    # be 4 bytes long.
+    arr_size = math.prod(arr_shape) * 4
 
+    # Check if we can retrieve the full array in one go.
+    if arr_size < max_payload_size:
+        # The array is small enough for a single request, so fetch everything
+        # at once.
+        records = await etp_helper.get_data_arrays(
+            ws,
+            msg_id,
+            dataspace,
+            get_data_object_type(epc),
+            epc.uuid,
+            [path_in_resource],
+        )
+        # Verify that we only got a single record with a single data array
+        # entry.
+        assert len(records) == 1
+        assert len(list(records[0]["dataArrays"])) == 1
 
-async def download_resqml_objects(ws, msg_id, max_payload_size, rddms_uris):
-    # FIXME: Handle chunking if there are too many data-objects.
-    records = await etp_helper.get_data_objects(
-        ws, msg_id, max_payload_size, rddms_uris
+        return etp_helper.etp_data_array_to_numpy(records[0]["dataArrays"].popitem()[1])
+
+    # We need to fetch the full array using several subarray-calls.
+    num_blocks = int(np.ceil(arr_size / max_payload_size))
+    # Split on axis 0, assuming that an element in axis 0 is not too large.
+    # This code is based on the NumPy array_split-function here:
+    # https://github.com/numpy/numpy/blob/d35cd07ea997f033b2d89d349734c61f5de54b0d/numpy/lib/shape_base.py#L731-L784
+    # NOTE: If the array that is being fetched is multi-dimensional and we need
+    # to split on several axes, then this code needs to generalized.
+    num_each_section, extras = divmod(arr_shape[0], num_blocks)
+    section_sizes = (
+        [0]
+        + extras * [num_each_section + 1]
+        + (num_blocks - extras) * [num_each_section]
     )
-    data_objects = records[0]["dataObjects"]
+    div_points = np.array(section_sizes, dtype=int).cumsum()
+
+    # Create lists of starting indices and number of elements in each subarray.
+    starts_list = []
+    counts_list = []
+    for i in range(num_blocks):
+        starts_list.append([div_points[i], 0])
+        counts_list.append(
+            [div_points[i + 1] - div_points[i], arr_shape[1]],
+        )
+
+    blocks = []
+    for starts, counts in zip(starts_list, counts_list):
+        records = await etp_helper.get_data_subarrays(
+            ws,
+            msg_id,
+            dataspace,
+            get_data_object_type(epc),
+            epc.uuid,
+            [
+                path_in_resource,
+            ],
+            [starts],
+            [counts],
+        )
+        # Verify that we get a single record with a single subarray.
+        assert len(records) == 1
+        assert len(list(records[0]["dataSubarrays"])) == 1
+        blocks.append(
+            etp_helper.etp_data_array_to_numpy(records[0]["dataSubarrays"].popitem()[1])
+        )
+
+    # Check that we have received the requested number of blocks.
+    assert len(blocks) == num_blocks
+
+    # Assemble and return the full array.
+    return np.concatenate(blocks, axis=0)
 
 
 async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authorization):
@@ -283,37 +397,20 @@ async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authori
             )
         )
 
-        # Download array data.
-        arrays = await download_array_data(
+        gri_array = await download_array(
             ws,
             msg_id,
             max_payload_size,
-            resqml_objects,
+            dataspace,
+            epc,
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,
         )
-        # NOTE: We assume that there is a single array connected to a resqml
-        # surface
-        assert len(arrays) == 1
-        # Fetch array
-        array = arrays.popitem()[1]
 
         # Close session.
         await etp_helper.close_session(ws, msg_id, "Done downloading surface array")
 
     # Return xml's and array
-    return resqml_objects, array
-
-
-async def download_xtgeo_surface_from_rddms(
-    rddms_urls, etp_server_url, dataspace, authorization
-):
-    resqml_objects, surface_array = await download_resqml_surface(
-        rddms_urls, etp_server_url, dataspace, authorization
-    )
-
-    # Convert resqml-objects and the surface array into an xtgeo
-    # RegularSurface.
-
-    # Return this surface
+    return epc, crs, gri, gri_array
 
 
 async def upload_xtgeo_surface_to_rddms(
@@ -394,7 +491,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
     x0 = surf.xori
     y0 = surf.yori
     dx = surf.xinc
-    dy = surf.xinc
+    dy = surf.yinc
     # NOTE: xtgeo uses nrow for axis 1 in the array, and ncol for axis 0.  This
     # means that surf.nrow is the fastest changing axis, and surf.ncol the
     # slowest changing axis, and we have surf.values.shape == (surf.ncol,
@@ -438,8 +535,17 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
                             coordinate2=y0,
                             coordinate3=0.0,
                         ),
+                        # NOTE: The ordering in the offset-list should be
+                        # preserved when the data is passed back and forth.
+                        # However, _we_ need to ensure a consistent ordering
+                        # for ourselves. In this setup I have set the slowest
+                        # axis to come first, i.e., the x-axis or axis 0 in
+                        # NumPy. The reason is so that it corresponds with the
+                        # origin above where "coordinate1" is set to be the
+                        # x0-coordinate, and "coordinate2" the y0-coordinate.
+                        # However, we can change this as we see fit.
                         offset=[
-                            # Offset for the x-direction, i.e., the slowest axis
+                            # Offset for x-direction, i.e., the slowest axis
                             resqml_objects.Point3dOffset(
                                 offset=resqml_objects.Point3d(
                                     coordinate1=1.0,
@@ -451,7 +557,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
                                     count=nx - 1,
                                 ),
                             ),
-                            # Offset for the y-direction, i.e., the fastest axis
+                            # Offset for y-direction, i.e., the fastest axis
                             resqml_objects.Point3dOffset(
                                 offset=resqml_objects.Point3d(
                                     coordinate1=0.0,

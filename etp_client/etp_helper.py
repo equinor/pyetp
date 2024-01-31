@@ -61,6 +61,10 @@ def numpy_to_etp_data_array(array):
     )
 
 
+def numpy_to_etp_data_subarray(subarray):
+    return dict(item=dict(values=subarray.ravel().tolist()))
+
+
 def etp_data_array_to_numpy(data_array):
     return np.asarray(data_array["data"]["item"]["values"]).reshape(
         data_array["dimensions"]
@@ -419,10 +423,69 @@ async def delete_data_objects(ws, get_msg_id, uris, pruneContainedObjects=False)
     )
 
 
+async def put_uninitialized_data_arrays(
+    ws,
+    get_msg_id,
+    dataspace,
+    epc_object_type,
+    epc_uuid,
+    paths_in_resources,
+    arr_shapes,
+    transport_array_type="",
+    logical_array_type="",
+):
+    epc_uri = get_data_object_uri(dataspace, epc_object_type, epc_uuid)
+    time = datetime.datetime.now(datetime.timezone.utc).timestamp()
+
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=9,  # PutUninitializedDataArrays
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    puda_record = dict(
+        dataArrays={
+            pir: dict(
+                uid=dict(
+                    uri=epc_uri,
+                    pathInResource=pir,
+                ),
+                metadata=dict(
+                    dimensions=list(arr_shape),
+                    # NOTE: Using arrayOfDouble64LE with arrayOfDouble did not
+                    # work even though we used np.float64-arrays.
+                    # These fields seem not to work as intended. The ETP-server
+                    # responds with (invalid) combinations (according to
+                    # section 13.2.2.1 in the ETP v1.2 spec), but we are able
+                    # to reconstruct the full data from the returned values.
+                    transportArrayType=transport_array_type or "arrayOfFloat",
+                    logicalArrayType=logical_array_type or "arrayOfBoolean",
+                    storeLastWrite=time,
+                    storeCreated=time,
+                ),
+            )
+            for pir, arr_shape in zip(paths_in_resources, arr_shapes)
+        }
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            puda_record,
+            "Energistics.Etp.v12.Protocol.DataArray.PutUninitializedDataArrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        "Energistics.Etp.v12.Protocol.DataArray.PutUninitializedDataArraysResponse",
+    )
+
+
 async def put_data_arrays(
     ws,
     get_msg_id,
-    max_payload_size,
     dataspaces,
     data_object_types,
     uuids,
@@ -468,10 +531,102 @@ async def put_data_arrays(
     )
 
 
-async def get_data_arrays(ws, get_msg_id, max_payload_size, epc_uri, path_in_resources):
-    # TODO: Figure out how too large arrays are handled.
-    # Does this protocol respond with an error, and tell us that we need to use
-    # GetDataSubarrays instead, or does it return multiple responses?
+async def put_data_subarrays(
+    ws,
+    get_msg_id,
+    dataspace,
+    epc_object_type,
+    epc_uuid,
+    paths_in_resources,
+    subarrays,
+    starts,
+):
+    epc_uri = get_data_object_uri(dataspace, epc_object_type, epc_uuid)
+
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=5,  # PutDataSubarrays
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    pds_record = dict(
+        dataSubarrays={
+            pir: dict(
+                uid=dict(
+                    uri=epc_uri,
+                    pathInResource=pir,
+                ),
+                data=numpy_to_etp_data_subarray(subarray),
+                starts=start,
+                counts=list(subarray.shape),
+            )
+            for subarray, start, pir in zip(subarrays, starts, paths_in_resources)
+        }
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            pds_record,
+            "Energistics.Etp.v12.Protocol.DataArray.PutDataSubarrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        "Energistics.Etp.v12.Protocol.DataArray.PutDataSubarraysResponse",
+    )
+
+
+async def get_data_array_metadata(
+    ws, get_msg_id, dataspace, epc_object_type, epc_uuid, paths_in_resources
+):
+    # This function can fetch multiple array metadata (multiple
+    # paths_in_resources), but only from a single epc-object.
+    epc_uri = get_data_object_uri(dataspace, epc_object_type, epc_uuid)
+
+    # Get data array metadata
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=6,  # GetDataArrayMetadata
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    gdam_record = dict(
+        dataArrays={
+            # Note that we use the pathInResource (pathInHdfFile) from the
+            # Grid2dRepresentation, but the uri is for
+            # EpcExternalPartReference!
+            pir: dict(
+                uri=epc_uri,
+                pathInResource=pir,
+            )
+            for pir in paths_in_resources
+        },
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            gdam_record,
+            "Energistics.Etp.v12.Protocol.DataArray.GetDataArrayMetadata",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws,
+        "Energistics.Etp.v12.Protocol.DataArray.GetDataArrayMetadataResponse",
+    )
+
+
+async def get_data_arrays(
+    ws, get_msg_id, dataspace, epc_object_type, epc_uuid, paths_in_resources
+):
+    # This function can fetch multiple arrays (multiple paths_in_resources),
+    # but only from a single epc-object.
+    epc_uri = get_data_object_uri(dataspace, epc_object_type, epc_uuid)
 
     # Get full data array
     mh_record = dict(
@@ -483,14 +638,11 @@ async def get_data_arrays(ws, get_msg_id, max_payload_size, epc_uri, path_in_res
     )
     gda_record = dict(
         dataArrays={
-            # Note that we use the pathInResource (pathInHdfFile) from the
-            # Grid2dRepresentation, but the uri is for
-            # EpcExternalPartReference!
-            key: dict(
+            pir: dict(
                 uri=epc_uri,
-                pathInResource=val,
+                pathInResource=pir,
             )
-            for key, val in path_in_resources.items()
+            for pir in paths_in_resources
         },
     )
 
@@ -505,6 +657,56 @@ async def get_data_arrays(ws, get_msg_id, max_payload_size, epc_uri, path_in_res
     return await handle_multipart_response(
         ws,
         "Energistics.Etp.v12.Protocol.DataArray.GetDataArraysResponse",
+    )
+
+
+async def get_data_subarrays(
+    ws,
+    get_msg_id,
+    dataspace,
+    epc_object_type,
+    epc_uuid,
+    paths_in_resources,
+    starts_list,
+    counts_list,
+):
+    # This function can fetch multiple arrays (multiple paths_in_resources),
+    # but only from a single epc-object. In practice we will mostly be using it
+    # to fetch a single subarray that is as large as possible as part of a too
+    # large array.
+    epc_uri = get_data_object_uri(dataspace, epc_object_type, epc_uuid)
+
+    mh_record = dict(
+        protocol=9,  # DataArray
+        messageType=3,  # GetDataSubarrays
+        correlationId=0,  # Ignored
+        messageId=await get_msg_id(),
+        messageFlags=MHFlags.FIN.value,  # Multi-part=False
+    )
+    gds_record = dict(
+        dataSubarrays={
+            pir: dict(
+                uid=dict(
+                    uri=epc_uri,
+                    pathInResource=pir,
+                ),
+                starts=starts,
+                counts=counts,
+            )
+            for starts, counts, pir in zip(starts_list, counts_list, paths_in_resources)
+        },
+    )
+
+    await ws.send(
+        serialize_message(
+            mh_record,
+            gds_record,
+            "Energistics.Etp.v12.Protocol.DataArray.GetDataSubarrays",
+        )
+    )
+
+    return await handle_multipart_response(
+        ws, "Energistics.Etp.v12.Protocol.DataArray.GetDataSubarraysResponse"
     )
 
 
