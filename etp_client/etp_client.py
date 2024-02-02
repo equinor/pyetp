@@ -1,18 +1,14 @@
 import datetime
 import math
-import json
-import tempfile
-import zipfile
-import os
 import uuid
-import re
+
 
 from . import etp_helper
 import map_api.resqml_objects as resqml_objects
 
 import websockets
 import lxml.etree as ET
-import h5py
+
 import numpy as np
 
 
