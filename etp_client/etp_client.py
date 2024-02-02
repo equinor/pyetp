@@ -333,8 +333,9 @@ async def download_array(
     return np.concatenate(blocks, axis=0)
 
 
-
 NT = T.TypeVar('NT')
+
+
 def find_next_instance(data: T.List[T.Any], cls: T.Type[NT]) -> NT:
     return next(
         filter(
@@ -391,6 +392,11 @@ async def download_resqml_surface(rddms_uris: T.Tuple[str, str, str], etp_server
         crs = find_next_instance(returned_resqml, ro.LocalDepth3dCrs)
         gri = find_next_instance(returned_resqml, ro.Grid2dRepresentation)
 
+        # some checks
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray), "Points must be Point3dZValueArray"
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array), "Values must be DoubleHdf5Array"
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues.values, ro.Hdf5Dataset), "Values must be Hdf5Dataset"
+
         gri_array = await download_array(
             ws,
             msg_id,
@@ -408,10 +414,10 @@ async def download_resqml_surface(rddms_uris: T.Tuple[str, str, str], etp_server
 
 
 async def upload_xtgeo_surface_to_rddms(
-    surface, title, projected_epsg, etp_server_url, dataspace, authorization
+    surf: 'xtgeo.RegularSurface', title, projected_epsg, etp_server_url, dataspace, authorization
 ):
     epc, crs, gri, surf_array = convert_xtgeo_surface_to_resqml_grid(
-        surface, title, projected_epsg
+        surf, title, projected_epsg
     )
     return await upload_resqml_surface(
         epc, crs, gri, surf_array, etp_server_url, dataspace, authorization
@@ -426,7 +432,7 @@ def get_data_object_type(obj):
     return obj.__class__.__name__
 
 
-def convert_xtgeo_surface_to_resqml_grid(surf: xtgeo.RegularSurface, title: str, projected_epsg):
+def convert_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', title: str, projected_epsg):
     # Build the RESQML-objects "manually" from the generated dataclasses.
     # Their content is described also in the RESQML v2.0.1 standard that is
     # available for download here:
