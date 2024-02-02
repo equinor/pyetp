@@ -3,6 +3,8 @@ import math
 import uuid
 
 
+from async_lru import alru_cache
+
 from . import etp_helper
 import map_api.resqml_objects as ro
 
@@ -345,6 +347,7 @@ def find_next_instance(data: T.List[T.Any], cls: T.Type[NT]) -> NT:
     )
 
 
+@alru_cache(maxsize=32)
 async def download_resqml_surface(rddms_uris: T.Tuple[str, str, str], etp_server_url: str, dataspace: str, authorization: str):
     # NOTE: This assumes that a "resqml-surface" consists of a
     # Grid2dRepresentation, an EpcExternalPartReference, and a LocalDepth3dCrs
