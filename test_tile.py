@@ -1,3 +1,4 @@
+import png
 import numpy as np
 import pytest
 from map_api import tile_service
@@ -10,7 +11,7 @@ client = TestClient(app)
 
 def test_dem():
     grid2d = np.array([[1000.]])
-    rgb = tile_service.height2rgb(grid2d)[0, 0]
+    rgb = tile_service.height2rgb(grid2d)
     assert np.isclose(tile_service.rgb2height(*rgb), 1000.0)
 
 
@@ -19,22 +20,34 @@ async def fake_arr_lod(*_):
 
 
 @pytest.mark.parametrize('z', range(3))
-def test_api(monkeypatch: pytest.MonkeyPatch, z: int):
+@pytest.mark.parametrize('channels', range(1, 5))
+def test_api(monkeypatch: pytest.MonkeyPatch, z: int, channels: int):
     monkeypatch.setattr(tile_service, 'get_arr_lod', fake_arr_lod)
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
+    monkeypatch.setattr(tile_service, 'CHANNELS', channels)
 
     response = client.post(
         f"/tiles/{z}/0/0",
         content=TilePostBody(url='http://localhost', dataspace='testing', rddmsURLs=['http://localhost'] * 3).model_dump_json()
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, "endpoint should be OK"
+
+    img = png.Reader(bytes=response.content)
+    h, w, _, info = img.read()
+
+    assert h == tile_service.TILE_SIZE and w == tile_service.TILE_SIZE, "should return empty tilesize"
+    assert info['planes'] == tile_service.CHANNELS, "and return correct number of channels"
 
 
 @pytest.mark.parametrize('z', range(3))
-def test_array_lod(z: int):
+@pytest.mark.parametrize('channels', range(1, 5))
+def test_array_lod(monkeypatch: pytest.MonkeyPatch, z: int, channels: int):
+    monkeypatch.setattr(tile_service, 'CHANNELS', channels)
+
     arr = tile_service._get_lod(np.random.random((32, 32)), z, step=(tile_service.RESOLUTION_LOD0, tile_service.RESOLUTION_LOD0))
-    assert arr.shape[0] == 32 * 2**z  # should increase with power of 2 per zoom
+    assert arr.shape[0] == 32 * 2**z, "should increase with power of 2 per zoom"
+    assert arr.shape[2] == channels, "should have correct number of channels"
 
 
 @pytest.mark.parametrize('z', range(2))
