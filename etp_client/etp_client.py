@@ -1,25 +1,20 @@
 import datetime
 import math
+import typing as T
 import uuid
 
-
-from async_lru import alru_cache
-
-from . import etp_helper
-import map_api.resqml_objects as ro
-
-import websockets
 import lxml.etree as ET
-
 import numpy as np
-
-import typing as T
-
-from xsdata.models.datatype import XmlDateTime
+import websockets
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
+from xsdata.models.datatype import XmlDateTime
+
+import map_api.resqml_objects as ro
+
+from . import etp_helper
 
 if T.TYPE_CHECKING:
     import xtgeo
@@ -347,7 +342,6 @@ def find_next_instance(data: T.List[T.Any], cls: T.Type[NT]) -> NT:
     )
 
 
-@alru_cache(maxsize=32)
 async def download_resqml_surface(rddms_uris: T.Tuple[str, str, str], etp_server_url: str, dataspace: str, authorization: str):
     # NOTE: This assumes that a "resqml-surface" consists of a
     # Grid2dRepresentation, an EpcExternalPartReference, and a LocalDepth3dCrs
@@ -399,6 +393,7 @@ async def download_resqml_surface(rddms_uris: T.Tuple[str, str, str], etp_server
         assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray), "Points must be Point3dZValueArray"
         assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array), "Values must be DoubleHdf5Array"
         assert isinstance(gri.grid2d_patch.geometry.points.zvalues.values, ro.Hdf5Dataset), "Values must be Hdf5Dataset"
+        assert isinstance(gri.grid2d_patch.geometry.points.supporting_geometry, ro.Point3dLatticeArray), "Points support_geo must be Point3dLatticeArray"
 
         gri_array = await download_array(
             ws,
