@@ -1,12 +1,10 @@
-import png
 import numpy as np
+import png
 import pytest
-from map_api import tile_service
 from fastapi.testclient import TestClient
 
-from map_api.main import TilePostBody, app
-
-client = TestClient(app)
+from map_api import tile_service
+from map_api.main import TilePostBody
 
 
 def test_dem():
@@ -20,20 +18,21 @@ def test_scale():
     assert np.isclose(tile_service.get_scale(1), tile_service.RESOLUTION_LOD0 / 2)
 
 
-async def fake_arr_lod(*_):
-    return (0, 0), tile_service.empty_tile()
+async def fake_arr(*_):
+    return tile_service.empty_tile(), (0, 0), (0, 0)
 
 
 @pytest.mark.parametrize('z', range(3))
 @pytest.mark.parametrize('channels', range(1, 5))
-def test_api(monkeypatch: pytest.MonkeyPatch, z: int, channels: int):
-    monkeypatch.setattr(tile_service, 'get_arr_lod', fake_arr_lod)
+def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, channels: int):
+    monkeypatch.setattr(tile_service, 'get_arr', fake_arr)
+    monkeypatch.setattr(tile_service, 'get_lod', lambda *_: (tile_service.empty_tile(), (0, 0)))
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
     monkeypatch.setattr(tile_service, 'CHANNELS', channels)
 
     response = client.post(
         f"/tiles/{z}/0/0",
-        content=TilePostBody(url='http://localhost', dataspace='testing', rddmsURLs=['http://localhost'] * 3).model_dump_json()
+        content=TilePostBody(mapId='test', url='http://localhost', dataspace='testing', rddmsURLs=['http://localhost'] * 3).model_dump_json()
     )
 
     assert response.status_code == 200, "endpoint should be OK"
@@ -50,7 +49,7 @@ def test_api(monkeypatch: pytest.MonkeyPatch, z: int, channels: int):
 def test_array_lod(monkeypatch: pytest.MonkeyPatch, z: int, channels: int):
     monkeypatch.setattr(tile_service, 'CHANNELS', channels)
 
-    _, arr = tile_service._get_lod(np.random.random((32, 32)), z, (0, 0), step=(tile_service.RESOLUTION_LOD0, tile_service.RESOLUTION_LOD0))
+    arr, _ = tile_service.get_lod(np.random.random((32, 32)), z, (0, 0), step=(tile_service.RESOLUTION_LOD0, tile_service.RESOLUTION_LOD0))
     assert arr.shape[0] == 32 * 2**z, "should increase with power of 2 per zoom"
     assert arr.shape[2] == channels, "should have correct number of channels"
 
@@ -66,7 +65,7 @@ def test_get_tile(monkeypatch: pytest.MonkeyPatch, z: int):
     tile = tile_service.get_tile(arr, z, 1, 1, arr_ori)
 
     if z == 0:
-        assert np.isclose(np.sum(tile), np.sum(arr) / 4), "(0, 1, 1) tile should overlap 1/4 of map"
+        assert np.isclose(np.sum(tile), float(np.sum(arr)) / 4.), "(0, 1, 1) tile should overlap 1/4 of map"
         assert tile[0, 0] == 1 and tile[-1, -1] == 0, "with data located up left corner"
     if z == 1:
         assert np.isclose(np.sum(tile), np.sum(arr)), "(1, 1, 1) tile should overlap perfectly"
