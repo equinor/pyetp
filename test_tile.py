@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import numpy as np
 import png
 import pytest
@@ -19,7 +21,7 @@ def test_scale():
 
 
 async def fake_arr(*_):
-    return tile_service.empty_tile(), (0, 0), (0, 0)
+    return tile_service.empty_tile(), (32, 32), (0, 0)
 
 
 @pytest.mark.parametrize('z', range(3))
@@ -29,6 +31,10 @@ def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, chann
     monkeypatch.setattr(tile_service, 'get_lod', lambda *_: (tile_service.empty_tile(), (0, 0)))
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
     monkeypatch.setattr(tile_service, 'CHANNELS', channels)
+    monkeypatch.setattr(tile_service, 'CHANNELS', channels)
+
+    mock_set_all_lods = Mock()
+    monkeypatch.setattr(tile_service.Cache, 'set_all_lods', mock_set_all_lods)
 
     response = client.post(
         f"/tiles/{z}/0/0",
@@ -42,6 +48,9 @@ def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, chann
 
     assert h == tile_service.TILE_SIZE and w == tile_service.TILE_SIZE, "should return empty tilesize"
     assert info['planes'] == tile_service.CHANNELS, "and return correct number of channels"
+
+    # assert caching all was called
+    mock_set_all_lods.assert_called_once()
 
 
 @pytest.mark.parametrize('z', range(3))
