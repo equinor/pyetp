@@ -31,7 +31,6 @@ def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, chann
     monkeypatch.setattr(tile_service, 'get_lod', lambda *_: (tile_service.empty_tile(), (0, 0)))
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
     monkeypatch.setattr(tile_service, 'CHANNELS', channels)
-    monkeypatch.setattr(tile_service, 'CHANNELS', channels)
 
     mock_set_all_lods = Mock()
     monkeypatch.setattr(tile_service.Cache, 'set_all_lods', mock_set_all_lods)
