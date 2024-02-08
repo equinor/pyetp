@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 import numpy as np
 import png
@@ -32,8 +32,10 @@ def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, chann
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
     monkeypatch.setattr(tile_service, 'CHANNELS', channels)
 
-    mock_set_all_lods = Mock()
+    # check if cache called been called
+    mock_set_all_lods, mock_set_lod = AsyncMock(), AsyncMock()
     monkeypatch.setattr(tile_service.Cache, 'set_all_lods', mock_set_all_lods)
+    monkeypatch.setattr(tile_service.Cache, 'set_lod', mock_set_lod)
 
     response = client.post(
         f"/tiles/{z}/0/0",
@@ -50,6 +52,7 @@ def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, chann
 
     # assert caching all was called
     mock_set_all_lods.assert_called_once()
+    mock_set_lod.assert_called_once()
 
 
 @pytest.mark.parametrize('z', range(3))
@@ -71,6 +74,7 @@ def test_get_tile(monkeypatch: pytest.MonkeyPatch, z: int):
     arr = np.ones((tile_service.TILE_SIZE, tile_service.TILE_SIZE)).astype(np.uint8)
 
     tile = tile_service.get_tile(arr, z, 1, 1, arr_ori)
+    assert tile is not None, "should never happen"
 
     if z == 0:
         assert np.isclose(np.sum(tile), float(np.sum(arr)) / 4.), "(0, 1, 1) tile should overlap 1/4 of map"
@@ -79,5 +83,4 @@ def test_get_tile(monkeypatch: pytest.MonkeyPatch, z: int):
         assert np.isclose(np.sum(tile), np.sum(arr)), "(1, 1, 1) tile should overlap perfectly"
 
     # test invalid location (z, -1, -1)
-    with pytest.raises(tile_service.TileError):
-        tile_service.get_tile(arr, z, -1, -1, arr_ori)
+    assert tile_service.get_tile(arr, z, -1, -1, arr_ori) is None
