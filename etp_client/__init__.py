@@ -1,5 +1,3 @@
-from .etp_client import (
-    upload_xtgeo_surface_to_rddms,
-    download_resqml_surface,
-    delete_resqml_objects,
-)
+from .etp_client import (delete_resqml_objects, download_resqml_surface,
+                         upload_xtgeo_surface_to_rddms)
+from .etp_helper import ETPError

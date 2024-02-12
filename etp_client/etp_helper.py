@@ -1,15 +1,17 @@
-import json
-import datetime
 import asyncio
-import uuid
-import io
+import datetime
 import enum
+import io
+import json
 import pathlib
+import uuid
 
 import fastavro
+import fastavro.read
+import fastavro.schema
+import fastavro.write
 import lxml.etree as ET
 import numpy as np
-
 
 # Read and store ETP-schemas in a global dictionary
 # The file etp.avpr can be downloaded from Energistics here:
@@ -21,6 +23,13 @@ with open(pathlib.Path("map_api/etp_client/etp.avpr"), "r") as foo:
 def parse_func(js, named_schemas=dict()):
     ps = fastavro.schema.parse_schema(js, named_schemas)
     return fastavro.schema.fullname(ps), ps
+
+
+class ETPError(Exception):
+    def __init__(self, message: str, code: int):
+        self.message = message
+        self.code = code
+        super().__init__(f"{message} ({code=:})")
 
 
 # These are now avro schemas for ETP
@@ -104,16 +113,24 @@ async def handle_multipart_response(ws, schema_key):
             ETP_SCHEMAS["Energistics.Etp.v12.Datatypes.MessageHeader"],
         )
 
-        records.append(
-            fastavro.read.schemaless_reader(
-                fo,
-                ETP_SCHEMAS[
-                    schema_key
-                    if mh_record["messageType"] != 1000
-                    else "Energistics.Etp.v12.Protocol.Core.ProtocolException"
-                ],
-            )
+        record = fastavro.read.schemaless_reader(
+            fo,
+            ETP_SCHEMAS[
+                schema_key
+                if mh_record["messageType"] != 1000
+                else "Energistics.Etp.v12.Protocol.Core.ProtocolException"
+            ],
         )
+
+        assert isinstance(record, dict), "we expected dict response"
+
+        if error := record.get('error'):
+            raise ETPError(**error)
+        if errors := record.get('errors'):
+            _, error = errors.popitem()  # TODO: parse all errors
+            raise ETPError(**error)
+
+        records.append(record)
 
         if (mh_record["messageFlags"] & MHFlags.FIN.value) != 0:
             # We have received a FIN-bit, i.e., the last reponse has been

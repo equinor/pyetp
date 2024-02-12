@@ -85,6 +85,7 @@ async def delete_resqml_objects(etp_server_url, rddms_uris, authorization):
         ]["item"]
 
         records = await etp_helper.delete_data_objects(ws, msg_id, rddms_uris)
+
         assert len(records[0]["deletedUris"]) == len(rddms_uris)
 
         # Close session.
@@ -201,7 +202,11 @@ async def upload_resqml_surface(
         # create it if it exists. However, we save a call to the server by just
         # trying to put the dataspace and ignore the error if it already
         # exists.
-        records = await etp_helper.put_dataspaces(ws, msg_id, [dataspace])
+        try:
+            records = await etp_helper.put_dataspaces(ws, msg_id, [dataspace])
+        except etp_helper.ETPError:
+            pass
+
         # The put_dataspaces returns a list of records, one for each dataspace.
         # However, as we are only adding a single dataspace there should only
         # be a single record.
