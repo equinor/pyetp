@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from map_api import tile_service
-from map_api.main import TilePostBody
+from map_api.main import TilePostBody, app
 
 
 def test_dem():
@@ -26,7 +26,7 @@ async def fake_arr(*_):
 
 @pytest.mark.parametrize('z', range(3))
 @pytest.mark.parametrize('channels', range(1, 5))
-def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, channels: int):
+def test_tile_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, channels: int):
     monkeypatch.setattr(tile_service, 'get_arr', fake_arr)
     monkeypatch.setattr(tile_service, 'get_lod', lambda *_: (tile_service.empty_tile(), (0, 0)))
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
@@ -38,7 +38,7 @@ def test_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, chann
     monkeypatch.setattr(tile_service.Cache, 'set_lod', mock_set_lod)
 
     response = client.post(
-        f"/tiles/{z}/0/0",
+        app.url_path_for('get_tile', z=z, x=0, y=0),
         content=TilePostBody(mapId='test', url='http://localhost', dataspace='testing', rddmsURLs=['http://localhost'] * 3).model_dump_json()
     )
 
