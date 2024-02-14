@@ -234,7 +234,7 @@ async def upload_resqml_surface(
         )
 
     # Return the uri's of the three uploaded objects.
-    return tuple(rddms_urls)
+    return rddms_urls
 
 
 async def download_array(
