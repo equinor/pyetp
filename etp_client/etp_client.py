@@ -1,26 +1,23 @@
 import datetime
 import math
-import json
-import tempfile
-import zipfile
-import os
+import typing as T
 import uuid
-import re
 
-from . import etp_helper
-import map_api.resqml_objects as resqml_objects
-
-import websockets
 import lxml.etree as ET
-import h5py
 import numpy as np
-
-
-from xsdata.models.datatype import XmlDateTime
+import websockets
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
+from xsdata.models.datatype import XmlDateTime
+
+import map_api.resqml_objects as ro
+
+from . import etp_helper
+
+if T.TYPE_CHECKING:
+    import xtgeo
 
 
 # TODO: Is there a limit from pss-data-gateway?
@@ -88,6 +85,7 @@ async def delete_resqml_objects(etp_server_url, rddms_uris, authorization):
         ]["item"]
 
         records = await etp_helper.delete_data_objects(ws, msg_id, rddms_uris)
+
         assert len(records[0]["deletedUris"]) == len(rddms_uris)
 
         # Close session.
@@ -204,7 +202,11 @@ async def upload_resqml_surface(
         # create it if it exists. However, we save a call to the server by just
         # trying to put the dataspace and ignore the error if it already
         # exists.
-        records = await etp_helper.put_dataspaces(ws, msg_id, [dataspace])
+        try:
+            records = await etp_helper.put_dataspaces(ws, msg_id, [dataspace])
+        except etp_helper.ETPError:
+            pass
+
         # The put_dataspaces returns a list of records, one for each dataspace.
         # However, as we are only adding a single dataspace there should only
         # be a single record.
@@ -232,7 +234,7 @@ async def upload_resqml_surface(
         )
 
     # Return the uri's of the three uploaded objects.
-    return rddms_urls
+    return tuple(rddms_urls)
 
 
 async def download_array(
@@ -333,7 +335,19 @@ async def download_array(
     return np.concatenate(blocks, axis=0)
 
 
-async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authorization):
+NT = T.TypeVar('NT')
+
+
+def find_next_instance(data: T.List[T.Any], cls: T.Type[NT]) -> NT:
+    return next(
+        filter(
+            lambda x: isinstance(x, cls),
+            data
+        )
+    )
+
+
+async def download_resqml_surface(rddms_uris: T.Tuple[str, str, str], etp_server_url: str, dataspace: str, authorization: str):
     # NOTE: This assumes that a "resqml-surface" consists of a
     # Grid2dRepresentation, an EpcExternalPartReference, and a LocalDepth3dCrs
     assert len(rddms_uris) == 3
@@ -376,24 +390,15 @@ async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authori
         # this call, but in other functions) we can replace "next" by "list"
         # (or just keep the generator from "filter" as-is) to sort out all the
         # relevant objects.
-        epc = next(
-            filter(
-                lambda x: isinstance(x, resqml_objects.EpcExternalPartReference),
-                returned_resqml,
-            )
-        )
-        crs = next(
-            filter(
-                lambda x: isinstance(x, resqml_objects.LocalDepth3dCrs),
-                returned_resqml,
-            )
-        )
-        gri = next(
-            filter(
-                lambda x: isinstance(x, resqml_objects.Grid2dRepresentation),
-                returned_resqml,
-            )
-        )
+        epc = find_next_instance(returned_resqml, ro.EpcExternalPartReference)
+        crs = find_next_instance(returned_resqml, ro.LocalDepth3dCrs)
+        gri = find_next_instance(returned_resqml, ro.Grid2dRepresentation)
+
+        # some checks
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray), "Points must be Point3dZValueArray"
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array), "Values must be DoubleHdf5Array"
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues.values, ro.Hdf5Dataset), "Values must be Hdf5Dataset"
+        assert isinstance(gri.grid2d_patch.geometry.points.supporting_geometry, ro.Point3dLatticeArray), "Points support_geo must be Point3dLatticeArray"
 
         gri_array = await download_array(
             ws,
@@ -412,10 +417,10 @@ async def download_resqml_surface(rddms_uris, etp_server_url, dataspace, authori
 
 
 async def upload_xtgeo_surface_to_rddms(
-    surface, title, projected_epsg, etp_server_url, dataspace, authorization
+    surf: 'xtgeo.RegularSurface', title, projected_epsg, etp_server_url, dataspace, authorization
 ):
     epc, crs, gri, surf_array = convert_xtgeo_surface_to_resqml_grid(
-        surface, title, projected_epsg
+        surf, title, projected_epsg
     )
     return await upload_resqml_surface(
         epc, crs, gri, surf_array, etp_server_url, dataspace, authorization
@@ -430,7 +435,7 @@ def get_data_object_type(obj):
     return obj.__class__.__name__
 
 
-def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
+def convert_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', title: str, projected_epsg):
     # Build the RESQML-objects "manually" from the generated dataclasses.
     # Their content is described also in the RESQML v2.0.1 standard that is
     # available for download here:
@@ -444,8 +449,8 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
     )
     schema_version = "2.0"
 
-    epc = resqml_objects.EpcExternalPartReference(
-        citation=resqml_objects.Citation(
+    epc = ro.EpcExternalPartReference(
+        citation=ro.Citation(
             title="Hdf Proxy",
             **common_citation_fields,
         ),
@@ -456,8 +461,8 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
 
     assert np.abs(surf.get_rotation()) < 1e-7
 
-    crs = resqml_objects.LocalDepth3dCrs(
-        citation=resqml_objects.Citation(
+    crs = ro.LocalDepth3dCrs(
+        citation=ro.Citation(
             title=f"CRS for {title}",
             **common_citation_fields,
         ),
@@ -468,20 +473,20 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
         xoffset=0.0,
         yoffset=0.0,
         zoffset=0.0,
-        areal_rotation=resqml_objects.PlaneAngleMeasure(
+        areal_rotation=ro.PlaneAngleMeasure(
             # Here rotation should be zero!
             value=surf.get_rotation(),
-            uom=resqml_objects.PlaneAngleUom.DEGA,
+            uom=ro.PlaneAngleUom.DEGA,
         ),
         # NOTE: Verify that this is the projected axis order
-        projected_axis_order=resqml_objects.AxisOrder2d.EASTING_NORTHING,
-        projected_uom=resqml_objects.LengthUom.M,
-        vertical_uom=resqml_objects.LengthUom.M,
+        projected_axis_order=ro.AxisOrder2d.EASTING_NORTHING,
+        projected_uom=ro.LengthUom.M,
+        vertical_uom=ro.LengthUom.M,
         zincreasing_downward=True,
-        vertical_crs=resqml_objects.VerticalUnknownCrs(
+        vertical_crs=ro.VerticalUnknownCrs(
             unknown="unknown",
         ),
-        projected_crs=resqml_objects.ProjectedCrsEpsgCode(
+        projected_crs=ro.ProjectedCrsEpsgCode(
             epsg_code=projected_epsg,
         ),
     )
@@ -498,15 +503,15 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
     nx = surf.ncol
     ny = surf.nrow
 
-    gri = resqml_objects.Grid2dRepresentation(
+    gri = ro.Grid2dRepresentation(
         uuid=(grid_uuid := str(uuid.uuid4())),
         schema_version=schema_version,
-        surface_role=resqml_objects.SurfaceRole.MAP,
-        citation=resqml_objects.Citation(
+        surface_role=ro.SurfaceRole.MAP,
+        citation=ro.Citation(
             title=title,
             **common_citation_fields,
         ),
-        grid2d_patch=resqml_objects.Grid2dPatch(
+        grid2d_patch=ro.Grid2dPatch(
             # TODO: Perhaps we can use this for tiling?
             patch_index=0,
             # NumPy-arrays are C-ordered, meaning that the last index is
@@ -516,8 +521,8 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
             # changing axis (as surf.values.shape == (surf.ncol, surf.nrow))
             fastest_axis_count=ny,
             slowest_axis_count=nx,
-            geometry=resqml_objects.PointGeometry(
-                local_crs=resqml_objects.DataObjectReference(
+            geometry=ro.PointGeometry(
+                local_crs=ro.DataObjectReference(
                     # NOTE: See Energistics Identifier Specification 4.0
                     # (it is downloaded alongside the RESQML v2.0.1
                     # standard) section 4.1 for an explanation on the
@@ -526,9 +531,9 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
                     title=crs.citation.title,
                     uuid=crs.uuid,
                 ),
-                points=resqml_objects.Point3dZValueArray(
-                    supporting_geometry=resqml_objects.Point3dLatticeArray(
-                        origin=resqml_objects.Point3d(
+                points=ro.Point3dZValueArray(
+                    supporting_geometry=ro.Point3dLatticeArray(
+                        origin=ro.Point3d(
                             coordinate1=x0,
                             coordinate2=y0,
                             coordinate3=0.0,
@@ -544,35 +549,35 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
                         # However, we can change this as we see fit.
                         offset=[
                             # Offset for x-direction, i.e., the slowest axis
-                            resqml_objects.Point3dOffset(
-                                offset=resqml_objects.Point3d(
+                            ro.Point3dOffset(
+                                offset=ro.Point3d(
                                     coordinate1=1.0,
                                     coordinate2=0.0,
                                     coordinate3=0.0,
                                 ),
-                                spacing=resqml_objects.DoubleConstantArray(
+                                spacing=ro.DoubleConstantArray(
                                     value=dx,
                                     count=nx - 1,
                                 ),
                             ),
                             # Offset for y-direction, i.e., the fastest axis
-                            resqml_objects.Point3dOffset(
-                                offset=resqml_objects.Point3d(
+                            ro.Point3dOffset(
+                                offset=ro.Point3d(
                                     coordinate1=0.0,
                                     coordinate2=1.0,
                                     coordinate3=0.0,
                                 ),
-                                spacing=resqml_objects.DoubleConstantArray(
+                                spacing=ro.DoubleConstantArray(
                                     value=dy,
                                     count=ny - 1,
                                 ),
                             ),
                         ],
                     ),
-                    zvalues=resqml_objects.DoubleHdf5Array(
-                        values=resqml_objects.Hdf5Dataset(
+                    zvalues=ro.DoubleHdf5Array(
+                        values=ro.Hdf5Dataset(
                             path_in_hdf_file=f"/RESQML/{grid_uuid}/zvalues",
-                            hdf_proxy=resqml_objects.DataObjectReference(
+                            hdf_proxy=ro.DataObjectReference(
                                 content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
                                 title=epc.citation.title,
                                 uuid=epc.uuid,
@@ -585,8 +590,7 @@ def convert_xtgeo_surface_to_resqml_grid(surf, title, projected_epsg):
     )
 
     # Use nan as the mask-value in the surface array
-    surf_array = surf.values.filled(np.nan)
-
+    surf_array: np.ndarray = surf.values.filled(np.nan)
     return epc, crs, gri, surf_array
 
 
@@ -602,10 +606,7 @@ def read_returned_resqml_objects(data_objects):
     return [
         parser.from_bytes(
             data_object["data"],
-            getattr(
-                resqml_objects,
-                ET.QName(ET.fromstring(data_object["data"]).tag).localname,
-            ),
+            getattr(ro, ET.QName(ET.fromstring(data_object["data"]).tag).localname),
         )
         for data_object in data_objects.values()
     ]
