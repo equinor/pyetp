@@ -39,7 +39,7 @@ def test_tile_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, 
 
     response = client.post(
         app.url_path_for('get_tile', z=z, x=0, y=0),
-        content=TilePostBody(mapId='test', url='http://localhost', dataspace='testing', rddmsURLs=['http://localhost'] * 3).model_dump_json()
+        content=TilePostBody(mapId='test', url='http://localhost', rddmsURLs=['http://localhost'] * 3).json()
     )
 
     assert response.status_code == 200, "endpoint should be OK"

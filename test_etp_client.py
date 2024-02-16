@@ -1,26 +1,21 @@
-import socket
 import tempfile
 from pathlib import Path
 
 import numpy as np
 import pytest
 import xtgeo
-from conftest import DATASPACE, ETP_SERVER_URL
+from conftest import ETP_SERVER_URL
 from fastapi.testclient import TestClient
 
-import map_api.etp_client
 import map_api.resqml_objects as resqml_objects
+from map_api.etp_client.client import ETPClient
+from map_api.etp_client.uri import DataspaceUri
 from map_api.main import DeleteMapBody, MapPayload, NewMapInterface, app
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-ws_open = sock.connect_ex(('127.0.0.1', 9002)) == 0
-
-if not ws_open:
-    pytest.skip(reason="websocket for test server not open", allow_module_level=True)
 
 
 def create_surface(ncol: int, nrow: int):
     surface = xtgeo.RegularSurface(
+        name="testsurface",
         ncol=ncol,
         nrow=nrow,
         xori=np.random.rand() * 1000,
@@ -36,20 +31,20 @@ def create_surface(ncol: int, nrow: int):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('surface', [create_surface(3, 4), create_surface(100, 40)])
-async def test_rddms_roundtrip(surface: xtgeo.RegularSurface):
+async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceUri):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    rddms_uris = await map_api.etp_client.upload_xtgeo_surface_to_rddms(
-        surface, "test-surface",  epsg_code, ETP_SERVER_URL, DATASPACE, ""
-    )
-    assert len(rddms_uris) == 3
+    epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(duri, surface, epsg_code)
 
-    epc, crs, gri, array = await map_api.etp_client.download_resqml_surface(
-        rddms_uris, ETP_SERVER_URL, DATASPACE, ""
-    )
+    epc, crs, gri = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri)
+    newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
+    array = np.array(newsurf.values.filled(np.nan))
+
     np.testing.assert_allclose(array, np.array(surface.values.filled(np.nan)))
+
+    print(epc, crs, gri)
 
     assert isinstance(epc, resqml_objects.EpcExternalPartReference)
     assert isinstance(crs, resqml_objects.LocalDepth3dCrs)
@@ -82,13 +77,13 @@ def test_etp_api(client: TestClient, surface_path: Path):
 
     # test success upload
     payload = MapPayload(
-        projectId='test', projectCRS='test', filePath=str(surface_path), url=ETP_SERVER_URL, dataspace=DATASPACE, transformPipeline='',
+        projectId='test', projectCRS='test', filePath=str(surface_path), url=ETP_SERVER_URL, dataspace='test_etp_api/pss-data-gateway', transformPipeline='',
         metadata=NewMapInterface(name='test', description='test', crsName='test', format='irap_binary', zUnit='m', mapType='value')
     )
 
     response = client.post(
         app.url_path_for('parse_map_binary_data'),
-        content=payload.model_dump_json()
+        content=payload.json()
     )
     assert response.status_code == 200, "endpoint should be OK"
 
@@ -104,7 +99,7 @@ def test_etp_api(client: TestClient, surface_path: Path):
     response = client.request(
         'DELETE',
         app.url_path_for('delete_map'),
-        content=payload.model_dump_json()
+        content=payload.json()
     )
     assert response.status_code == 200, "endpoint should be OK"
 
@@ -112,6 +107,6 @@ def test_etp_api(client: TestClient, surface_path: Path):
     response = client.request(
         'DELETE',
         app.url_path_for('delete_map'),
-        content=payload.model_dump_json()
+        content=payload.json()
     )
-    assert response.status_code == 404, "should return not found"
+    assert response.status_code == 404, "should be conflict"
