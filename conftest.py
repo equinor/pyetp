@@ -5,12 +5,15 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 
 from map_api import etp_client
+from map_api.config import SETTINGS
 from map_api.db import get_cache
 from map_api.etp_client.client import ETPClient
-from map_api.etp_client.uri import DataspaceUri
+from map_api.etp_client.uri import DataspaceURI
 from map_api.main import app
 
 ETP_SERVER_URL = "ws://localhost:9002"
+SETTINGS.application_name = "geomin_testing"
+SETTINGS.etp_url = ETP_SERVER_URL  # type: ignore
 
 
 def get_fake_cache():
@@ -42,7 +45,7 @@ async def eclient():
 @pytest_asyncio.fixture
 async def duri(eclient: ETPClient):
     try:
-        uri = DataspaceUri.from_name('test/test')
+        uri = DataspaceURI.from_name('test/test')
         resp = await eclient.put_dataspaces_no_raise(uri)
         # assert len(resp) == 1, "created one dataspace"
         yield uri

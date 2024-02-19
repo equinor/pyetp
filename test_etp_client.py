@@ -4,12 +4,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 import xtgeo
-from conftest import ETP_SERVER_URL
 from fastapi.testclient import TestClient
 
 import map_api.resqml_objects as resqml_objects
 from map_api.etp_client.client import ETPClient
-from map_api.etp_client.uri import DataspaceUri
+from map_api.etp_client.uri import DataspaceURI
 from map_api.main import DeleteMapBody, MapPayload, NewMapInterface, app
 
 
@@ -31,12 +30,12 @@ def create_surface(ncol: int, nrow: int):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('surface', [create_surface(3, 4), create_surface(100, 40)])
-async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceUri):
+async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(duri, surface, epsg_code)
+    epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(surface, epsg_code, dataspace=duri)
 
     epc, crs, gri = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri)
     newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
@@ -77,7 +76,7 @@ def test_etp_api(client: TestClient, surface_path: Path):
 
     # test success upload
     payload = MapPayload(
-        projectId='test', projectCRS='test', filePath=str(surface_path), url=ETP_SERVER_URL, dataspace='test_etp_api/pss-data-gateway', transformPipeline='',
+        projectId='test', projectCRS='test', filePath=str(surface_path), transformPipeline='',
         metadata=NewMapInterface(name='test', description='test', crsName='test', format='irap_binary', zUnit='m', mapType='value')
     )
 
@@ -95,7 +94,7 @@ def test_etp_api(client: TestClient, surface_path: Path):
     # assert rerror.status_code == 409, "should return conflic"
 
     # test success delete
-    payload = DeleteMapBody(**response.json(), url=ETP_SERVER_URL)
+    payload = DeleteMapBody(**response.json())
     response = client.request(
         'DELETE',
         app.url_path_for('delete_map'),
@@ -110,3 +109,15 @@ def test_etp_api(client: TestClient, surface_path: Path):
         content=payload.json()
     )
     assert response.status_code == 404, "should be conflict"
+
+
+def test_etp_api_validation_error(client: TestClient):
+
+    # test fail delete
+    response = client.request(
+        'DELETE',
+        app.url_path_for('delete_map'),
+        json=dict(rddmsURLs=['http://localhost/test'])
+    )
+    print(response.text)
+    assert response.status_code == 422, "should be invalid"

@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import numpy as np
 import png
@@ -6,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from map_api import tile_service
+from map_api.etp_client.uri import DataObjectURI
 from map_api.main import TilePostBody, app
 
 
@@ -37,9 +39,10 @@ def test_tile_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, 
     monkeypatch.setattr(tile_service.Cache, 'set_all_lods', mock_set_all_lods)
     monkeypatch.setattr(tile_service.Cache, 'set_lod', mock_set_lod)
 
+    datauri = DataObjectURI.from_parts('test', 'resqml20', 'type', uuid4())
     response = client.post(
         app.url_path_for('get_tile', z=z, x=0, y=0),
-        content=TilePostBody(mapId='test', url='http://localhost', rddmsURLs=['http://localhost'] * 3).json()
+        content=TilePostBody(mapId='test', rddmsURLs=[str(datauri)] * 3).json()
     )
 
     assert response.status_code == 200, "endpoint should be OK"

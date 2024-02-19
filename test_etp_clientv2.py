@@ -1,5 +1,4 @@
 
-import asyncio
 from typing import Tuple
 from unittest.mock import AsyncMock
 
@@ -12,8 +11,9 @@ from conftest import ETP_SERVER_URL
 from map_api import etp_client
 from map_api.etp_client.client import MAXPAYLOADSIZE, ETPClient, ETPError
 from map_api.etp_client.types import DataArrayIdentifier
-from map_api.etp_client.uri import DataspaceUri
-from map_api.etp_client.utils import parse_xtgeo_surface_to_resqml_grid
+from map_api.etp_client.uri import DataspaceURI
+from map_api.etp_client.utils import (create_epc,
+                                      parse_xtgeo_surface_to_resqml_grid)
 
 
 def create_surface(ncol: int, nrow: int):
@@ -30,13 +30,10 @@ def create_surface(ncol: int, nrow: int):
 
 
 @pytest_asyncio.fixture
-async def uid(eclient: ETPClient, duri: DataspaceUri):
+async def uid(eclient: ETPClient, duri: DataspaceURI):
     """empty DataArrayIdentifier"""
-
-    surf = create_surface(1, 1)
-    epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)  # TODO: Create some dummy resqml objects for storing any array data
-    uris = await eclient.put_resqml_objects(duri, epc, crs, gri)
-    yield DataArrayIdentifier(uri=uris[0].raw_uri, pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file)
+    epc_uri, = await eclient.put_resqml_objects(create_epc(), dataspace=duri)
+    yield DataArrayIdentifier(uri=str(epc_uri), pathInResource="/data")  # dummy path
 
 
 @pytest_asyncio.fixture
@@ -73,7 +70,7 @@ async def test_open_close(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.asyncio
-async def test_datapaces(eclient: ETPClient, duri: DataspaceUri):
+async def test_datapaces(eclient: ETPClient, duri: DataspaceURI):
     pass  # basicically just testing if eclient and temp dataspace fixtures
 
 
@@ -92,7 +89,7 @@ async def test_arraymeta_not_found(eclient: ETPClient, uid_not_exists: DataArray
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_] only one type that works with etp server!!!
+@pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32, np.int64, np.bool_])
 async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
     data = np.random.rand(100, 50) * 100.
     data = data.astype(dtype)
@@ -103,9 +100,11 @@ async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
     arr = await eclient.get_array(uid)
     np.testing.assert_allclose(arr, data)
 
+    assert arr.dtype == dtype
+
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_] only one type that works with etp server!!!
+@pytest.mark.parametrize('dtype', [np.float32, np.int32])
 @pytest.mark.parametrize('shape', [(256, 300), (96, 96, 64)])
 async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype, shape: Tuple[int, ...]):
     data = np.random.rand(*shape) * 100.
@@ -122,12 +121,15 @@ async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
     arr = await eclient._get_array_chuncked(uid)
     np.testing.assert_allclose(arr, data)
 
+    assert arr.dtype == dtype
+
 
 @pytest.mark.asyncio
-async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier):
+@pytest.mark.parametrize('dtype', [np.float32, np.int32])
+async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
 
     data = np.random.rand(150, 86) * 100.
-    data = data.astype(np.float32)
+    data = data.astype(dtype)
 
     # for some reason writing data takes aloooong time
     eclient.timeout = 60
@@ -139,10 +141,11 @@ async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier):
     eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = MAXPAYLOADSIZE
     arr = await eclient.get_array(uid)
     np.testing.assert_allclose(arr, data)
+    assert arr.dtype == dtype
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_] only one type that works with etp server!!!
+@pytest.mark.parametrize('dtype', [np.int32, np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_]
 @pytest.mark.parametrize('starts', [[0, 0], [20, 20]])  #
 async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, starts):
     data = np.random.rand(100, 50) * 100.
@@ -161,11 +164,11 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
 
 
 @pytest.mark.asyncio
-async def test_resqml_objects(eclient: ETPClient, duri: DataspaceUri):
+async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50)
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
 
-    uris = await eclient.put_resqml_objects(duri, epc, crs, gri)
+    uris = await eclient.put_resqml_objects(epc, crs, gri, dataspace=duri)
     epc, crs, gri = await eclient.get_resqml_objects(*uris)
 
     resp = await eclient.delete_data_objects(*uris)
@@ -173,9 +176,9 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceUri):
 
 
 @pytest.mark.asyncio
-async def test_surface(eclient: ETPClient, duri: DataspaceUri):
+async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50)
-    epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(duri, surf)
+    epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
 
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
