@@ -14,10 +14,11 @@ from etpproto.messages import Message, MessageFlags
 from xtgeo import RegularSurface
 
 import map_api.resqml_objects as ro
+from map_api.config import SETTINGS
 from map_api.etp_client.utils import *
 
 from .types import *
-from .uri import DataObjectURI, DataspaceUri
+from .uri import DataObjectURI, DataspaceURI
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -44,10 +45,11 @@ class ETPClient(ETPConnection):
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.WebSocketClientProtocol, timeout=10.):
+    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: DataspaceURI | None, timeout=10.):
         super().__init__(connection_type=ConnectionType.CLIENT)
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
+        self._default_duri = default_dataspace_uri
         self.ws = ws
 
         self.timeout = timeout
@@ -146,8 +148,8 @@ class ETPClient(ETPConnection):
     async def connect(self):
         msg = await self.send(
             RequestSession(
-                applicationName='pss-gate',
-                applicationVersion='test',
+                applicationName=SETTINGS.application_name,
+                applicationVersion=SETTINGS.application_version,
                 clientInstanceId=uuid.uuid4(),  # type: ignore
                 requestedProtocols=[
                     SupportedProtocol(protocol=p.value, protocolVersion=Version(major=1, minor=2), role='store')
@@ -185,17 +187,36 @@ class ETPClient(ETPConnection):
     def timestamp(self):
         return int(datetime.datetime.now(datetime.timezone.utc).timestamp())
 
+    @property
+    def default_dataspace_uri(self):
+        return self._default_duri
+
+    @default_dataspace_uri.setter
+    def default_dataspace_uri(self, v: DataspaceURI | str | None):
+        self._default_duri = None if v is None else DataspaceURI.from_any(v)
+
+    def get_dataspace_or_default_uri(self, ds: DataspaceURI | str | None) -> DataspaceURI:
+        """Returns default dataspace or user spefied one"""
+
+        if ds is None and self._default_duri is None:
+            raise ValueError("Could not get dataspace from userinput or default")
+
+        if isinstance(ds, str):
+            return DataspaceURI(ds)
+
+        return ds or self._default_duri  # type: ignore
+
     #
     # dataspace
     #
 
-    async def put_dataspaces(self, *uris: DataspaceUri | str):
+    async def put_dataspaces(self, *uris: DataspaceURI | str):
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
             PutDataspaces
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
             PutDataspacesResponse
 
-        _uris = [DataspaceUri(u) if isinstance(u, str) else u for u in uris]  # type: ignore
+        _uris = [DataspaceURI(u) if isinstance(u, str) else u for u in uris]  # type: ignore
 
         time = self.timestamp
         response = await self.send(
@@ -210,13 +231,13 @@ class ETPClient(ETPConnection):
 
         return response.success
 
-    async def put_dataspaces_no_raise(self, *uris: DataspaceUri | str):
+    async def put_dataspaces_no_raise(self, *uris: DataspaceURI | str):
         try:
             return await self.put_dataspaces(*uris)
         except ETPError:
             pass
 
-    async def delete_dataspaces(self, *uris: DataspaceUri | str):
+    async def delete_dataspaces(self, *uris: DataspaceURI | str):
         from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
             DeleteDataspaces
         from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
@@ -269,13 +290,14 @@ class ETPClient(ETPConnection):
         data_objects = await self.get_data_objects(*uris)
         return parse_resqml_objects(data_objects)
 
-    async def put_resqml_objects(self, dataspace: DataspaceUri | str, *objs: ro.AbstractObject):
+    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: DataspaceURI | str | None = None):
         from etptypes.energistics.etp.v12.datatypes.object.resource import \
             Resource
 
         time = self.timestamp
+        duri = self.get_dataspace_or_default_uri(dataspace)
 
-        uris = [DataObjectURI.from_obj(dataspace, obj) for obj in objs]
+        uris = [DataObjectURI.from_obj(duri, obj) for obj in objs]
 
         dobjs = [DataObject(
             format="xml",
@@ -346,12 +368,12 @@ class ETPClient(ETPConnection):
             masked=True
         )
 
-    async def put_xtgeo_surface(self, dataspace: DataspaceUri | str, surface: RegularSurface, epsg_code=23031):
+    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: DataspaceURI | str | None = None):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
 
         epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
-        epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(dataspace, epc, crs, gri)
+        epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
 
         response = await self.put_array(
             DataArrayIdentifier(
@@ -456,7 +478,8 @@ class ETPClient(ETPConnection):
         ends = starts + counts
 
         if put_uninitialized:
-            await self._put_uninitialized_data_array(uid, data.shape)
+            transport_array_type = get_transfertype_from_dtype(data.dtype)
+            await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
         dataarray = numpy_to_etp_data_array(data[*slices])
@@ -481,11 +504,11 @@ class ETPClient(ETPConnection):
     # chuncked get array - ETP will not chunck response - so we need to do it manually
     #
 
-    def _get_chunk_sizes(self, shape, dtype=np.float32):
+    def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32)):
         shape = np.array(shape)
 
         # capsize blocksize
-        max_items = self.max_array_size / dtype().itemsize  # remove 512 bytes for headers and body
+        max_items = self.max_array_size / dtype.itemsize  # remove 512 bytes for headers and body
         block_size = np.power(max_items, 1. / len(shape))
         block_size = min(2048, int(block_size // 2) * 2)
 
@@ -509,8 +532,9 @@ class ETPClient(ETPConnection):
         metadata = (await self.get_array_metadata(uid))[0]
         buffer_shape = np.array(metadata.dimensions).astype(np.int64)
 
-        assert metadata.transport_array_type == AnyArrayType.ARRAY_OF_FLOAT, "etp server only support floats32 as of now"
-        buffer = np.zeros(buffer_shape, dtype=np.float32)
+        assert metadata.transport_array_type in SUPPORTED_ARRAY_TRANSPORTS, f"{metadata.transport_array_type} not supported transport type as of yet"
+        dtype = SUPPORTED_ARRAY_TRANSPORTS[metadata.transport_array_type]
+        buffer = np.zeros(buffer_shape, dtype=dtype)
 
         async def populate(starts, counts):
             array = await self.get_subarray(uid, starts, counts)
@@ -520,19 +544,19 @@ class ETPClient(ETPConnection):
 
         await asyncio.gather(*[
             populate(starts, counts)
-            for starts, counts in self._get_chunk_sizes(buffer_shape)
+            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype)
         ])
 
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
-        assert data.dtype == np.float32, "etp server only support floats32 as of now"
 
-        await self._put_uninitialized_data_array(uid, data.shape)
+        transport_array_type = get_transfertype_from_dtype(data.dtype)
+        await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         await asyncio.gather(*[
             self.put_subarray(uid, data, starts, counts)
-            for starts, counts in self._get_chunk_sizes(data.shape)
+            for starts, counts in self._get_chunk_sizes(data.shape, data.dtype)
         ])
 
         return {uid.uri: ''}
@@ -566,10 +590,11 @@ class ETPClient(ETPConnection):
 # define an asynchronous context manager
 class connect:
 
-    def __init__(self, server_url: str, authorization: T.Optional[str] = None, timeout=10.):
+    def __init__(self, server_url: str, default_dataspace_uri: DataspaceURI | None = None, authorization: T.Optional[str] = None, timeout=10.):
         self.server_url = server_url
         self.headers = {"Authorization": authorization} if authorization else {}
         self.timeout = timeout
+        self.default_dataspace_uri = default_dataspace_uri
 
     # enter the async context manager
     async def __aenter__(self):
@@ -580,7 +605,7 @@ class connect:
             extra_headers=self.headers,
             max_size=MAXPAYLOADSIZE
         )
-        self.client = ETPClient(ws, timeout=self.timeout)
+        self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         await self.client.connect()
 
         return self.client

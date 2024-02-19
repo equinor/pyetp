@@ -12,21 +12,41 @@ from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime
 
 import map_api.resqml_objects as ro
+from map_api.config import SETTINGS
 
-from .types import (ArrayOfBoolean, ArrayOfDouble, ArrayOfFloat, ArrayOfInt,
-                    ArrayOfLong, DataArray, DataObject)
+from .types import (AnyArrayType, ArrayOfBoolean, ArrayOfDouble, ArrayOfFloat,
+                    ArrayOfInt, ArrayOfLong, DataArray, DataObject)
 
-APPLICATION_NAME = "geomint"
-APPLICATION_VERSION = "0.0.1"
-
-
-SUPPORTED_ARRAY_TYPES = {
-    ArrayOfFloat: np.float32,
-    ArrayOfBoolean: np.bool_,
-    ArrayOfInt: np.int32,
-    ArrayOfLong: np.int64,
-    ArrayOfDouble: np.float64,
+_ARRAY_TYPES = ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
+SUPPORTED_ARRAY_TYPES: dict[T.Type[_ARRAY_TYPES], np.dtype[T.Any]] = {
+    ArrayOfFloat: np.dtype(np.float32),
+    ArrayOfBoolean: np.dtype(np.bool_),
+    ArrayOfInt: np.dtype(np.int32),
+    ArrayOfLong: np.dtype(np.int64),
+    ArrayOfDouble: np.dtype(np.float64),
 }
+
+SUPPORTED_ARRAY_TRANSPORTS = {
+    AnyArrayType(k.__name__[0].lower() + k.__name__[1:]): d for k, d in SUPPORTED_ARRAY_TYPES.items()
+}
+
+
+def get_transfertype_from_dtype(dtype: np.dtype):
+
+    arraytype = [item[0] for item in SUPPORTED_ARRAY_TRANSPORTS.items() if item[1] == dtype]
+    if not len(arraytype):
+        raise TypeError(f"Not {type(dtype)} supported")
+
+    return arraytype[0]
+
+
+def get_array_cls_from_dtype(dtype: np.dtype):
+
+    arraytype = [item[0] for item in SUPPORTED_ARRAY_TYPES.items() if item[1] == dtype]
+    if not len(arraytype):
+        raise TypeError(f"Not {type(dtype)} supported")
+
+    return arraytype[0]
 
 
 def get_data_object_type(obj: ro.AbstractObject):
@@ -70,14 +90,7 @@ def etp_data_array_to_numpy(data_array: DataArray):
 
 def numpy_to_etp_data_array(data: np.ndarray):
     from etptypes.energistics.etp.v12.datatypes.any_array import AnyArray
-
-    dtype = data.dtype
-
-    arraytype = [item[0] for item in SUPPORTED_ARRAY_TYPES.items() if item[1] == data.dtype]
-    if not len(arraytype):
-        raise TypeError(f"Not {type(dtype)} supported")
-
-    cls = arraytype[0]
+    cls = get_array_cls_from_dtype(data.dtype)
     return DataArray(
         dimensions=data.shape,  # type: ignore
         data=AnyArray(item=cls(values=data.flatten().tolist()))
@@ -91,8 +104,17 @@ def create_common_citation(title: str):
         creation=XmlDateTime.from_string(
             datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
         ),
-        originator=APPLICATION_NAME,
-        format=f"equinor:{APPLICATION_NAME}:v{APPLICATION_VERSION}",
+        originator=SETTINGS.application_name,
+        format=f"equinor:{SETTINGS.application_name}:v{SETTINGS.application_version}",
+    )
+
+
+def create_epc(schema_version="2.0"):
+    return ro.EpcExternalPartReference(
+        citation=create_common_citation("Hdf Proxy"),
+        schema_version=schema_version,
+        uuid=str(uuid4()),
+        mime_type="application/x-hdf5",
     )
 
 
@@ -105,15 +127,9 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
     schema_version = "2.0"
     title = surf.name or "regularsurface"
 
-    epc = ro.EpcExternalPartReference(
-        citation=create_common_citation("Hdf Proxy"),
-        schema_version=schema_version,
-        uuid=str(uuid4()),
-        mime_type="application/x-hdf5",
-    )
-
     assert np.abs(surf.get_rotation()) < 1e-7, "Maps should have no rotation!"
 
+    epc = create_epc()
     crs = ro.LocalDepth3dCrs(
         citation=create_common_citation(f"CRS for {title}"),
         schema_version=schema_version,

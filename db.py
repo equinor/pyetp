@@ -1,8 +1,9 @@
-from os import environ
 
 import redis.asyncio as redis
 
-pool = redis.ConnectionPool.from_url(environ.get('REDISHOST', 'redis://localhost:6379'))
+from map_api.config import SETTINGS
+
+pool = redis.ConnectionPool.from_url(SETTINGS.redis_dns)
 
 
 def get_cache():
