@@ -253,3 +253,161 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
     )
 
     return epc, crs, gri
+
+
+def convert_resqpy_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
+    import resqpy.model as rq
+    import resqpy.unstructured as rug
+    import numpy as np
+
+    schema_version = "2.0"
+    title = title_in or "hexamesh" 
+
+    model = rq.Model(epc_filename)
+    assert model is not None
+
+    #
+    # read mesh:  vertex positions and cell definitions
+    #
+    hexa_uuid = model.uuid(obj_type = 'UnstructuredGridRepresentation', title = title_in )
+    assert hexa_uuid is not None
+    hexa = rug.HexaGrid(model, uuid = hexa_uuid)
+    assert hexa is not None
+    print(hexa.title, hexa.node_count, hexa.cell_count, hexa.cell_shape)
+    assert hexa.cell_shape == 'hexahedral'
+
+    print( hexa.points_ref().shape )   # numpy array of vertex positions
+    cells = np.array( [ hexa.distinct_node_indices_for_cell(i) for i in range(hexa.cell_count) ]  ) # cell indices are read using this function(?)
+    print( cells.shape )   # numpy array of vertex positions
+
+    hexa.check_hexahedral()
+
+
+    crs = ro.LocalDepth3dCrs(
+        citation=create_common_citation(f"CRS for {title}"),
+        schema_version=schema_version,
+        uuid=str(uuid4()),
+        # NOTE: I assume that we let the CRS have no offset
+        xoffset=0.0,
+        yoffset=0.0,
+        zoffset=0.0,
+        areal_rotation=ro.PlaneAngleMeasure(
+            # Here rotation should be zero!
+            value=0.0,
+            uom=ro.PlaneAngleUom.DEGA,
+        ),
+        # NOTE: Verify that this is the projected axis order
+        projected_axis_order=ro.AxisOrder2d.EASTING_NORTHING,
+        projected_uom=ro.LengthUom.M,
+        vertical_uom=ro.LengthUom.M,
+        zincreasing_downward=True,
+        vertical_crs=ro.VerticalUnknownCrs(
+            unknown="unknown",
+        ),
+        projected_crs=ro.ProjectedCrsEpsgCode(
+            epsg_code=projected_epsg,
+        ),
+    )
+
+
+    epc = ro.EpcExternalPartReference(
+        citation=create_common_citation("Hdf Proxy"),        
+        schema_version=schema_version,
+        uuid=str(uuid4()),
+        mime_type="application/x-hdf5",
+    )
+    
+    cellshape = ro.CellShape.HEXAHEDRAL if (hexa.cell_shape=="hexahedral") else ro.CellShape.TETRAHEDRAL
+
+    geom = ro.UnstructuredGridGeometry(
+        local_crs = ro.DataObjectReference(
+                content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}",
+                title=crs.citation.title,
+                uuid=crs.uuid,
+            ),
+        node_count=hexa.node_count or -1,
+        face_count=hexa.face_count or -1,
+        cell_shape = cellshape, # ro.CellShape( value=ro.CellShape.HEXAHEDRAL ), # hexa.cell_shape could be hexahedral or tetrahedral
+        # points = hexa.points_cached,
+        points = ro.Point3dHdf5Array(
+            coordinates = ro.Hdf5Dataset(
+                path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/points",
+                hdf_proxy=ro.DataObjectReference(
+                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                    title=epc.citation.title,
+                    uuid=str(epc.uuid),
+                ),                
+            )
+        ),
+        nodes_per_face = ro.ResqmlJaggedArray(
+            elements = ro.IntegerHdf5Array(
+                null_value = -1,
+                values = ro.Hdf5Dataset(
+                    path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/nodes_per_face",
+                    hdf_proxy=ro.DataObjectReference(
+                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                        title=epc.citation.title,
+                        uuid=str(epc.uuid),
+                    ),                
+                )
+            ),
+            cumulative_length = ro.IntegerHdf5Array(
+                null_value = -1,
+                values = ro.Hdf5Dataset(
+                    path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/nodes_per_face_cl",
+                    hdf_proxy=ro.DataObjectReference(
+                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                        title=epc.citation.title,
+                        uuid=str(epc.uuid),
+                    ),                
+                )
+            ),
+        ),
+        faces_per_cell = ro.ResqmlJaggedArray(
+            elements = ro.IntegerHdf5Array(
+                null_value = -1,
+                values = ro.Hdf5Dataset(
+                    path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/faces_per_cell",
+                    hdf_proxy=ro.DataObjectReference(
+                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                        title=epc.citation.title,
+                        uuid=str(epc.uuid),
+                    ),                
+                )
+            ),
+            cumulative_length = ro.IntegerHdf5Array(
+                null_value = -1,
+                values = ro.Hdf5Dataset(
+                    path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/faces_per_cell_cl",
+                    hdf_proxy=ro.DataObjectReference(
+                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                        title=epc.citation.title,
+                        uuid=str(epc.uuid),
+                    ),                
+                )
+            ),
+        ),
+        cell_face_is_right_handed = ro.BooleanHdf5Array(
+            values = ro.Hdf5Dataset(
+                path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/cell_face_is_right_handed",
+                hdf_proxy=ro.DataObjectReference(
+                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                    title=epc.citation.title,
+                    uuid=str(epc.uuid),
+                ),                
+            )
+        )
+    )
+
+    #
+    uns = ro.UnstructuredGridRepresentation(
+        uuid=str(hexa.uuid),
+        schema_version=schema_version,
+        # surface_role=resqml_objects.SurfaceRole.MAP,
+        citation=create_common_citation(hexa.title),     
+        cell_count = hexa.cell_count or -1,
+        geometry = geom,
+    )
+
+    return uns, crs, epc, hexa
+

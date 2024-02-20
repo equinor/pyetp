@@ -386,6 +386,83 @@ class ETPClient(ETPConnection):
         return epc_uri, crs_uri, gri_uri
 
     #
+    # resqpy meshes
+    #
+
+    async def upload_epc_mesh_to_rddms(
+        self, epc_filename, title_in, property_titles, projected_epsg, etp_server_url, dataspace, authorization,
+    ):
+        uns, crs, epc, hexa = convert_resqpy_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
+
+        # uns_rddms_uris = await upload_resqml_mesh(
+        #     uns, crs, epc, hexa, etp_server_url, dataspace, authorization
+        # )
+        # rddms_urls = await upload_resqml_objects(
+        #     ws, msg_id, max_payload_size, dataspace, [epc, crs, uns]
+        # )
+        print("dataspace ", dataspace, type(dataspace))
+        epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+            ),
+            hexa.points_cached # surface.values.filled(np.nan).astype(np.float32)
+        )
+        print("=== records from upload array ===", response)
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
+            ),
+            hexa.nodes_per_face
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
+            ),
+            hexa.nodes_per_face_cl
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
+            ),
+            hexa.faces_per_cell
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
+            ),
+            hexa.faces_per_cell_cl
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
+            ),
+            hexa.cell_face_is_right_handed
+        )
+
+        prop_rddms_uris = {}
+
+        # for propname in property_titles:
+        #     cprop0, prop, propertykind0 = convert_resqpy_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc )
+        #     prop_rddms_uri = await upload_resqml_mesh_property(
+        #         prop, cprop0, propertykind0, epc, etp_server_url, dataspace, authorization
+        #     )
+        #     prop_rddms_uris[propname] = prop_rddms_uri
+        
+        return [epc_uri, crs_uri, uns_uri], prop_rddms_uris
+    #
     # array
     #
 
