@@ -389,17 +389,66 @@ class ETPClient(ETPConnection):
     # resqpy meshes
     #
 
-    async def upload_epc_mesh_to_rddms(
+    async def get_epc_mesh(self, epc_uri: DataObjectURI | str, uns_uri: DataObjectURI | str):
+        uns, = await self.get_resqml_objects(uns_uri)
+
+        # some checks
+        assert isinstance(uns, ro.UnstructuredGridRepresentation), "obj must be Grid2dRepresentation"
+        assert isinstance(uns.geometry, ro.UnstructuredGridGeometry), "geometry must be UnstructuredGridGeometry"
+        assert isinstance(uns.geometry.points, ro.Point3dHdf5Array), "points must be Point3dHdf5Array"
+        assert isinstance(uns.geometry.points.coordinates, ro.Hdf5Dataset), "coordinates must be Hdf5Dataset"
+        assert isinstance(uns.geometry.faces_per_cell.elements, ro.IntegerHdf5Array), "faces_per_cell must be IntegerHdf5Array"
+        assert isinstance(uns.geometry.faces_per_cell.cumulative_length, ro.IntegerHdf5Array), "faces_per_cell cl must be IntegerHdf5Array"
+
+        # sgeo = gri.grid2d_patch.geometry.points.supporting_geometry  # type: ignore
+        # assert isinstance(sgeo, ro.Point3dLatticeArray), "supporting_geometry must be Point3dLatticeArray"
+
+        # # get array
+        points = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+            )
+        )
+        nodes_per_face = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
+            )
+        )
+        nodes_per_face_cl = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
+            )
+        )
+        faces_per_cell = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
+            )
+        )
+        faces_per_cell_cl = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
+            )
+        )
+        cell_face_is_right_handed = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
+            )
+        )
+
+        # return RegularSurface(
+        #     ncol=array.shape[0], nrow=array.shape[1],
+        #     xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,
+        #     xori=sgeo.origin.coordinate1, yori=sgeo.origin.coordinate2,
+        #     values=array,
+        #     masked=True
+        # )
+        return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
+
+    async def put_epc_mesh(
         self, epc_filename, title_in, property_titles, projected_epsg, etp_server_url, dataspace, authorization,
     ):
         uns, crs, epc, hexa = convert_resqpy_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
 
-        # uns_rddms_uris = await upload_resqml_mesh(
-        #     uns, crs, epc, hexa, etp_server_url, dataspace, authorization
-        # )
-        # rddms_urls = await upload_resqml_objects(
-        #     ws, msg_id, max_payload_size, dataspace, [epc, crs, uns]
-        # )
         print("dataspace ", dataspace, type(dataspace))
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
 
