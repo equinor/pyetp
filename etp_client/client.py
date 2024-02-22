@@ -444,14 +444,35 @@ class ETPClient(ETPConnection):
         # )
         return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
 
+
+    async def get_epc_mesh_property(self, epc_uri: DataObjectURI | str, prop_uri: DataObjectURI | str):
+        print("get_epc_mesh_property", prop_uri, epc_uri )
+        cprop0, = await self.get_resqml_objects(prop_uri)
+
+        # some checks
+        assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
+        assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
+        
+        # # get array
+        values = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
+            )
+        )
+
+        return cprop0, values
+
     async def put_epc_mesh(
-        self, epc_filename, title_in, property_titles, projected_epsg, etp_server_url, dataspace, authorization,
+        self, epc_filename, title_in, property_titles, projected_epsg, dataspace
     ):
-        uns, crs, epc, hexa = convert_resqpy_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
+        uns, crs, epc, hexa = convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
 
         print("dataspace ", dataspace, type(dataspace))
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
 
+        #
+        # mesh geometry (six arrays)
+        #
         response = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -459,7 +480,6 @@ class ETPClient(ETPConnection):
             ),
             hexa.points_cached # surface.values.filled(np.nan).astype(np.float32)
         )
-        print("=== records from upload array ===", response)
 
         response = await self.put_array(
             DataArrayIdentifier(
@@ -501,14 +521,27 @@ class ETPClient(ETPConnection):
             hexa.cell_face_is_right_handed
         )
 
+        #
+        # mesh properties: one Property, one array of values, and an optional PropertyKind per property
+        #
         prop_rddms_uris = {}
+        for propname in property_titles:
+            cprop0, prop, propertykind0 = convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc )
 
-        # for propname in property_titles:
-        #     cprop0, prop, propertykind0 = convert_resqpy_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc )
-        #     prop_rddms_uri = await upload_resqml_mesh_property(
-        #         prop, cprop0, propertykind0, epc, etp_server_url, dataspace, authorization
-        #     )
-        #     prop_rddms_uris[propname] = prop_rddms_uri
+            assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
+            assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
+
+            propkind_uri = "" if (propertykind0 is None) else self.put_resqml_objects(propertykind0, dataspace=dataspace)
+            cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+
+            prop_rddms_uris[propname] = [propkind_uri, cprop_uri]
+            response = await self.put_array(
+                DataArrayIdentifier(
+                    uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                    pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
+                ),
+                prop.array_ref(),
+            )            
         
         return [epc_uri, crs_uri, uns_uri], prop_rddms_uris
     #
