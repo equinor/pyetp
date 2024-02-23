@@ -73,7 +73,7 @@ def test_get_tile(monkeypatch: pytest.MonkeyPatch, z: int):
     monkeypatch.setattr(tile_service, 'empty_tile', lambda *_: np.zeros((tile_service.TILE_SIZE, tile_service.TILE_SIZE)).astype(np.uint8))
 
     # map origo half tile size away project origo ( down right looking on screen )
-    arr_ori = -tile_service.TILE_SIZE * np.array([tile_service.RESOLUTION_LOD0] * 2) / 2
+    arr_ori = tile_service.TILE_SIZE * np.array([-tile_service.RESOLUTION_LOD0, tile_service.RESOLUTION_LOD0]) / 2
     arr = np.ones((tile_service.TILE_SIZE, tile_service.TILE_SIZE)).astype(np.uint8)
 
     tile = tile_service.get_tile(arr, z, 1, 1, arr_ori)
