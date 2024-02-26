@@ -466,7 +466,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
             ),
-            hexa.points_cached # surface.values.filled(np.nan).astype(np.float32)
+            hexa.points_cached  # type: ignore
         )
 
         response = await self.put_array(
@@ -474,7 +474,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
             ),
-            hexa.nodes_per_face
+            hexa.nodes_per_face  # type: ignore
         )
 
         response = await self.put_array(
@@ -482,7 +482,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
             ),
-            hexa.nodes_per_face_cl
+            hexa.nodes_per_face_cl  # type: ignore
         )
 
         response = await self.put_array(
@@ -490,7 +490,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
             ),
-            hexa.faces_per_cell
+            hexa.faces_per_cell  # type: ignore
         )
 
         response = await self.put_array(
@@ -498,7 +498,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
             ),
-            hexa.faces_per_cell_cl
+            hexa.faces_per_cell_cl  # type: ignore
         )
 
         response = await self.put_array(
@@ -506,7 +506,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
             ),
-            hexa.cell_face_is_right_handed
+            hexa.cell_face_is_right_handed  # type: ignore
         )
 
         #
@@ -528,10 +528,11 @@ class ETPClient(ETPConnection):
                     uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                     pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
                 ),
-                prop.array_ref(),
+                prop.array_ref(),  # type: ignore
             )            
         
         return [epc_uri, crs_uri, uns_uri], prop_rddms_uris
+    
     #
     # array
     #

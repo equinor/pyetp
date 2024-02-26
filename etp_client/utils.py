@@ -320,8 +320,7 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
             ),
         node_count=hexa.node_count or -1,
         face_count=hexa.face_count or -1,
-        cell_shape = cellshape, # ro.CellShape( value=ro.CellShape.HEXAHEDRAL ), # hexa.cell_shape could be hexahedral or tetrahedral
-        # points = hexa.points_cached,
+        cell_shape = cellshape,
         points = ro.Point3dHdf5Array(
             coordinates = ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/points",
@@ -424,7 +423,7 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
 
     model = rq.Model(epc_filename)
     assert model is not None
-    prop_uuid = model.uuid(title = prop_title)  # prop_title
+    prop_uuid = model.uuid(title = prop_title)
     prop = rqp.Property(model, uuid = prop_uuid)
 
     continuous = prop.is_continuous()
