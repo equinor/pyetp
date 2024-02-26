@@ -400,9 +400,6 @@ class ETPClient(ETPConnection):
         assert isinstance(uns.geometry.faces_per_cell.elements, ro.IntegerHdf5Array), "faces_per_cell must be IntegerHdf5Array"
         assert isinstance(uns.geometry.faces_per_cell.cumulative_length, ro.IntegerHdf5Array), "faces_per_cell cl must be IntegerHdf5Array"
 
-        # sgeo = gri.grid2d_patch.geometry.points.supporting_geometry  # type: ignore
-        # assert isinstance(sgeo, ro.Point3dLatticeArray), "supporting_geometry must be Point3dLatticeArray"
-
         # # get array
         points = await self.get_array(
             DataArrayIdentifier(
@@ -435,18 +432,10 @@ class ETPClient(ETPConnection):
             )
         )
 
-        # return RegularSurface(
-        #     ncol=array.shape[0], nrow=array.shape[1],
-        #     xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,
-        #     xori=sgeo.origin.coordinate1, yori=sgeo.origin.coordinate2,
-        #     values=array,
-        #     masked=True
-        # )
         return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
 
 
     async def get_epc_mesh_property(self, epc_uri: DataObjectURI | str, prop_uri: DataObjectURI | str):
-        print("get_epc_mesh_property", prop_uri, epc_uri )
         cprop0, = await self.get_resqml_objects(prop_uri)
 
         # some checks
@@ -467,7 +456,6 @@ class ETPClient(ETPConnection):
     ):
         uns, crs, epc, hexa = convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
 
-        print("dataspace ", dataspace, type(dataspace))
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
 
         #
@@ -531,7 +519,7 @@ class ETPClient(ETPConnection):
             assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
             assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
 
-            propkind_uri = "" if (propertykind0 is None) else self.put_resqml_objects(propertykind0, dataspace=dataspace)
+            propkind_uri = "" if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
             cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
 
             prop_rddms_uris[propname] = [propkind_uri, cprop_uri]

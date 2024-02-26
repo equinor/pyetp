@@ -273,15 +273,8 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     assert hexa_uuid is not None
     hexa = rug.HexaGrid(model, uuid = hexa_uuid)
     assert hexa is not None
-    print(hexa.title, hexa.node_count, hexa.cell_count, hexa.cell_shape)
     assert hexa.cell_shape == 'hexahedral'
-
-    print( hexa.points_ref().shape )   # numpy array of vertex positions
-    cells = np.array( [ hexa.distinct_node_indices_for_cell(i) for i in range(hexa.cell_count) ]  ) # cell indices are read using this function(?)
-    print( cells.shape )   # numpy array of vertex positions
-
     hexa.check_hexahedral()
-
 
     crs = ro.LocalDepth3dCrs(
         citation=create_common_citation(f"CRS for {title}"),
