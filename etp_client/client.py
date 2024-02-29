@@ -386,6 +386,154 @@ class ETPClient(ETPConnection):
         return epc_uri, crs_uri, gri_uri
 
     #
+    # resqpy meshes
+    #
+
+    async def get_epc_mesh(self, epc_uri: DataObjectURI | str, uns_uri: DataObjectURI | str):
+        uns, = await self.get_resqml_objects(uns_uri)
+
+        # some checks
+        assert isinstance(uns, ro.UnstructuredGridRepresentation), "obj must be Grid2dRepresentation"
+        assert isinstance(uns.geometry, ro.UnstructuredGridGeometry), "geometry must be UnstructuredGridGeometry"
+        assert isinstance(uns.geometry.points, ro.Point3dHdf5Array), "points must be Point3dHdf5Array"
+        assert isinstance(uns.geometry.points.coordinates, ro.Hdf5Dataset), "coordinates must be Hdf5Dataset"
+        assert isinstance(uns.geometry.faces_per_cell.elements, ro.IntegerHdf5Array), "faces_per_cell must be IntegerHdf5Array"
+        assert isinstance(uns.geometry.faces_per_cell.cumulative_length, ro.IntegerHdf5Array), "faces_per_cell cl must be IntegerHdf5Array"
+
+        # # get array
+        points = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+            )
+        )
+        nodes_per_face = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
+            )
+        )
+        nodes_per_face_cl = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
+            )
+        )
+        faces_per_cell = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
+            )
+        )
+        faces_per_cell_cl = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
+            )
+        )
+        cell_face_is_right_handed = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
+            )
+        )
+
+        return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
+
+
+    async def get_epc_mesh_property(self, epc_uri: DataObjectURI | str, prop_uri: DataObjectURI | str):
+        cprop0, = await self.get_resqml_objects(prop_uri)
+
+        # some checks
+        assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
+        assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
+        
+        # # get array
+        values = await self.get_array(
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
+            )
+        )
+
+        return cprop0, values
+
+    async def put_epc_mesh(
+        self, epc_filename, title_in, property_titles, projected_epsg, dataspace
+    ):
+        uns, crs, epc, hexa = convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
+
+        epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
+
+        #
+        # mesh geometry (six arrays)
+        #
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+            ),
+            hexa.points_cached  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
+            ),
+            hexa.nodes_per_face  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
+            ),
+            hexa.nodes_per_face_cl  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
+            ),
+            hexa.faces_per_cell  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
+            ),
+            hexa.faces_per_cell_cl  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
+            ),
+            hexa.cell_face_is_right_handed  # type: ignore
+        )
+
+        #
+        # mesh properties: one Property, one array of values, and an optional PropertyKind per property
+        #
+        prop_rddms_uris = {}
+        for propname in property_titles:
+            cprop0, prop, propertykind0 = convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc )
+
+            assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
+            assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
+
+            propkind_uri = "" if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
+            cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+
+            prop_rddms_uris[propname] = [propkind_uri, cprop_uri]
+            response = await self.put_array(
+                DataArrayIdentifier(
+                    uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                    pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
+                ),
+                prop.array_ref(),  # type: ignore
+            )            
+        
+        return [epc_uri, crs_uri, uns_uri], prop_rddms_uris
+    
+    #
     # array
     #
 
