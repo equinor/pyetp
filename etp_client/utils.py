@@ -29,7 +29,8 @@ SUPPORTED_ARRAY_TYPES: dict[T.Type[_ARRAY_TYPES], np.dtype[T.Any]] = {
 SUPPORTED_ARRAY_TRANSPORTS = {
     AnyArrayType(k.__name__[0].lower() + k.__name__[1:]): d for k, d in SUPPORTED_ARRAY_TYPES.items()
 }
-
+    
+schema_version = "2.0"
 
 def get_transfertype_from_dtype(dtype: np.dtype):
 
@@ -109,6 +110,36 @@ def create_common_citation(title: str):
     )
 
 
+def create_common_crs(title: str, projected_epsg, rotation: float = 0.0):
+    return ro.LocalDepth3dCrs(
+        citation=create_common_citation(f"CRS for {title}"),
+        schema_version=schema_version,
+        uuid=str(uuid4()),
+        # NOTE: I assume that we let the CRS have no offset, and add any offset
+        # in the grid instead.
+        xoffset=0.0,
+        yoffset=0.0,
+        zoffset=0.0,
+        areal_rotation=ro.PlaneAngleMeasure(
+            # Here rotation should be zero!
+            value=rotation,
+            uom=ro.PlaneAngleUom.DEGA,
+        ),
+        # NOTE: Verify that this is the projected axis order
+        projected_axis_order=ro.AxisOrder2d.EASTING_NORTHING,
+        projected_uom=ro.LengthUom.M,
+        vertical_uom=ro.LengthUom.M,
+        zincreasing_downward=True,
+        vertical_crs=ro.VerticalUnknownCrs(
+            unknown="unknown",
+        ),
+        projected_crs=ro.ProjectedCrsEpsgCode(
+            epsg_code=projected_epsg,
+        ),
+    )
+
+
+
 def create_epc(schema_version="2.0"):
     return ro.EpcExternalPartReference(
         citation=create_common_citation("Hdf Proxy"),
@@ -124,38 +155,12 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
     # available for download here:
     # https://publications.opengroup.org/standards/energistics-standards/v231a
 
-    schema_version = "2.0"
     title = surf.name or "regularsurface"
 
     assert np.abs(surf.get_rotation()) < 1e-7, "Maps should have no rotation!"
 
     epc = create_epc()
-    crs = ro.LocalDepth3dCrs(
-        citation=create_common_citation(f"CRS for {title}"),
-        schema_version=schema_version,
-        uuid=str(uuid4()),
-        # NOTE: I assume that we let the CRS have no offset, and add any offset
-        # in the grid instead.
-        xoffset=0.0,
-        yoffset=0.0,
-        zoffset=0.0,
-        areal_rotation=ro.PlaneAngleMeasure(
-            # Here rotation should be zero!
-            value=surf.get_rotation(),
-            uom=ro.PlaneAngleUom.DEGA,
-        ),
-        # NOTE: Verify that this is the projected axis order
-        projected_axis_order=ro.AxisOrder2d.EASTING_NORTHING,
-        projected_uom=ro.LengthUom.M,
-        vertical_uom=ro.LengthUom.M,
-        zincreasing_downward=True,
-        vertical_crs=ro.VerticalUnknownCrs(
-            unknown="unknown",
-        ),
-        projected_crs=ro.ProjectedCrsEpsgCode(
-            epsg_code=projected_epsg,
-        ),
-    )
+    crs = create_common_crs(title, projected_epsg, surf.get_rotation())   # Here rotation should be zero!
 
     x0 = surf.xori
     y0 = surf.yori
@@ -260,7 +265,6 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     import resqpy.unstructured as rug
     import numpy as np
 
-    schema_version = "2.0"
     title = title_in or "hexamesh" 
 
     model = rq.Model(epc_filename)
@@ -276,32 +280,7 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     assert hexa.cell_shape == 'hexahedral'
     hexa.check_hexahedral()
 
-    crs = ro.LocalDepth3dCrs(
-        citation=create_common_citation(f"CRS for {title}"),
-        schema_version=schema_version,
-        uuid=str(uuid4()),
-        # NOTE: I assume that we let the CRS have no offset
-        xoffset=0.0,
-        yoffset=0.0,
-        zoffset=0.0,
-        areal_rotation=ro.PlaneAngleMeasure(
-            # Here rotation should be zero!
-            value=0.0,
-            uom=ro.PlaneAngleUom.DEGA,
-        ),
-        # NOTE: Verify that this is the projected axis order
-        projected_axis_order=ro.AxisOrder2d.EASTING_NORTHING,
-        projected_uom=ro.LengthUom.M,
-        vertical_uom=ro.LengthUom.M,
-        zincreasing_downward=True,
-        vertical_crs=ro.VerticalUnknownCrs(
-            unknown="unknown",
-        ),
-        projected_crs=ro.ProjectedCrsEpsgCode(
-            epsg_code=projected_epsg,
-        ),
-    )
-
+    crs = create_common_crs(title, projected_epsg)
 
     epc = ro.EpcExternalPartReference(
         citation=create_common_citation("Hdf Proxy"),        
@@ -418,8 +397,6 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
         if (pt=="insulance_thermal"): return ro.ThermalInsulanceUom.DELTA_K_M2_W
         if (pt=="Radiogenic_heat_production"): return ro.ResqmlUom.U_W_M3
         return ro.ResqmlUom.EUC
-
-    schema_version = "2.0"
 
     model = rq.Model(epc_filename)
     assert model is not None
