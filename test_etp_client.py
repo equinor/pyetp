@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 import map_api.resqml_objects as resqml_objects
 from map_api.etp_client.client import ETPClient
 from map_api.etp_client.uri import DataspaceURI
-from map_api.main import DeleteMapBody, MapPayload, NewMapInterface, app
+from map_api.main import DeleteMapBody, MapPayload, NewMapInterface, app, projectCRSData
 
 
 def create_surface(ncol: int, nrow: int):
@@ -75,8 +75,9 @@ def surface_path():
 def test_etp_api(client: TestClient, surface_path: Path):
 
     # test success upload
+    crs = projectCRSData(epsg=12345, name='test')
     payload = MapPayload(
-        projectId='test', projectCRS='test', filePath=str(surface_path), transformPipeline='',
+        projectId='test', projectCRS=crs, filePath=str(surface_path), transformPipeline='',
         metadata=NewMapInterface(name='test', description='test', crsName='test', format='irap_binary', zUnit='m', mapType='value')
     )
 
