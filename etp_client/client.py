@@ -198,13 +198,13 @@ class ETPClient(ETPConnection):
     def get_dataspace_or_default_uri(self, ds: DataspaceURI | str | None) -> DataspaceURI:
         """Returns default dataspace or user spefied one"""
 
-        if ds is None and self._default_duri is None:
+        if ds is not None:
+            return DataspaceURI.from_any(ds)
+
+        if self._default_duri is None:
             raise ValueError("Could not get dataspace from userinput or default")
 
-        if isinstance(ds, str):
-            return DataspaceURI(ds)
-
-        return ds or self._default_duri  # type: ignore
+        return self._default_duri
 
     #
     # dataspace
@@ -216,7 +216,7 @@ class ETPClient(ETPConnection):
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
             PutDataspacesResponse
 
-        _uris = [DataspaceURI(u) if isinstance(u, str) else u for u in uris]  # type: ignore
+        _uris = list(map(DataspaceURI.from_any, uris))
 
         time = self.timestamp
         response = await self.send(
