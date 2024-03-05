@@ -86,8 +86,11 @@ class ETPClient(ETPConnection):
     async def _recv(self, correlation_id: int) -> ETPModel:
         assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
 
-        async with asyncio.timeout(self.timeout):
-            await self._recv_events[correlation_id].wait()
+        try:
+            async with asyncio.timeout(self.timeout):
+                await self._recv_events[correlation_id].wait()
+        except asyncio.CancelledError as e:
+            raise TimeoutError(f'Timeout before reciving {correlation_id=}') from e
 
         # cleanup
         bodies = self._clear_msg_on_buffer(correlation_id)
@@ -110,8 +113,8 @@ class ETPClient(ETPConnection):
             self.__recvtask.cancel("stopped")
 
             if len(self._recv_buffer):
-                logger.error(f"Closed connection - but had stuff left in buffers")
-                logger.warning(self._recv_buffer)
+                logger.error(f"Closed connection - but had stuff left in buffers ({len(self._recv_buffer)})")
+                # logger.warning(self._recv_buffer)  # may contain data so lets not flood logs
 
     #
     #
@@ -754,7 +757,8 @@ class connect:
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
             extra_headers=self.headers,
-            max_size=MAXPAYLOADSIZE
+            max_size=MAXPAYLOADSIZE,
+            ping_timeout=self.timeout
         )
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         await self.client.connect()
