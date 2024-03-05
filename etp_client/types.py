@@ -1,5 +1,6 @@
 
 from etptypes import ETPModel
+from etptypes.energistics.etp.v12.datatypes.any_array import AnyArray
 from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
 from etptypes.energistics.etp.v12.datatypes.any_logical_array_type import \
     AnyLogicalArrayType
@@ -14,6 +15,8 @@ from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array import \
     DataArray
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import \
     DataArrayIdentifier
+from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import \
+    DataArrayMetadata
 from etptypes.energistics.etp.v12.datatypes.data_value import DataValue
 from etptypes.energistics.etp.v12.datatypes.message_header import MessageHeader
 from etptypes.energistics.etp.v12.datatypes.object.data_object import \

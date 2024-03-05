@@ -15,8 +15,8 @@ from xtgeo import RegularSurface
 
 import map_api.resqml_objects as ro
 from map_api.config import SETTINGS
-from map_api.etp_client.utils import *
 
+from . import utils_arrays, utils_xml
 from .types import *
 from .uri import DataObjectURI, DataspaceURI
 
@@ -288,7 +288,7 @@ class ETPClient(ETPConnection):
 
     async def get_resqml_objects(self, *uris: DataObjectURI | str) -> T.List[ro.AbstractObject]:
         data_objects = await self.get_data_objects(*uris)
-        return parse_resqml_objects(data_objects)
+        return utils_xml.parse_resqml_objects(data_objects)
 
     async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: DataspaceURI | str | None = None):
         from etptypes.energistics.etp.v12.datatypes.object.resource import \
@@ -301,7 +301,7 @@ class ETPClient(ETPConnection):
 
         dobjs = [DataObject(
             format="xml",
-            data=resqml_to_xml(obj),
+            data=utils_xml.resqml_to_xml(obj),
             resource=Resource(
                 uri=uri.raw_uri,
                 name=obj.citation.title if obj.citation else obj.__class__.__name__,
@@ -362,9 +362,9 @@ class ETPClient(ETPConnection):
 
         return RegularSurface(
             ncol=array.shape[0], nrow=array.shape[1],
-            xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,
+            xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,  # type: ignore
             xori=sgeo.origin.coordinate1, yori=sgeo.origin.coordinate2,
-            values=array,
+            values=array,  # type: ignore
             masked=True
         )
 
@@ -372,13 +372,13 @@ class ETPClient(ETPConnection):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
 
-        epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
+        epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
         epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
 
         response = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+                pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file  # type: ignore
             ),
             surface.values.filled(np.nan).astype(np.float32)
         )
@@ -434,14 +434,13 @@ class ETPClient(ETPConnection):
 
         return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
 
-
     async def get_epc_mesh_property(self, epc_uri: DataObjectURI | str, prop_uri: DataObjectURI | str):
         cprop0, = await self.get_resqml_objects(prop_uri)
 
         # some checks
         assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
-        assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
-        
+        assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
+
         # # get array
         values = await self.get_array(
             DataArrayIdentifier(
@@ -454,8 +453,7 @@ class ETPClient(ETPConnection):
     async def put_epc_mesh(
         self, epc_filename, title_in, property_titles, projected_epsg, dataspace
     ):
-        uns, crs, epc, hexa = convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
-
+        uns, crs, epc, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
 
         #
@@ -514,10 +512,10 @@ class ETPClient(ETPConnection):
         #
         prop_rddms_uris = {}
         for propname in property_titles:
-            cprop0, prop, propertykind0 = convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc )
+            cprop0, prop, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc)
 
             assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
-            assert len(cprop0.patch_of_values)==1, "property obj must have exactly one patch of values"
+            assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
             propkind_uri = "" if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
             cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
@@ -529,10 +527,10 @@ class ETPClient(ETPConnection):
                     pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
                 ),
                 prop.array_ref(),  # type: ignore
-            )            
-        
+            )
+
         return [epc_uri, crs_uri, uns_uri], prop_rddms_uris
-    
+
     #
     # array
     #
@@ -561,8 +559,8 @@ class ETPClient(ETPConnection):
             GetDataArraysResponse
 
         # Check if we can upload the full array in one go.
-        meta = (await self.get_array_metadata(uid))[0]
-        if np.prod(np.array(meta.dimensions)) * np.float32().itemsize > self.max_array_size:
+        meta, = await self.get_array_metadata(uid)
+        if utils_arrays.get_nbytes(meta) > self.max_array_size:
             return await self._get_array_chuncked(uid)
 
         response = await self.send(
@@ -571,11 +569,13 @@ class ETPClient(ETPConnection):
         assert isinstance(response, GetDataArraysResponse), "Expected GetDataArraysResponse"
 
         arrays = list(response.data_arrays.values())
-        return etp_data_array_to_numpy(arrays[0])
+        return utils_arrays.to_numpy(arrays[0])
 
     async def put_array(self, uid: DataArrayIdentifier, data: np.ndarray):
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays import (
-            PutDataArrays, PutDataArraysType)
+        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_arrays_type import \
+            PutDataArraysType
+        from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays import \
+            PutDataArrays
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays_response import \
             PutDataArraysResponse
 
@@ -585,7 +585,7 @@ class ETPClient(ETPConnection):
 
         response = await self.send(
             PutDataArrays(
-                dataArrays={uid.path_in_resource: PutDataArraysType(uid=uid, array=numpy_to_etp_data_array(data))})
+                dataArrays={uid.path_in_resource: PutDataArraysType(uid=uid, array=utils_arrays.to_data_array(data))})
         )
         assert isinstance(response, PutDataArraysResponse), "Expected PutDataArraysResponse"
         assert len(response.success) == 1, "expected one success from put_array"
@@ -595,8 +595,10 @@ class ETPClient(ETPConnection):
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
 
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays import (
-            GetDataSubarrays, GetDataSubarraysType)
+        from etptypes.energistics.etp.v12.datatypes.data_array_types.get_data_subarrays_type import \
+            GetDataSubarraysType
+        from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays import \
+            GetDataSubarrays
         from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays_response import \
             GetDataSubarraysResponse
 
@@ -613,11 +615,13 @@ class ETPClient(ETPConnection):
         assert isinstance(response, GetDataSubarraysResponse), "Expected GetDataSubarraysResponse"
 
         arrays = list(response.data_subarrays.values())
-        return etp_data_array_to_numpy(arrays[0])
+        return utils_arrays.to_numpy(arrays[0])
 
     async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: np.ndarray | T.List[int], counts: np.ndarray | T.List[int], put_uninitialized=False):
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import (
-            PutDataSubarrays, PutDataSubarraysType)
+        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
+            PutDataSubarraysType
+        from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
+            PutDataSubarrays
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
             PutDataSubarraysResponse
 
@@ -626,11 +630,11 @@ class ETPClient(ETPConnection):
         ends = starts + counts
 
         if put_uninitialized:
-            transport_array_type = get_transfertype_from_dtype(data.dtype)
+            transport_array_type = utils_arrays.get_transport(data.dtype)
             await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
-        dataarray = numpy_to_etp_data_array(data[*slices])
+        dataarray = utils_arrays.to_data_array(data[*slices])
         payload = PutDataSubarraysType(
             uid=uid,
             data=dataarray.data,
@@ -680,8 +684,7 @@ class ETPClient(ETPConnection):
         metadata = (await self.get_array_metadata(uid))[0]
         buffer_shape = np.array(metadata.dimensions).astype(np.int64)
 
-        assert metadata.transport_array_type in SUPPORTED_ARRAY_TRANSPORTS, f"{metadata.transport_array_type} not supported transport type as of yet"
-        dtype = SUPPORTED_ARRAY_TRANSPORTS[metadata.transport_array_type]
+        dtype = utils_arrays.get_dtype(metadata.transport_array_type)
         buffer = np.zeros(buffer_shape, dtype=dtype)
 
         async def populate(starts, counts):
@@ -699,7 +702,7 @@ class ETPClient(ETPConnection):
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
 
-        transport_array_type = get_transfertype_from_dtype(data.dtype)
+        transport_array_type = utils_arrays.get_transport(data.dtype)
         await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         await asyncio.gather(*[
@@ -710,10 +713,10 @@ class ETPClient(ETPConnection):
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
-        from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import \
-            DataArrayMetadata
-        from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import (
-            PutUninitializedDataArrays, PutUninitializedDataArrayType)
+        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
+            PutUninitializedDataArrayType
+        from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
+            PutUninitializedDataArrays
         from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays_response import \
             PutUninitializedDataArraysResponse
 
