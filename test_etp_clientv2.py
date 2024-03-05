@@ -12,8 +12,8 @@ from map_api import etp_client
 from map_api.etp_client.client import MAXPAYLOADSIZE, ETPClient, ETPError
 from map_api.etp_client.types import DataArrayIdentifier
 from map_api.etp_client.uri import DataspaceURI
-from map_api.etp_client.utils import (create_epc,
-                                      parse_xtgeo_surface_to_resqml_grid)
+from map_api.etp_client.utils_xml import (create_epc,
+                                          parse_xtgeo_surface_to_resqml_grid)
 
 
 def create_surface(ncol: int, nrow: int):
