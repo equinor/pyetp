@@ -10,5 +10,5 @@ from .client import connect
 async def get_eclient(
     authorization: str = Header(default=None),
 ):
-    async with connect(SETTINGS.etp_url, SETTINGS.duri, authorization=authorization) as client:
+    async with connect(SETTINGS.etp_url, SETTINGS.duri, timeout=SETTINGS.etp_timeout, authorization=authorization) as client:
         yield client
