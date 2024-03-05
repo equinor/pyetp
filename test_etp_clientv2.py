@@ -1,4 +1,5 @@
 
+from contextlib import contextmanager
 from typing import Tuple
 from unittest.mock import AsyncMock
 
@@ -9,7 +10,7 @@ import xtgeo
 from conftest import ETP_SERVER_URL
 
 from map_api import etp_client
-from map_api.etp_client.client import MAXPAYLOADSIZE, ETPClient, ETPError
+from map_api.etp_client.client import ETPClient, ETPError
 from map_api.etp_client.types import DataArrayIdentifier
 from map_api.etp_client.uri import DataspaceURI
 from map_api.etp_client.utils_xml import (create_epc,
@@ -27,6 +28,18 @@ def create_surface(ncol: int, nrow: int):
         values=np.random.random((nrow, ncol)).astype(np.float32),
     )
     return surface
+
+
+@contextmanager
+def temp_maxsize(eclient: ETPClient, maxsize=10000):
+    _maxsize_before = eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"]
+    try:
+        # set maxsize
+        eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = maxsize
+        assert eclient.max_size == maxsize
+        yield eclient
+    finally:
+        eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = _maxsize_before
 
 
 @pytest_asyncio.fixture
@@ -113,15 +126,10 @@ async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
     resp = await eclient.put_array(uid, data)
     assert len(resp) == 1
 
-    # set maxsize
-    maxsize = 10000
-    eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = maxsize
-    assert eclient.max_size == maxsize
-
-    arr = await eclient._get_array_chuncked(uid)
-    np.testing.assert_allclose(arr, data)
-
-    assert arr.dtype == dtype
+    with temp_maxsize(eclient):
+        arr = await eclient._get_array_chuncked(uid)
+        np.testing.assert_allclose(arr, data)
+        assert arr.dtype == dtype
 
 
 @pytest.mark.asyncio
@@ -133,12 +141,9 @@ async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
 
     # for some reason writing data takes aloooong time
     eclient.timeout = 60
+    with temp_maxsize(eclient):
+        await eclient._put_array_chuncked(uid, data)
 
-    # set maxsize
-    eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = 10000
-    await eclient._put_array_chuncked(uid, data)
-
-    eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = MAXPAYLOADSIZE
     arr = await eclient.get_array(uid)
     np.testing.assert_allclose(arr, data)
     assert arr.dtype == dtype
