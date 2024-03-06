@@ -40,7 +40,21 @@ class ETPError(Exception):
         return cls(error.message, error.code)
 
 
+def get_all_etp_protocol_classes():
+    """Update protocol - all exception protocols are now per message"""
+
+    pddict = ETPConnection.generic_transition_table
+    pexec = ETPConnection.generic_transition_table["0"]["1000"]  # protocol exception
+
+    for v in pddict.values():
+        v["1000"] = pexec
+
+    return pddict
+
+
 class ETPClient(ETPConnection):
+
+    generic_transition_table = get_all_etp_protocol_classes()
 
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
@@ -138,7 +152,7 @@ class ETPClient(ETPConnection):
         while (True):
             msg_data = await self.ws.recv()
             msg = Message.decode_binary_message(
-                T.cast(bytes, msg_data), ETPConnection.generic_transition_table
+                T.cast(bytes, msg_data), ETPClient.generic_transition_table
             )
 
             if msg is None:
@@ -758,7 +772,7 @@ class connect:
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
             extra_headers=self.headers,
             max_size=MAXPAYLOADSIZE,
-            ping_timeout=self.timeout
+            ping_timeout=self.timeout,
         )
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         await self.client.connect()
