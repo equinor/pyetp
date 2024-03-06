@@ -22,22 +22,30 @@ def test_scale():
     assert np.isclose(tile_service.get_scale(1), tile_service.RESOLUTION_LOD0 / 2)
 
 
-async def fake_arr(*_):
-    return tile_service.empty_tile(), (32, 32), (0, 0)
+async def fake_bounds(*_):
+    return tile_service.BBox(-1e6, -1e6, 1e6, 1e6)
+
+
+async def fake_max_lod(*_):
+    return 10
+
+
+async def fake_arr_lod(*_):
+    return tile_service.empty_tile(), (0, 0)
 
 
 @pytest.mark.parametrize('z', range(3))
 @pytest.mark.parametrize('channels', range(1, 5))
 def test_tile_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, channels: int):
-    monkeypatch.setattr(tile_service, 'get_arr', fake_arr)
-    monkeypatch.setattr(tile_service, 'get_lod', lambda *_: (tile_service.empty_tile(), (0, 0)))
     monkeypatch.setattr(tile_service, 'get_tile', lambda *_: tile_service.empty_tile())
+    monkeypatch.setattr(tile_service.Cache, 'get_bounds', fake_bounds)
+    monkeypatch.setattr(tile_service.Cache, 'get_max_lod', fake_max_lod)
+    monkeypatch.setattr(tile_service.Cache, 'get_lod', fake_arr_lod)
     monkeypatch.setattr(tile_service, 'CHANNELS', channels)
 
     # check if cache called been called
-    mock_set_all_lods, mock_set_lod = AsyncMock(), AsyncMock()
-    monkeypatch.setattr(tile_service.Cache, 'set_all_lods', mock_set_all_lods)
-    monkeypatch.setattr(tile_service.Cache, 'set_lod', mock_set_lod)
+    mock_set_lod = AsyncMock()
+    monkeypatch.setattr(tile_service.Cache, 'cache_lod', mock_set_lod)
 
     datauri = DataObjectURI.from_parts('test', 'resqml20', 'type', uuid4())
     response = client.post(
@@ -53,8 +61,7 @@ def test_tile_api(monkeypatch: pytest.MonkeyPatch, client: TestClient,  z: int, 
     assert h == tile_service.TILE_SIZE and w == tile_service.TILE_SIZE, "should return empty tilesize"
     assert info['planes'] == tile_service.CHANNELS, "and return correct number of channels"
 
-    # assert caching all was called
-    # mock_set_all_lods.assert_called_once()  # called in get_arr which is faked
+    # assert cache was called
     mock_set_lod.assert_called_once()
 
 
