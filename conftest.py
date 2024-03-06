@@ -10,6 +10,7 @@ from map_api.db import get_cache
 from map_api.etp_client.client import ETPClient
 from map_api.etp_client.uri import DataspaceURI
 from map_api.main import app
+from map_api import deps
 
 ETP_SERVER_URL = "ws://localhost:9002"
 SETTINGS.application_name = "geomin_testing"
@@ -20,6 +21,11 @@ def get_fake_cache():
     return fakeredis.aioredis.FakeRedis()
 
 
+async def get_app_token():
+    return None
+
+
+deps.get_app_token = get_app_token
 app.dependency_overrides[get_cache] = get_fake_cache
 
 
