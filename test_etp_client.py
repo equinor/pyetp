@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 import map_api.resqml_objects as resqml_objects
 from map_api.etp_client.client import ETPClient
 from map_api.etp_client.uri import DataspaceURI
-from map_api.main import DeleteMapBody, MapPayload, NewMapInterface, app, projectCRSData
+from map_api.main import (DeleteMapBody, MapPayload, NewMapInterface, app,
+                          projectCRSData)
 
 
 def create_surface(ncol: int, nrow: int):
