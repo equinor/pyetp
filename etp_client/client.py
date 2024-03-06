@@ -773,6 +773,7 @@ class connect:
             extra_headers=self.headers,
             max_size=MAXPAYLOADSIZE,
             ping_timeout=self.timeout,
+            open_timeout=None,
         )
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         await self.client.connect()
