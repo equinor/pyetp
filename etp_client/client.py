@@ -7,6 +7,7 @@ from collections import defaultdict
 from types import TracebackType
 
 import numpy as np
+from pydantic import SecretStr
 import websockets
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
@@ -758,9 +759,9 @@ class ETPClient(ETPConnection):
 # define an asynchronous context manager
 class connect:
 
-    def __init__(self, server_url: str, default_dataspace_uri: DataspaceURI | None = None, authorization: T.Optional[str] = None, timeout=10.):
+    def __init__(self, server_url: str, default_dataspace_uri: DataspaceURI | None = None, authorization: T.Optional[SecretStr] = None, timeout=10.):
         self.server_url = server_url
-        self.headers = {"Authorization": authorization} if authorization else {}
+        self.authorization = authorization
         self.timeout = timeout
         self.default_dataspace_uri = default_dataspace_uri
 
@@ -770,7 +771,7 @@ class connect:
         ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            extra_headers=self.headers,
+            extra_headers={"Authorization": self.authorization.get_secret_value()} if self.authorization else {},
             max_size=MAXPAYLOADSIZE,
             ping_timeout=self.timeout,
             open_timeout=None,
