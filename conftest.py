@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 
-from map_api import db, deps, etp_client
+from map_api import deps, etp_client
 from map_api.config import SETTINGS
 from map_api.main import app
 
@@ -14,22 +14,12 @@ SETTINGS.etp_url = ETP_SERVER_URL  # type: ignore
 SETTINGS.dataspace = "testing_space"
 
 
-def get_fake_cache():
-    return fakeredis.aioredis.FakeRedis()
-
-
-async def get_app_token():
+async def get_app_token(rc=None):
     return None
 
 
-deps.get_app_token = get_app_token
-app.dependency_overrides[db.get_cache] = get_fake_cache
-
-
-@pytest.fixture
-def client():
-    with TestClient(app) as client:
-        yield client
+app.dependency_overrides[deps.get_redis] = lambda: fakeredis.aioredis.FakeRedis()
+app.dependency_overrides[deps.get_app_token] = get_app_token
 
 
 @pytest_asyncio.fixture
@@ -44,6 +34,18 @@ async def eclient():
 
     async with etp_client.connect(ETP_SERVER_URL) as client:
         yield client
+
+
+@pytest_asyncio.fixture
+async def default_duri(eclient: etp_client.ETPClient):
+    await eclient.put_dataspaces_no_raise(SETTINGS.duri)
+    yield SETTINGS.duri
+    await eclient.delete_dataspaces(SETTINGS.duri)
+
+
+@pytest.fixture
+def client(default_duri):
+    return TestClient(app)
 
 
 @pytest_asyncio.fixture
