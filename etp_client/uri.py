@@ -9,9 +9,13 @@ import map_api.resqml_objects as ro
 
 class _Mixin:
     # print full url as default
+    raw_uri: str
 
     def __str__(self):
-        return self.raw_uri  # type: ignore
+        return self.raw_uri
+
+    def __hash__(self):
+        return hash(self.raw_uri)
 
     # pydantic validators
 
