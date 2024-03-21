@@ -40,12 +40,13 @@ jobs:
         poetry run python -m pytest -rs -v --color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/ | tee pytest-coverage.txt
 
     - name: Comment coverage
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ github.event_name == 'pull_request' && matrix.python-version == '3.11'}}
       uses: coroo/pytest-coverage-commentator@v1.0.2
       with:
         pytest-coverage: pytest-coverage.txt
 
     - name: Upload coverage reports to Codecov
+      if: ${{ github.event_name == 'push' && matrix.python-version == '3.11'}}
       uses: codecov/codecov-action@v4.0.1
       with:
         file: ./coverage.xml
