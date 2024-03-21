@@ -10,12 +10,12 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
-    event_type:
-      required: true
-      type: string
-    action_type:
-      required: true
-      type: string
+      event_type:
+        required: true
+        type: string
+      action_type:
+        required: true
+        type: string
 
 jobs:
   snyk:
