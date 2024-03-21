@@ -11,8 +11,8 @@ from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime
 
-import map_api.resqml_objects as ro
-from map_api.config import SETTINGS
+import pyetp.resqml_objects as ro
+from pyetp.config import SETTINGS
 
 from .types import DataObject
 
@@ -54,7 +54,7 @@ def create_common_citation(title: str):
             datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
         ),
         originator=SETTINGS.application_name,
-        format=f"equinor:{SETTINGS.application_name}:v{SETTINGS.application_version}",
+        format=f"{SETTINGS.application_name}:v{SETTINGS.application_version}",
     )
 
 

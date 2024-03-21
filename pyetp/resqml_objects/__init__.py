@@ -1,4 +1,4 @@
-from map_api.resqml_objects.generated import (
+from pyetp.resqml_objects.generated import (
     APIGammaRayMeasure,
     APIGammaRayUom,
     APIGravityMeasure,

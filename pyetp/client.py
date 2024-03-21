@@ -14,8 +14,8 @@ from etpproto.connection import (CommunicationProtocol, ConnectionType,
 from etpproto.messages import Message, MessageFlags
 from xtgeo import RegularSurface
 
-import map_api.resqml_objects as ro
-from map_api.config import SETTINGS
+import pyetp.resqml_objects as ro
+from pyetp.config import SETTINGS
 
 from . import utils_arrays, utils_xml
 from .types import *
@@ -759,19 +759,24 @@ class ETPClient(ETPConnection):
 # define an asynchronous context manager
 class connect:
 
-    def __init__(self, server_url: str, default_dataspace_uri: DataspaceURI | None = None, authorization: T.Optional[SecretStr] = None, timeout=10.):
-        self.server_url = server_url
+    def __init__(self, authorization: T.Optional[SecretStr] = None, timeout=10.):
+        self.server_url = SETTINGS.etp_url
         self.authorization = authorization
         self.timeout = timeout
-        self.default_dataspace_uri = default_dataspace_uri
+        self.default_dataspace_uri = DataspaceURI.from_name(SETTINGS.dataspace)
 
     # enter the async context manager
     async def __aenter__(self):
-
+        if isinstance(self.authorization, str):
+            token = self.authorization
+        else:
+            token = self.authorization.get_secret_value()
+        if token.startswith("Bearer") is False:
+            token = f"Bearer {token.lstrip()}"
         ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            extra_headers={"Authorization": self.authorization.get_secret_value()} if self.authorization else {},
+            extra_headers={"Authorization": token} if self.authorization else {},
             max_size=MAXPAYLOADSIZE,
             ping_timeout=self.timeout,
             open_timeout=None,
