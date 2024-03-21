@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyetp"
-version = "0.1.0"
+version = "0.0.1"
 description = ""
 authors = ["Adam Cheng <52572642+adamchengtkc@users.noreply.github.com>"]
 
