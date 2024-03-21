@@ -1,5 +1,6 @@
 ![Build Status](https://github.com/equinor/pyetp/actions/workflows/ci.yml/badge.svg?branch=main)
 ![Build Status](https://github.com/equinor/pyetp/actions/workflows/snyk.yml/badge.svg?branch=main)
+[![codecov](https://codecov.io/gh/equinor/pyetp/graph/badge.svg?token=S2XDDKKI8U)](https://codecov.io/gh/equinor/pyetp)
 
 # RESQML versions
 The library is build and tested against RESQML v2.2. Spec can be downloaded [here](https://publications.opengroup.org/standards/energistics-standards/v231)

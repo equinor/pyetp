@@ -36,7 +36,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-
+coverage.xml
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -170,3 +170,4 @@ poetry.toml
 
 # Vim swap
 *.swp
+pytest-coverage.txt
