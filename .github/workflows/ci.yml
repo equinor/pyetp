@@ -18,12 +18,6 @@ on:
         type: string
 
 jobs:
-  snyk:
-    uses: equinor/pyetp/.github/workflows/snyk.yml@main
-    secrets:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      GITHUB_TOKEN_WORKFLOW: ${{ secrets.GITHUB_TOKEN }}
-
   test:
     runs-on: ubuntu-20.04
 

@@ -1,5 +1,12 @@
 name: Snyk
 on: 
+  pull_request:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - '.devcontainer/**'
+      - '.github/**'
+  workflow_dispatch:
   workflow_call:
     secrets:
       SNYK_TOKEN:
