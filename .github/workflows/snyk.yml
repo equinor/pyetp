@@ -1,0 +1,20 @@
+name: Snyk scan
+on: 
+  workflow_call:
+    secrets:
+      SNYK_TOKEN:
+        required: true
+      GITHUB_TOKEN_WORKFLOW:
+        required: true
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python-3.10@master
+        continue-on-error: false
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk.sarif --severity-threshold=high

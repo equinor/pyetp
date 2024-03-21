@@ -4,9 +4,9 @@ import resqpy.model as rq
 import resqpy.property as rqp
 import resqpy.unstructured as rug
 
-from map_api.etp_client.client import MAXPAYLOADSIZE, ETPClient, ETPError
-from map_api.etp_client.uri import DataspaceURI
-from map_api.resqml_objects import ContinuousProperty, DiscreteProperty
+from pyetp.client import MAXPAYLOADSIZE, ETPClient, ETPError
+from pyetp.uri import DataspaceURI
+from pyetp.resqml_objects import ContinuousProperty, DiscreteProperty
 
 
 @pytest.mark.parametrize('input_mesh_file', ['./test/mesh/model_hexa_0.epc'])

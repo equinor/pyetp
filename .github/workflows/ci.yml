@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - '.devcontainer/**'
+      - '.github/**'
+  workflow_dispatch:
+
+jobs:
+  snyk:
+    uses: equinor/pyetp/.github/workflows/snyk.yml@main
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      GITHUB_TOKEN_WORKFLOW: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install testing deps
+      run: |
+        curl -sSL https://install.python-poetry.org | python3
+        poetry install --with dev --no-interaction
+        docker compose -f tests/compose.yml up --detach
+
+    - name: Test
+      run: |
+        poetry run python -m pytest -rs -v --color=yes --cov-report=term-missing --cov=pyetp tests/ | tee pytest-coverage.txt
+
+    - name: Comment coverage
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: coroo/pytest-coverage-commentator@v1.0.2
+      with:
+        pytest-coverage: pytest-coverage.txt

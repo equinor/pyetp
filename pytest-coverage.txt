@@ -1,0 +1,49 @@
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.11.8, pytest-7.4.4, pluggy-1.4.0 -- /workspaces/pyetp/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /workspaces/pyetp
+plugins: cov-4.1.0, anyio-4.3.0, asyncio-0.23.6
+asyncio: mode=Mode.STRICT
+[1mcollecting ... [0mcollected 23 items
+
+tests/test_etp_clientv2.py::test_open_close [32mPASSED[0m[32m                       [  4%][0m
+tests/test_etp_clientv2.py::test_datapaces [32mPASSED[0m[32m                        [  8%][0m
+tests/test_etp_clientv2.py::test_arraymeta [32mPASSED[0m[32m                        [ 13%][0m
+tests/test_etp_clientv2.py::test_arraymeta_not_found [32mPASSED[0m[32m              [ 17%][0m
+tests/test_etp_clientv2.py::test_get_array[float32] [32mPASSED[0m[32m               [ 21%][0m
+tests/test_etp_clientv2.py::test_get_array[float64] [32mPASSED[0m[32m               [ 26%][0m
+tests/test_etp_clientv2.py::test_get_array[int32] [32mPASSED[0m[32m                 [ 30%][0m
+tests/test_etp_clientv2.py::test_get_array[int64] [32mPASSED[0m[32m                 [ 34%][0m
+tests/test_etp_clientv2.py::test_get_array[bool_] [32mPASSED[0m[32m                 [ 39%][0m
+tests/test_etp_clientv2.py::test_get_array_chuncked[shape0-float32] [32mPASSED[0m[32m [ 43%][0m
+tests/test_etp_clientv2.py::test_get_array_chuncked[shape0-int32] [32mPASSED[0m[32m [ 47%][0m
+tests/test_etp_clientv2.py::test_get_array_chuncked[shape1-float32] [32mPASSED[0m[32m [ 52%][0m
+tests/test_etp_clientv2.py::test_get_array_chuncked[shape1-int32] [32mPASSED[0m[32m [ 56%][0m
+tests/test_etp_clientv2.py::test_put_array_chuncked[float32] [32mPASSED[0m[32m      [ 60%][0m
+tests/test_etp_clientv2.py::test_put_array_chuncked[int32] [32mPASSED[0m[32m        [ 65%][0m
+tests/test_etp_clientv2.py::test_subarrays[starts0-int32] [32mPASSED[0m[32m         [ 69%][0m
+tests/test_etp_clientv2.py::test_subarrays[starts0-float32] [32mPASSED[0m[32m       [ 73%][0m
+tests/test_etp_clientv2.py::test_subarrays[starts1-int32] [32mPASSED[0m[32m         [ 78%][0m
+tests/test_etp_clientv2.py::test_subarrays[starts1-float32] [32mPASSED[0m[32m       [ 82%][0m
+tests/test_etp_clientv2.py::test_resqml_objects [32mPASSED[0m[32m                   [ 86%][0m
+tests/test_etp_clientv2.py::test_rddms_roundtrip[surface0] [32mPASSED[0m[32m        [ 91%][0m
+tests/test_etp_clientv2.py::test_rddms_roundtrip[surface1] [32mPASSED[0m[32m        [ 95%][0m
+tests/test_etp_clientv2.py::test_surface [32mPASSED[0m[32m                          [100%][0m
+
+---------- coverage: platform linux, python 3.11.8-final-0 -----------
+Name                                Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------
+pyetp/__init__.py                       3      0   100%
+pyetp/client.py                       357     55    85%   88, 107-108, 118, 131, 160-161, 210, 214, 222-225, 255-256, 411-453, 456-469, 474-550, 568, 582, 602, 773
+pyetp/config.py                        17      1    94%   27
+pyetp/resqml_objects/__init__.py        2      0   100%
+pyetp/resqml_objects/generated.py    7778      0   100%
+pyetp/types.py                         27      0   100%
+pyetp/uri.py                           55     15    73%   18, 24, 28, 32-37, 50-55, 78
+pyetp/utils_arrays.py                  29      2    93%   36, 49
+pyetp/utils_xml.py                     96     52    46%   211-330, 334-460
+-----------------------------------------------------------------
+TOTAL                                8364    125    99%
+
+
+[32m============================= [32m[1m23 passed[0m[32m in 46.51s[0m[32m ==============================[0m

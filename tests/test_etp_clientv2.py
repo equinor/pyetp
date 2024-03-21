@@ -8,12 +8,11 @@ import pytest
 import pytest_asyncio
 import xtgeo
 from conftest import ETP_SERVER_URL
-
-from map_api import etp_client
-from map_api.etp_client.client import ETPClient, ETPError
-from map_api.etp_client.types import DataArrayIdentifier
-from map_api.etp_client.uri import DataspaceURI
-from map_api.etp_client.utils_xml import (create_epc,
+import pyetp.resqml_objects as ro
+from pyetp.client import ETPClient, ETPError, connect
+from pyetp.types import DataArrayIdentifier
+from pyetp.uri import DataspaceURI
+from pyetp.utils_xml import (create_epc,
                                           parse_xtgeo_surface_to_resqml_grid)
 
 
@@ -74,7 +73,7 @@ def uid_not_exists():
 async def test_open_close(monkeypatch: pytest.MonkeyPatch):
     mock_close = AsyncMock()
 
-    async with etp_client.connect(ETP_SERVER_URL) as client:
+    async with connect(ETP_SERVER_URL) as client:
         assert client.is_connected, "should be connected"
         await client.close()  # close
 
@@ -179,6 +178,39 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     resp = await eclient.delete_data_objects(*uris)
     assert len(resp) == 3
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('surface', [create_surface(3, 4), create_surface(100, 40)])
+async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+    # NOTE: xtgeo calls the first axis (axis 0) of the values-array
+    # columns, and the second axis by rows.
+
+    epsg_code = 23031
+    epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(surface, epsg_code, dataspace=duri)
+
+    epc, crs, gri = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri)
+    newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
+    array = np.array(newsurf.values.filled(np.nan))
+
+    np.testing.assert_allclose(array, np.array(surface.values.filled(np.nan)))
+
+    print(epc, crs, gri)
+
+    assert isinstance(epc, ro.EpcExternalPartReference)
+    assert isinstance(crs, ro.LocalDepth3dCrs)
+    assert isinstance(gri, ro.Grid2dRepresentation)
+
+    assert crs.projected_crs.epsg_code == epsg_code
+    assert surface.rotation == crs.areal_rotation.value
+    assert array.shape[0] == gri.grid2d_patch.slowest_axis_count == surface.values.shape[0] == surface.ncol
+    assert array.shape[1] == gri.grid2d_patch.fastest_axis_count == surface.values.shape[1] == surface.nrow
+
+    supporting_geometry = gri.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(supporting_geometry, ro.Point3dLatticeArray)
+
+    assert surface.xori == supporting_geometry.origin.coordinate1
+    assert surface.yori == supporting_geometry.origin.coordinate2
+    assert surface.xinc == supporting_geometry.offset[0].spacing.value
+    assert surface.yinc == supporting_geometry.offset[1].spacing.value
 
 @pytest.mark.asyncio
 async def test_surface(eclient: ETPClient, duri: DataspaceURI):
