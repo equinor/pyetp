@@ -8,6 +8,7 @@ on:
       - '.devcontainer/**'
       - '.github/**'
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   snyk:
