@@ -1,6 +1,11 @@
+# RESQML versions
+The library is build and tested against RESQML v2.2. Spec can be downloaded [here](https://publications.opengroup.org/standards/energistics-standards/v231)
 
-### Running pytest from root folder
-`python -m pytest -rs -v`
+# Generated Python objects from RESQML spec
+Under `resqml_objects` you will find Pythons objects generated from RESQML xml spec. It is used to ensure consistence data type is used in RESQML.
 
-### Starting etp-test server
-`docker compose -f test/python/compose.yml up --detach`
+# Documentation
+See `/examples` for usage
+
+# This libaray is under active development and subject to breaking changes
+
