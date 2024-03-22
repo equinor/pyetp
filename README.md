@@ -1,6 +1,11 @@
 ![Build Status](https://github.com/equinor/pyetp/actions/workflows/ci.yml/badge.svg?branch=main)
 ![Build Status](https://github.com/equinor/pyetp/actions/workflows/snyk.yml/badge.svg?branch=main)
-[![codecov](https://codecov.io/gh/equinor/pyetp/graph/badge.svg?token=S2XDDKKI8U)](https://codecov.io/gh/equinor/pyetp)
+![codecov](https://codecov.io/gh/equinor/pyetp/graph/badge.svg?token=S2XDDKKI8U)
+![Python](https://img.shields.io/pypi/pyversions/pyetp)
+[![PyPI version](https://badge.fury.io/py/pyetp.svg)](https://badge.fury.io/py/pyetp)
+![License](https://img.shields.io/github/license/equinor/pyetp)
+# Install
+ `pip install pyetp`
 
 # RESQML versions
 The library is build and tested against RESQML v2.2. Spec can be downloaded [here](https://publications.opengroup.org/standards/energistics-standards/v231)
