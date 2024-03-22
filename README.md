@@ -22,4 +22,4 @@ See `/examples` for usage
 ### Running pytest from root folder
 `python -m pytest -rs -v`
 
-# This libaray is under active development and subject to breaking changes
+# This library is under active development and subject to breaking changes
