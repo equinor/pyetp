@@ -4,11 +4,13 @@
 name: build and publish
  
 on:
-  workflow_dispatch:
+  push:
+    tags:
+    - '[0-9]+.[0-9]+.[0-9]'
     
 permissions:
   id-token: write
-  contents: write
+  contents: read
 
 jobs:
   test:
@@ -38,27 +40,20 @@ jobs:
         with:
             python-version: '3.11'
 
-      - name: Azure key vault login
-        uses: Azure/login@v1
-        with:
-            client-id: ${{ secrets.AZURE_CLIENT_ID }}
-            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-            allow-no-subscriptions: true
-
-      - name: Fetch secrets
-        uses: azure/CLI@v1
-        with:
-            azcliversion: 2.42.0
-            inlineScript: |
-                echo PYPI_TOKEN=$(az keyvault secret show --vault-name PSSCloudDev --name PYPI-Token --query value -o tsv) >> $GITHUB_ENV
-        
       - name: Install dependencies
         run: |
             curl -sSL https://install.python-poetry.org | python3
             poetry install --with dev --no-interaction
-            
-      - name: Build and publish
+
+      - name: Update version (kept at 0.0.0) in pyproject.toml and build
         run: |
-            poetry config pypi-token.pypi ${{ env.PYPI_TOKEN }}
+            poetry version ${{ github.ref_name }}
             poetry build
-            poetry publish
+
+      - name: Mint token
+        id: mint
+        uses: tschm/token-mint-action@v1.0.3
+
+      - name: Publish the package with poetry
+        run: |
+          poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}'

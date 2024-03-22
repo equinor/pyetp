@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "pyetp"
-version = "0.0.1"
+version = "0.0.0"
 description = ""
 authors = ["Adam Cheng <52572642+adamchengtkc@users.noreply.github.com>"]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
