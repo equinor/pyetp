@@ -40,7 +40,7 @@ jobs:
 
     - name: Test
       run: |
-        poetry run python -m pytest -rs -v --color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/ | tee pytest-coverage.txt
+        poetry run python -m pytest -v -x -color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/ | tee pytest-coverage.txt
 
     - name: Comment coverage
       if: ${{ github.event_name == 'pull_request'}}
