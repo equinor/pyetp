@@ -14,12 +14,14 @@ The library is build and tested against RESQML v2.2. Spec can be downloaded [her
 Under `resqml_objects` you will find Pythons objects generated from RESQML xml spec. It is used to ensure consistence data type is used in RESQML.
 
 # Documentation
-See `/examples` for usage
+See `/examples` for 2D grid usage
+
+`tests/test_mesh.py` for Unstructured/structured mesh
 
 # Tests
 ### Starting etp-test server
 `docker compose -f tests/compose.yml up --detach`
 ### Running pytest from root folder
-`python -m pytest -rs -v`
+`poetry run python -m pytest -rs -v`
 
 # This library is under active development and subject to breaking changes
