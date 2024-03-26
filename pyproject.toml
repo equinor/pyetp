@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "pyetp"
 version = "0.0.0"
-description = ""
+description = "Interface with OSDU RDDMS using ETP protocol"
 authors = ["Adam Cheng <52572642+adamchengtkc@users.noreply.github.com>"]
 readme = "README.md"
 license = "LGPL-3.0-only"
+homepage = "https://github.com/equinor/pyetp"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
