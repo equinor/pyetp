@@ -366,6 +366,7 @@ class ETPClient(ETPConnection):
 
         # some checks
         assert isinstance(gri, ro.Grid2dRepresentation), "obj must be Grid2dRepresentation"
+        print(type(gri.grid2d_patch.geometry.points))
         assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray), "Points must be Point3dZValueArray"
         assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array), "Values must be DoubleHdf5Array"
         assert isinstance(gri.grid2d_patch.geometry.points.zvalues.values, ro.Hdf5Dataset), "Values must be Hdf5Dataset"
