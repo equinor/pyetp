@@ -1,3 +1,4 @@
+from typing import Union
 from uuid import UUID
 
 from etpproto.uri import DataObjectURI as _DataObjectURI
@@ -58,12 +59,12 @@ class DataspaceURI(_DataspaceURI, _Mixin):
 class DataObjectURI(_DataObjectURI, _Mixin):
 
     @classmethod
-    def from_parts(cls, duri: DataspaceURI | str, domain_and_version: str, obj_type: str, uuid: UUID | str):
+    def from_parts(cls, duri:Union[DataspaceURI, str]   , domain_and_version: str, obj_type: str, uuid:Union[ UUID ,str]):
         duri = DataspaceURI.from_any(duri)
         return cls(f"{duri}/{domain_and_version}.{obj_type}({uuid})")
 
     @classmethod
-    def from_obj(cls, dataspace: DataspaceURI | str, obj: ro.AbstractObject):
+    def from_obj(cls, dataspace: Union[DataspaceURI , str], obj: ro.AbstractObject):
 
         objname = obj.__class__.__name__
         namespace: str = getattr(obj.Meta, 'namespace', None) or getattr(obj.Meta, 'target_namespace')

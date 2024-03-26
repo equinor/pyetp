@@ -1,12 +1,12 @@
-import typing as T
 
+import typing as T
 import numpy as np
 
 from .types import (AnyArray, AnyArrayType, ArrayOfBoolean, ArrayOfDouble,
                     ArrayOfFloat, ArrayOfInt, ArrayOfLong, DataArray,
                     DataArrayMetadata)
 
-SUPPORED_ARRAY_TYPES = ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
+SUPPORED_ARRAY_TYPES = T.Union[ArrayOfFloat , ArrayOfBoolean, ArrayOfInt, ArrayOfLong , ArrayOfDouble]
 
 _ARRAY_MAP_TYPES: dict[AnyArrayType, np.dtype[T.Any]] = {
     AnyArrayType.ARRAY_OF_FLOAT: np.dtype(np.float32),
@@ -42,7 +42,7 @@ def get_cls(dtype: np.dtype):
     return _ARRAY_MAP[get_transport(dtype)]
 
 
-def get_dtype(item: AnyArray | AnyArrayType):
+def get_dtype(item: T.Union[AnyArray ,AnyArrayType]):
     atype = item if isinstance(item, AnyArrayType) else get_transport_from_name(item.item.__class__.__name__)
 
     if atype not in _ARRAY_MAP_TYPES:

@@ -5,7 +5,7 @@ import typing as T
 import uuid
 from collections import defaultdict
 from types import TracebackType
-
+from async_timeout import timeout
 import numpy as np
 from pydantic import SecretStr
 import websockets
@@ -60,7 +60,7 @@ class ETPClient(ETPConnection):
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: DataspaceURI | None, timeout=10.):
+    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: T.Union[DataspaceURI , None], timeout=10.):
         super().__init__(connection_type=ConnectionType.CLIENT)
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
@@ -102,7 +102,10 @@ class ETPClient(ETPConnection):
         assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
 
         try:
-            async with asyncio.timeout(self.timeout):
+            
+            async with timeout(self.timeout):
+                #await inner()
+            # async with asyncio.timeout(self.timeout):
                 await self._recv_events[correlation_id].wait()
         except asyncio.CancelledError as e:
             raise TimeoutError(f'Timeout before reciving {correlation_id=}') from e
@@ -210,10 +213,10 @@ class ETPClient(ETPConnection):
         return self._default_duri
 
     @default_dataspace_uri.setter
-    def default_dataspace_uri(self, v: DataspaceURI | str | None):
+    def default_dataspace_uri(self, v: T.Union[DataspaceURI , str , None]):
         self._default_duri = None if v is None else DataspaceURI.from_any(v)
 
-    def get_dataspace_or_default_uri(self, ds: DataspaceURI | str | None) -> DataspaceURI:
+    def get_dataspace_or_default_uri(self, ds: T.Union[DataspaceURI , str , None]) -> DataspaceURI:
         """Returns default dataspace or user spefied one"""
 
         if ds is not None:
@@ -228,7 +231,7 @@ class ETPClient(ETPConnection):
     # dataspace
     #
 
-    async def put_dataspaces(self, *uris: DataspaceURI | str):
+    async def put_dataspaces(self, *uris: T.Union[DataspaceURI , str]):
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
             PutDataspaces
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
@@ -249,13 +252,13 @@ class ETPClient(ETPConnection):
 
         return response.success
 
-    async def put_dataspaces_no_raise(self, *uris: DataspaceURI | str):
+    async def put_dataspaces_no_raise(self, *uris: T.Union[DataspaceURI , str]):
         try:
             return await self.put_dataspaces(*uris)
         except ETPError:
             pass
 
-    async def delete_dataspaces(self, *uris: DataspaceURI | str):
+    async def delete_dataspaces(self, *uris:T.Union[DataspaceURI , str]):
         from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
             DeleteDataspaces
         from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
@@ -271,7 +274,7 @@ class ETPClient(ETPConnection):
     # data objects
     #
 
-    async def get_data_objects(self, *uris: DataObjectURI | str):
+    async def get_data_objects(self, *uris: T.Union[DataObjectURI , str]):
 
         from etptypes.energistics.etp.v12.protocol.store.get_data_objects import \
             GetDataObjects
@@ -304,11 +307,11 @@ class ETPClient(ETPConnection):
 
         return response.success
 
-    async def get_resqml_objects(self, *uris: DataObjectURI | str) -> T.List[ro.AbstractObject]:
+    async def get_resqml_objects(self, *uris: T.Union[DataObjectURI , str]) -> T.List[ro.AbstractObject]:
         data_objects = await self.get_data_objects(*uris)
         return utils_xml.parse_resqml_objects(data_objects)
 
-    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: DataspaceURI | str | None = None):
+    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: T.Union[DataspaceURI ,str , None] = None):
         from etptypes.energistics.etp.v12.datatypes.object.resource import \
             Resource
 
@@ -335,7 +338,7 @@ class ETPClient(ETPConnection):
         response = await self.put_data_objects(*dobjs)
         return uris
 
-    async def delete_data_objects(self, *uris: DataObjectURI | str, pruneContainedObjects=False):
+    async def delete_data_objects(self, *uris: T.Union[DataObjectURI , str], pruneContainedObjects=False):
         from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import \
             DeleteDataObjects
         from etptypes.energistics.etp.v12.protocol.store.delete_data_objects_response import \
@@ -358,7 +361,7 @@ class ETPClient(ETPConnection):
     # xtgeo
     #
 
-    async def get_xtgeo_surface(self, epc_uri: DataObjectURI | str, gri_uri: DataObjectURI | str):
+    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str]):
         gri, = await self.get_resqml_objects(gri_uri)
 
         # some checks
@@ -386,7 +389,7 @@ class ETPClient(ETPConnection):
             masked=True
         )
 
-    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: DataspaceURI | str | None = None):
+    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: T.Union[DataspaceURI , str , None] = None):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
 
@@ -407,7 +410,7 @@ class ETPClient(ETPConnection):
     # resqpy meshes
     #
 
-    async def get_epc_mesh(self, epc_uri: DataObjectURI | str, uns_uri: DataObjectURI | str):
+    async def get_epc_mesh(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str]):
         uns, = await self.get_resqml_objects(uns_uri)
 
         # some checks
@@ -452,7 +455,7 @@ class ETPClient(ETPConnection):
 
         return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
 
-    async def get_epc_mesh_property(self, epc_uri: DataObjectURI | str, prop_uri: DataObjectURI | str):
+    async def get_epc_mesh_property(self, epc_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str]):
         cprop0, = await self.get_resqml_objects(prop_uri)
 
         # some checks
@@ -609,7 +612,7 @@ class ETPClient(ETPConnection):
         assert len(response.success) == 1, "expected one success from put_array"
         return response.success
 
-    async def get_subarray(self, uid: DataArrayIdentifier, starts: np.ndarray | T.List[int], counts: np.ndarray | T.List[int]):
+    async def get_subarray(self, uid: DataArrayIdentifier, starts: T.Union[np.ndarray , T.List[int]], counts: T.Union[np.ndarray , T.List[int]]):
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
 
@@ -635,7 +638,7 @@ class ETPClient(ETPConnection):
         arrays = list(response.data_subarrays.values())
         return utils_arrays.to_numpy(arrays[0])
 
-    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: np.ndarray | T.List[int], counts: np.ndarray | T.List[int], put_uninitialized=False):
+    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray ,T.List[int]], counts: T.Union[np.ndarray , T.List[int]], put_uninitialized=False):
         from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
             PutDataSubarraysType
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
@@ -652,7 +655,7 @@ class ETPClient(ETPConnection):
             await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
-        dataarray = utils_arrays.to_data_array(data[*slices])
+        dataarray = utils_arrays.to_data_array(data[slices])
         payload = PutDataSubarraysType(
             uid=uid,
             data=dataarray.data,
@@ -769,10 +772,8 @@ class connect:
     async def __aenter__(self):
         if isinstance(self.authorization, str):
             token = self.authorization
-        else:
+        elif isinstance(self.authorization, SecretStr):
             token = self.authorization.get_secret_value()
-        if token.startswith("Bearer") is False:
-            token = f"Bearer {token.lstrip()}"
         ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore

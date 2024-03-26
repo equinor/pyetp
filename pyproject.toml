@@ -20,6 +20,7 @@ httpx = "^0.26.0"
 xtgeo = "^3.8.0"
 xsdata = "^24.3.1"
 resqpy = "^4.14.3"
+async-timeout = "^4.0.3"
 
 [tool.poetry.group.dev.dependencies]
 notebook = "^7.0.7"

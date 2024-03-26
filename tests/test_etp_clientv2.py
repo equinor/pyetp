@@ -73,7 +73,7 @@ def uid_not_exists():
 async def test_open_close(monkeypatch: pytest.MonkeyPatch):
     mock_close = AsyncMock()
 
-    async with connect(ETP_SERVER_URL) as client:
+    async with connect() as client:
         assert client.is_connected, "should be connected"
         await client.close()  # close
 
