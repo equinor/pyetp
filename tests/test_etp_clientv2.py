@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 import pytest_asyncio
 import xtgeo
-from conftest import ETP_SERVER_URL
 import pyetp.resqml_objects as ro
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.types import DataArrayIdentifier
