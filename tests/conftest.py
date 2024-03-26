@@ -6,9 +6,8 @@ from pyetp.client import  ETPClient
 from pyetp.config import SETTINGS
 from pyetp.uri import  DataspaceURI
 
-ETP_SERVER_URL = "ws://localhost:9002"
 SETTINGS.application_name = "geomin_testing"
-SETTINGS.etp_url = ETP_SERVER_URL  # type: ignore
+SETTINGS.etp_url = "ws://localhost:9002"
 SETTINGS.dataspace = "testing_space"
 
 
@@ -27,7 +26,7 @@ async def eclient():
     if not ws_open:
         pytest.skip(reason="websocket for test server not open", allow_module_level=True)
 
-    async with connect(ETP_SERVER_URL) as client:
+    async with connect() as client:
         yield client
 
 
