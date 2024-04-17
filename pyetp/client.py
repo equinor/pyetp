@@ -103,10 +103,7 @@ class ETPClient(ETPConnection):
         assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
 
         try:
-            
             async with timeout(self.timeout):
-                #await inner()
-            # async with asyncio.timeout(self.timeout):
                 await self._recv_events[correlation_id].wait()
         except asyncio.CancelledError as e:
             raise TimeoutError(f'Timeout before reciving {correlation_id=}') from e
@@ -477,8 +474,16 @@ class ETPClient(ETPConnection):
     async def put_epc_mesh(
         self, epc_filename, title_in, property_titles, projected_epsg, dataspace
     ):
-        uns, crs, epc, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
+        uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
+        timeseries_uri = ""
+        if timeseries is not None:
+            timeseries_uris = await self.put_resqml_objects(timeseries, dataspace=dataspace)
+            timeseries_uri = list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
+        
+        # print("put_epc_mesh", uns, crs, epc, timeseries)
+        # print("put_epc_mesh", epc_uri, crs_uri, uns_uri, timeseries_uri)
+        print("put_epc_mesh property_titles", property_titles)
 
         #
         # mesh geometry (six arrays)
@@ -536,24 +541,33 @@ class ETPClient(ETPConnection):
         #
         prop_rddms_uris = {}
         for propname in property_titles:
-            cprop0, prop, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc)
+            if timeseries is not None:
+                time_indices = list(range(len(timeseries.time)))
+                # print(f"prop {propname}: len of timeseries: {len(timeseries.time)}")
+                cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc, timeseries=timeseries, time_indices=time_indices)
+            else:
+                time_indices = [-1]
+                cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc)
 
-            assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
-            assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
+            cprop_uris = []
+            for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
+                assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
+                assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
-            propkind_uri = "" if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
-            cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+                propkind_uri = "" if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
+                cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+                
+                response = await self.put_array(
+                    DataArrayIdentifier(
+                        uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                        pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
+                    ),
+                    prop.array_ref(),  # type: ignore
+                )
+                cprop_uris.append(cprop_uri)
+            prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
-            prop_rddms_uris[propname] = [propkind_uri, cprop_uri]
-            response = await self.put_array(
-                DataArrayIdentifier(
-                    uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                    pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
-                ),
-                prop.array_ref(),  # type: ignore
-            )
-
-        return [epc_uri, crs_uri, uns_uri], prop_rddms_uris
+        return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
 
     #
     # array

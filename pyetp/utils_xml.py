@@ -211,6 +211,8 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     import numpy as np
     import resqpy.model as rq
     import resqpy.unstructured as rug
+    import resqpy.property as rqp
+    import resqpy.time_series as rts
 
     title = title_in or "hexamesh"
 
@@ -226,6 +228,92 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     assert hexa is not None
     assert hexa.cell_shape == 'hexahedral'
     hexa.check_hexahedral()
+
+    ts_uuid = model.uuid(obj_type = "TimeSeries")
+    # ts_uuid_2 = model.uuid(obj_type='GeologicTimeSeries')
+    # print("TS UUIDs: ", ts_uuid, ts_uuid_2)
+    gts = rts.GeologicTimeSeries(model, uuid=ts_uuid)
+    print("gts: ", gts)
+    timeseries = None
+    # dynamic_points = []    
+    if (ts_uuid is not None) and (gts is not None):
+        temp_uuids = model.uuids(title = 'Temperature')
+        node_uuids = model.uuids(title = 'points')        
+        # print("temp_uuids", temp_uuids)
+        # print("node_uuids", node_uuids)
+
+        points_cached_series = []
+        Temp_per_vertex_series = []
+
+        # for uuid in node_uuids[0:-1:10]:
+        ro_timestamps = []
+        for uuid in node_uuids:
+            prop = rqp.Property(model, uuid = uuid)
+            # print(uuid, prop)
+            tst = float(str(gts.timestamp( prop.time_index())).replace(' Ma',''))
+            # print(f'index: {prop.time_index()}  time stamp: {gts.timestamp( prop.time_index())}   tst: {int(tst*1e6)}' )
+            ro_timestamps.append(
+                ro.Timestamp(
+                    date_time=XmlDateTime.from_string("0001-01-01T00:00:00.00+00:00"),
+                    year_offset=int(tst*1e6),
+                )
+            )
+            # points = prop.array_ref()
+            # # print(f'time stamp: {gts.timestamp( prop.time_index())} -- thickness of crust+sed: {(np.amax(points)-np.amin(points)):.2f}    shape: {points.shape}')  # type: ignore
+            # dynamic_points.append(points)
+
+        print(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
+
+        timeseries = ro.TimeSeries(
+            citation=create_common_citation(str(gts.citation_title)),
+            schema_version=schema_version,
+            uuid=str(gts.uuid),
+            time = ro_timestamps,
+        )
+
+        # for tti in self.time_indices:
+        #     x_original_order, T_per_vertex = self.get_node_pos_and_temp(tti)
+        #     T_per_vertex_filt = [ T_per_vertex[i] for i in range(x_original_order.shape[0]) if i in p_to_keep  ]
+        #     Temp_per_vertex_series.append(np.array(T_per_vertex_filt))
+        #     points_cached = []
+        #     point_original_to_cached = np.ones(x_original_order.shape[0], dtype = np.int32)  * (-1)
+        #     for i in range(x_original_order.shape[0]):
+        #         if (i in p_to_keep):
+        #             point_original_to_cached[i] = len(points_cached)
+        #             points_cached.append(x_original_order[i,:])
+        #     points_cached_series.append(np.array(points_cached))
+
+        # for uuid_t,uuid_p in zip(temp_uuids[0:-1:10], node_uuids[0:-1:10]):
+        #     prop = rqp.Property(model, uuid = uuid_t)
+        #     temperature = prop.array_ref()
+        #     prop_p = rqp.Property(model, uuid = uuid_p)
+        #     points = prop_p.array_ref()
+        #     sumT = 0
+        #     sumW = 0
+        #     for i,c in enumerate(cells):
+        #         p0 = points[c,:]
+        #         vv = volumeOfHex(p0[[0,2,6,4,1,3,7,5]])
+        #         sumT = sumT + temperature[i]*vv
+        #         sumW = sumW + vv
+        #     Tmean = sumT / sumW
+        #     print(f'time stamp: {gts.timestamp( prop.time_index())} -- mean temperature: {Tmean:.2f}')
+
+        # import numpy as np
+        # for uuid in node_uuids[0:-1:10]:
+        #     prop = rqp.Property(model, uuid = uuid)
+        #     points = prop.array_ref()
+        #     print(f'time stamp: {gts.timestamp( prop.time_index())} -- thickness of crust+sed: {(np.amax(points)-np.amin(points)):.2f}    shape: {points.shape}')  # type: ignore
+        #     c0 = cells[0,:]
+        #     p0 = points[c0,:]
+        #     vv = volumeOfHex(p0[[0,2,6,4,1,3,7,5]])
+        #     if ( np.abs(vv-312805.18)<1) :
+        #         print(vv)
+        #         print(c0)
+        #         print(p0)
+                
+        #     print(f'time stamp: {gts.timestamp( prop.time_index())} -- volume of cell 0: {vv:.2f}')
+
+        pass
 
     crs = create_common_crs(title, projected_epsg)
 
@@ -327,10 +415,10 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
         geometry=geom,
     )
 
-    return uns, crs, epc, hexa
+    return uns, crs, epc, timeseries, hexa
 
 
-def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns, epc):
+def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns, epc, timeseries=None, time_indices:list[int]=[]):
     import resqpy.model as rq
     import resqpy.property as rqp
 
@@ -351,19 +439,28 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
             return ro.ThermalInsulanceUom.DELTA_K_M2_W
         if (pt == "Radiogenic_heat_production"):
             return ro.ResqmlUom.U_W_M3
+        if (pt == 'dynamic nodes') or (pt=='points'):
+            return ro.ResqmlUom.M
         return ro.ResqmlUom.EUC
 
     model = rq.Model(epc_filename)
     assert model is not None
-    prop_uuid = model.uuid(title=prop_title)
-    prop = rqp.Property(model, uuid=prop_uuid)
 
-    continuous = prop.is_continuous()
+    use_timeseries = (timeseries is not None) and (time_indices)
+    if not use_timeseries:
+        prop_uuid0 = model.uuid(title=prop_title)
+        prop0 = rqp.Property(model, uuid=prop_uuid0)
+    else:
+        prop_uuids = model.uuids(title=prop_title)
+        prop_uuid0 = prop_uuids[time_indices[0]]
+        prop0 = rqp.Property(model, uuid=prop_uuid0)   # a prop representative of all in the timeseries
 
-    if (prop.local_property_kind_uuid() is None):
+    continuous = prop0.is_continuous()
+
+    if (prop0.local_property_kind_uuid() is None):
         propertykind0 = None
     else:
-        pk = rqp.PropertyKind(model, uuid=prop.local_property_kind_uuid())
+        pk = rqp.PropertyKind(model, uuid=prop0.local_property_kind_uuid())
         propertykind0 = ro.PropertyKind(
             schema_version=schema_version,
             citation=create_common_citation(f"{prop_title}"),
@@ -376,85 +473,114 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
             uuid=str(pk.uuid),
         )
 
-    pov = ro.PatchOfValues(
-        values=ro.DoubleHdf5Array(
-            values=ro.Hdf5Dataset(
-                path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
+
+    cprop0s, props = [], []
+    
+    for i in range( len(time_indices) if use_timeseries else 1 ):
+        if (not use_timeseries):
+            prop_uuid = prop_uuid0
+            prop = prop0
+        else:
+            prop_uuid = prop_uuids[time_indices[i]]
+            prop = rqp.Property(model, uuid=prop_uuid)
+
+        pov = ro.PatchOfValues(
+            values=ro.DoubleHdf5Array(
+                values=ro.Hdf5Dataset(
+                    path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
+                    hdf_proxy=ro.DataObjectReference(
+                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                        title=epc.citation.title,
+                        uuid=str(epc.uuid),
+                    ),
+                )
+            ) if continuous else
+            ro.IntegerHdf5Array(
+                values=ro.Hdf5Dataset(
+                    path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
+                    hdf_proxy=ro.DataObjectReference(
+                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
+                        title=epc.citation.title,
+                        uuid=str(epc.uuid),
+                    ),
                 ),
+                null_value=int(1e30),
             )
-        ) if continuous else
-        ro.IntegerHdf5Array(
-            values=ro.Hdf5Dataset(
-                path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
+        )
+
+        timeindex_ref = None
+        if use_timeseries:
+            time_index = time_indices[i]
+            timeindex_ref = ro.TimeIndex(
+                index = time_index,
+                time_series = ro.DataObjectReference(
+                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(timeseries)}",
+                    title=timeseries.citation.title,
+                    uuid=timeseries.uuid,
+                )
+            )
+
+        r_uom = ro.ResqmlUom( value= uom_for_prop_title(prop_title) ) if (prop.uom() is None) else prop.uom()
+
+        if (continuous):
+            cprop0 = ro.ContinuousProperty(
+                schema_version=schema_version,
+                citation=create_common_citation(f"{prop_title}"),
+                uuid=str(prop.uuid),
+                uom = r_uom,
+                count=1,
+                indexable_element=prop.indexable_element(),
+                supporting_representation=ro.DataObjectReference(
+                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
+                    title=uns.citation.title,
+                    uuid=uns.uuid,
                 ),
-            ),
-            null_value=int(1e30),
-        )
-    )
+                property_kind=ro.LocalPropertyKind(
+                    local_property_kind=ro.DataObjectReference(
+                        content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
+                        title=propertykind0.citation.title,
+                        uuid=propertykind0.uuid,
+                    )
+                ) if (propertykind0 is not None) else ro.StandardPropertyKind(kind=prop.property_kind()),
+                minimum_value=[prop.minimum_value() or 0.0],
+                maximum_value=[prop.maximum_value() or 1.0],
+                facet=[ro.PropertyKindFacet(
+                    facet=ro.Facet.WHAT,
+                    value=prop_title,  # prop.facet(),
+                )],
+                patch_of_values=[pov],
+                time_index=timeindex_ref,
+            )
+        else:
+            cprop0 = ro.DiscreteProperty(
+                schema_version=schema_version,
+                citation=create_common_citation(f"{prop_title}"),
+                uuid=str(prop.uuid),
+                # uom = prop.uom(),
+                count=1,
+                indexable_element=prop.indexable_element(),
+                supporting_representation=ro.DataObjectReference(
+                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
+                    title=uns.citation.title,
+                    uuid=uns.uuid,
+                ),
+                property_kind=ro.LocalPropertyKind(
+                    local_property_kind=ro.DataObjectReference(
+                        content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
+                        title=propertykind0.citation.title,
+                        uuid=propertykind0.uuid,
+                    )
+                ) if (propertykind0 is not None) else ro.StandardPropertyKind(kind=prop.property_kind()),
+                minimum_value=[int(prop.minimum_value() or 0)],
+                maximum_value=[int(prop.maximum_value() or 1)],
+                facet=[ro.PropertyKindFacet(
+                    facet=ro.Facet.WHAT,
+                    value=prop_title,  # prop.facet(),
+                )],
+                patch_of_values=[pov],
+                time_index=timeindex_ref,
+            )
+        cprop0s.append(cprop0)
+        props.append(prop)
 
-    if (continuous):
-        cprop0 = ro.ContinuousProperty(
-            schema_version=schema_version,
-            citation=create_common_citation(f"{prop_title}"),
-            uuid=str(prop.uuid),
-            uom=prop.uom(),
-            count=1,
-            indexable_element=prop.indexable_element(),
-            supporting_representation=ro.DataObjectReference(
-                content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
-                title=uns.citation.title,
-                uuid=uns.uuid,
-            ),
-            property_kind=ro.LocalPropertyKind(
-                local_property_kind=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
-                    title=propertykind0.citation.title,
-                    uuid=propertykind0.uuid,
-                )
-            ) if (propertykind0 is not None) else ro.StandardPropertyKind(kind=prop.property_kind()),
-            minimum_value=[prop.minimum_value() or 0.0],
-            maximum_value=[prop.maximum_value() or 1.0],
-            facet=[ro.PropertyKindFacet(
-                facet=ro.Facet.WHAT,
-                value=prop_title,  # prop.facet(),
-            )],
-            patch_of_values=[pov],
-        )
-    else:
-        cprop0 = ro.DiscreteProperty(
-            schema_version=schema_version,
-            citation=create_common_citation(f"{prop_title}"),
-            uuid=str(prop.uuid),
-            # uom = prop.uom(),
-            count=1,
-            indexable_element=prop.indexable_element(),
-            supporting_representation=ro.DataObjectReference(
-                content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
-                title=uns.citation.title,
-                uuid=uns.uuid,
-            ),
-            property_kind=ro.LocalPropertyKind(
-                local_property_kind=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
-                    title=propertykind0.citation.title,
-                    uuid=propertykind0.uuid,
-                )
-            ) if (propertykind0 is not None) else ro.StandardPropertyKind(kind=prop.property_kind()),
-            minimum_value=[int(prop.minimum_value() or 0)],
-            maximum_value=[int(prop.maximum_value() or 1)],
-            facet=[ro.PropertyKindFacet(
-                facet=ro.Facet.WHAT,
-                value=prop_title,  # prop.facet(),
-            )],
-            patch_of_values=[pov],
-        )
-
-    return cprop0, prop, propertykind0
+    return cprop0s, props, propertykind0
