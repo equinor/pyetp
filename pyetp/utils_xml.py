@@ -13,7 +13,9 @@ from xsdata.models.datatype import XmlDateTime
 
 import pyetp.resqml_objects as ro
 from pyetp.config import SETTINGS
-
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 from .types import DataObject
 
 schema_version = "2.0"
@@ -445,8 +447,9 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
 
     model = rq.Model(epc_filename)
     assert model is not None
-
-    use_timeseries = (timeseries is not None) and (time_indices)
+    p = model.uuids(title=prop_title)
+    p = rqp.Property(model, uuid=p[0])
+    use_timeseries = p.time_index()#(timeseries is not None) and (time_indices)
     if not use_timeseries:
         prop_uuid0 = model.uuid(title=prop_title)
         prop0 = rqp.Property(model, uuid=prop_uuid0)
@@ -475,7 +478,7 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
 
 
     cprop0s, props = [], []
-    
+
     for i in range( len(time_indices) if use_timeseries else 1 ):
         if (not use_timeseries):
             prop_uuid = prop_uuid0
