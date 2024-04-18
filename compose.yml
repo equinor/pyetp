@@ -9,7 +9,7 @@ services:
       # Note that port, dbname, user and password are specified in the open-etp-postgres service
       POSTGRESQL_CONN_STRING: "host=open-etp-postgres port=5432 dbname=pear user=testyuser password=testypass"
     ports:
-      - 9002:9002
+      - 9100:9002
     networks:
       - web
     depends_on:
