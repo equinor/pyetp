@@ -14,9 +14,11 @@ from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
 from xtgeo import RegularSurface
+import xtgeo
 
 import pyetp.resqml_objects as ro
 from pyetp.config import SETTINGS
+from pyetp.resqml_objects.generated import Grid2dPatch
 
 from . import utils_arrays, utils_xml
 from .types import *
@@ -358,7 +360,61 @@ class ETPClient(ETPConnection):
     #
     # xtgeo
     #
-
+    @staticmethod
+    def check_inside(x:float,y:float,patch:Grid2dPatch):
+        xori= patch.geometry.points.supporting_geometry.origin.coordinate1
+        yori = patch.geometry.points.supporting_geometry.origin.coordinate2 
+        xmax = xori + (patch.geometry.points.supporting_geometry.offset[0].spacing.value*patch.geometry.points.supporting_geometry.offset[0].spacing.count)
+        ymax = yori + (patch.geometry.points.supporting_geometry.offset[1].spacing.value*patch.geometry.points.supporting_geometry.offset[1].spacing.count)
+        if x < xori:
+            return False
+        if y < yori:
+            return False
+        if x > xmax:
+            return False
+        if y > ymax:
+            return False  
+        return True
+    
+    @staticmethod
+    def find_closest_index(x,y,patch:Grid2dPatch):
+        x_ind = (x-patch.geometry.points.supporting_geometry.origin.coordinate1)/patch.geometry.points.supporting_geometry.offset[0].spacing.value
+        y_ind = (y-patch.geometry.points.supporting_geometry.origin.coordinate2)/patch.geometry.points.supporting_geometry.offset[1].spacing.value
+        return round(x_ind),round(y_ind)
+    
+    async def get_surface_value_x_y(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str], x: T.Union[int,float], y: T.Union[int,float], method:T.Literal["linear","nearest"]):
+        gri, = await self.get_resqml_objects(gri_uri) # parallelized using subarray
+        logger.info(gri)
+        xori= gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate1
+        yori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate2 
+        xinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[0].spacing.value
+        yinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[1].spacing.value
+        if not self.check_inside(x,y,gri.grid2d_patch):
+            return  np.nan
+        uid=DataArrayIdentifier(
+                    uri=str(epc_uri), pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+                )
+        x_ind,y_ind=self.find_closest_index(x,y,gri.grid2d_patch)
+        if method == "nearest":
+            arr = await self.get_subarray(uid,[x_ind,y_ind],[1,1])
+            return arr[0][0]
+        min_x_ind = max(x_ind-2,0)
+        min_y_ind = max(y_ind-2,0)
+        # TODO add fencing for max x and y not larger than ncol nrow
+        arr = await self.get_subarray(uid,[min_x_ind,min_y_ind],[4,4])
+        min_x = xori+(min_x_ind*xinc)
+        min_y = yori+(min_y_ind*yinc) 
+        regridded = xtgeo.RegularSurface(
+            ncol=4,
+            nrow=4,
+            xori=min_x,
+            yori=min_y,
+            xinc=xinc,
+            yinc=yinc,
+            rotation=0.0,
+            values=arr.flatten(),
+        )
+        return regridded.get_value_from_xy((x,y))
     async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str]):
         gri, = await self.get_resqml_objects(gri_uri)
 
@@ -394,7 +450,6 @@ class ETPClient(ETPConnection):
 
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
         epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
-
         response = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,

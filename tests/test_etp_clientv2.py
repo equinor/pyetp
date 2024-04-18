@@ -1,5 +1,6 @@
 
 from contextlib import contextmanager
+import random
 from typing import Tuple
 from unittest.mock import AsyncMock
 
@@ -226,3 +227,24 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
 
     # ensure rotation, step, origin etc is equal
     assert surf.generate_hash() == nsurf.generate_hash()
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('surface', [create_surface(100, 40)])
+async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+    # NOTE: xtgeo calls the first axis (axis 0) of the values-array
+    # columns, and the second axis by rows.
+
+    epsg_code = 23031
+    epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(surface, epsg_code, dataspace=duri)
+    x_ori = surface.xori
+    y_ori = surface.yori
+    x_max = x_ori + (surface.xinc*surface.ncol)
+    y_max = y_ori + (surface.yinc*surface.nrow)
+    x = random.uniform(x_ori, x_max) 
+    y= random.uniform(y_ori, y_max) 
+    nearest = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x,y,"nearest")
+    xtgeo_nearest = surface.get_value_from_xy((x,y),sampling="nearest")
+    assert nearest == pytest.approx(xtgeo_nearest)
+    linear = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x,y,"linear")
+    xtgeo_linear = surface.get_value_from_xy((x,y))
+    assert linear == pytest.approx(xtgeo_linear)
