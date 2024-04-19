@@ -229,7 +229,7 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     assert surf.generate_hash() == nsurf.generate_hash()
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(100, 40)])
+@pytest.mark.parametrize('surface', [create_surface(100, 40), create_surface(3, 3)])
 async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
@@ -245,6 +245,20 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
     nearest = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x,y,"nearest")
     xtgeo_nearest = surface.get_value_from_xy((x,y),sampling="nearest")
     assert nearest == pytest.approx(xtgeo_nearest)
-    linear = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x,y,"linear")
+    linear = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x,y,"bilinear")
     xtgeo_linear = surface.get_value_from_xy((x,y))
     assert linear == pytest.approx(xtgeo_linear)
+
+    # # test x y index fencing
+    x_i =  x_max - surface.xinc-1
+    y_i = y_max - surface.yinc-1
+
+    linear_i = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x_i,y_i,"bilinear")
+    xtgeo_linear_i = surface.get_value_from_xy((x_i,y_i))
+    assert linear_i == pytest.approx(xtgeo_linear_i,rel=1e-2)
+
+    # test outside map coverage
+    x_ii =  x_max +100
+    y_ii = y_max +100
+    linear_ii = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x_ii,y_ii,"bilinear")
+    assert linear_ii is None
