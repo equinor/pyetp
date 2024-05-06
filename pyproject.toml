@@ -19,7 +19,7 @@ etpproto = "^1.0.5"
 httpx = "^0.26.0"
 xtgeo = "^3.8.0"
 xsdata = "^24.3.1"
-resqpy = "^4.14.3"
+resqpy = "^4.14.4"
 async-timeout = "^4.0.3"
 pillow = "^10.3.0"
 
