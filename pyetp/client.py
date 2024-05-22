@@ -629,7 +629,7 @@ class ETPClient(ETPConnection):
                 assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
                 assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
-                propkind_uri = "" if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
+                propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
                 cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
                 
                 response = await self.put_array(
@@ -639,7 +639,7 @@ class ETPClient(ETPConnection):
                     ),
                     prop.array_ref(),  # type: ignore
                 )
-                cprop_uris.append(cprop_uri)
+                cprop_uris.extend(cprop_uri)
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
@@ -693,8 +693,8 @@ class ETPClient(ETPConnection):
             PutDataArraysResponse
 
         # Check if we can upload the full array in one go.
-        if data.nbytes > self.max_array_size:
-            return await self._put_array_chuncked(uid, data)
+        #if data.nbytes > self.max_array_size:
+        return await self._put_array_chuncked(uid, data)
 
         response = await self.send(
             PutDataArrays(
@@ -737,16 +737,18 @@ class ETPClient(ETPConnection):
             PutDataSubarrays
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
             PutDataSubarraysResponse
-
+        # starts [start_X, starts_Y]
+        # counts [count_X, count_Y]
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
         ends = starts + counts
-
+        print(starts,ends)
         if put_uninitialized:
             transport_array_type = utils_arrays.get_transport(data.dtype)
             await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
+        print(data.shape,starts,ends,counts,slices,data[slices].shape,"!!!!!")
         dataarray = utils_arrays.to_data_array(data[slices])
         payload = PutDataSubarraysType(
             uid=uid,
