@@ -693,8 +693,8 @@ class ETPClient(ETPConnection):
             PutDataArraysResponse
 
         # Check if we can upload the full array in one go.
-        #if data.nbytes > self.max_array_size:
-        return await self._put_array_chuncked(uid, data)
+        if data.nbytes > self.max_array_size:
+            return await self._put_array_chuncked(uid, data)
 
         response = await self.send(
             PutDataArrays(
