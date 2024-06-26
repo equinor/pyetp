@@ -106,28 +106,26 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
 
     title = surf.name or "regularsurface"
 
-    assert np.abs(surf.get_rotation()) < 1e-7, "Maps should have no rotation!"
-
-    epc = create_epc()
-    crs = create_common_crs(title, projected_epsg, surf.get_rotation())   # Here rotation should be zero!
-
-    x0 = surf.xori
-    y0 = surf.yori
-    dx = surf.xinc
-    dy = surf.yinc
     # NOTE: xtgeo uses nrow for axis 1 in the array, and ncol for axis 0.  This
     # means that surf.nrow is the fastest changing axis, and surf.ncol the
     # slowest changing axis, and we have surf.values.shape == (surf.ncol,
     # surf.nrow). The author of this note finds that confusing, but such is
     # life.
-    nx = surf.ncol
-    ny = surf.nrow
+    epc, crs, gri = instantiate_resqml_grid(title, surf.get_rotation(), surf.xori, surf.yori, surf.xinc, surf.yinc, surf.ncol, surf.nrow, projected_epsg)
+    return epc, crs, gri
+
+def instantiate_resqml_grid(name:str, rotation: float, x0: float, y0: float, dx: float, dy: float, nx: int, ny: int, epsg: int):
+    assert np.abs(rotation) < 1e-7, "Maps should have no rotation!"
+
+    epc = create_epc()
+    crs = create_common_crs(name, epsg, rotation)   # Here rotation should be zero!
+
 
     gri = ro.Grid2dRepresentation(
         uuid=(grid_uuid := str(uuid4())),
         schema_version=schema_version,
         surface_role=ro.SurfaceRole.MAP,
-        citation=create_common_citation(title),
+        citation=create_common_citation(name),
         grid2d_patch=ro.Grid2dPatch(
             # TODO: Perhaps we can use this for tiling?
             patch_index=0,
@@ -205,9 +203,7 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
             ),
         ),
     )
-
     return epc, crs, gri
-
 
 def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     import numpy as np
