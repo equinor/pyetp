@@ -739,16 +739,14 @@ class ETPClient(ETPConnection):
             PutDataSubarraysResponse
         # starts [start_X, starts_Y]
         # counts [count_X, count_Y]
-        starts = np.array(starts).astype(np.int64)
-        counts = np.array(counts).astype(np.int64)
-        ends = starts + counts
-        print(starts,ends)
+        starts = np.array(starts).astype(np.int64) # len = 2 [x_start_index, y_start_index]
+        counts = np.array(counts).astype(np.int64) # len = 2
+        ends = starts + counts # len = 2
         if put_uninitialized:
             transport_array_type = utils_arrays.get_transport(data.dtype)
             await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
-        print(data.shape,starts,ends,counts,slices,data[slices].shape,"!!!!!")
         dataarray = utils_arrays.to_data_array(data[slices])
         payload = PutDataSubarraysType(
             uid=uid,
