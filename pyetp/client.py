@@ -839,7 +839,7 @@ class ETPClient(ETPConnection):
                 continue
             yield starts, counts
 
-    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset:int = 0, total_count: int|None = None):
+    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset:int = 0, total_count: T.Union[int, None] = None):
 
         metadata = (await self.get_array_metadata(uid))[0]
         if len(metadata.dimensions) != 1 and offset != 0:
