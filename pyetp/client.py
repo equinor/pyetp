@@ -15,10 +15,9 @@ from etpproto.connection import (CommunicationProtocol, ConnectionType,
 from etpproto.messages import Message, MessageFlags
 from xtgeo import RegularSurface
 import xtgeo
-
+from scipy.interpolate import griddata
 import pyetp.resqml_objects as ro
 from pyetp.config import SETTINGS
-from pyetp.resqml_objects.generated import Grid2dPatch
 
 from . import utils_arrays, utils_xml
 from .types import *
@@ -361,7 +360,7 @@ class ETPClient(ETPConnection):
     # xtgeo
     #
     @staticmethod
-    def check_inside(x:float,y:float,patch:Grid2dPatch):
+    def check_inside(x:float,y:float,patch:ro.Grid2dPatch):
         xori= patch.geometry.points.supporting_geometry.origin.coordinate1
         yori = patch.geometry.points.supporting_geometry.origin.coordinate2 
         xmax = xori + (patch.geometry.points.supporting_geometry.offset[0].spacing.value*patch.geometry.points.supporting_geometry.offset[0].spacing.count)
@@ -377,7 +376,7 @@ class ETPClient(ETPConnection):
         return True
     
     @staticmethod
-    def find_closest_index(x,y,patch:Grid2dPatch):
+    def find_closest_index(x,y,patch:ro.Grid2dPatch):
         x_ind = (x-patch.geometry.points.supporting_geometry.origin.coordinate1)/patch.geometry.points.supporting_geometry.offset[0].spacing.value
         y_ind = (y-patch.geometry.points.supporting_geometry.origin.coordinate2)/patch.geometry.points.supporting_geometry.offset[1].spacing.value
         return round(x_ind),round(y_ind)
@@ -545,6 +544,52 @@ class ETPClient(ETPConnection):
         )
 
         return cprop0, values
+    
+    @staticmethod
+    def check_bound(points, x:float, y:float):
+        if x > points[:,0].max() or x < points[:,0].min():
+            return False
+        if y > points[:,1].max() or y < points[:,1].min():
+            return False
+        return True
+    
+    async def get_epc_mesh_property_x_y(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str], x: float, y: float, top: float, base: float):
+        uns, = await self.get_resqml_objects(uns_uri)
+        points = await self.get_array(
+        DataArrayIdentifier(
+            uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+        ))
+        chk = self.check_bound(points, x, y)
+        if chk == False:
+            return None
+        first_x = np.searchsorted(points[:,0],x)
+        first_y = np.searchsorted(points[:,1],y)
+        first_idx = min(first_x,first_y)
+        last_idx = max(first_x,first_y)
+        filtered = points[first_idx:last_idx,:]
+        cprop, = await self.get_resqml_objects(prop_uri)
+        assert str(cprop.indexable_element) == 'IndexableElements.NODES'
+        props_uid = DataArrayIdentifier(
+                    uri=str(epc_uri), pathInResource=cprop.patch_of_values[0].values.values.path_in_hdf_file,
+                )
+        meta, = await self.get_array_metadata(props_uid)
+        if utils_arrays.get_nbytes(meta)* filtered.shape[0]/points.shape[0] < self.max_array_size:
+            values = await self._get_array_chuncked(props_uid,first_idx,filtered.shape[0])
+        else:
+            values = await self.get_subarray(props_uid, [first_idx], [filtered.shape[0]])
+        if isinstance(cprop, ro.DiscreteProperty):
+            method = "nearest"
+        else:
+            method = "linear"
+        resolution= 100
+        requested_depth = np.arange(top,base+1,resolution)
+        request = np.tile([x, y, 0], (requested_depth.size,1))
+        request[:,2]=requested_depth
+        interpolated = griddata(filtered, values, request, method=method)
+        response = np.vstack((requested_depth,interpolated))
+        response_filtered = response[:, ~np.isnan(response[1])]
+        return {"depth": response_filtered[0], "values": response_filtered[1]}
+       
 
     async def put_epc_mesh(
         self, epc_filename, title_in, property_titles, projected_epsg, dataspace
@@ -769,7 +814,7 @@ class ETPClient(ETPConnection):
     # chuncked get array - ETP will not chunck response - so we need to do it manually
     #
 
-    def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32)):
+    def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset = 0):
         shape = np.array(shape)
 
         # capsize blocksize
@@ -784,18 +829,26 @@ class ETPClient(ETPConnection):
 
         for ijk in indexes:
             starts = ijk * block_size
+            if offset != 0:
+                starts = starts + offset
             ends = np.fmin(shape, starts + block_size)
+            if offset != 0:
+                ends = ends + offset
             counts = ends - starts
-
             if any(counts == 0):
                 continue
-
             yield starts, counts
 
-    async def _get_array_chuncked(self, uid: DataArrayIdentifier):
+    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset:int = 0, total_count: int|None = None):
 
         metadata = (await self.get_array_metadata(uid))[0]
-        buffer_shape = np.array(metadata.dimensions).astype(np.int64)
+        if len(metadata.dimensions) != 1 and offset != 0:
+            raise Exception("Offset is only implemented for 1D array")
+
+        if isinstance(total_count, (int, float)):
+            buffer_shape = np.array([total_count], dtype=np.int64)
+        else:
+            buffer_shape = np.array(metadata.dimensions, dtype=np.int64)
 
         dtype = utils_arrays.get_dtype(metadata.transport_array_type)
         buffer = np.zeros(buffer_shape, dtype=dtype)
@@ -803,12 +856,12 @@ class ETPClient(ETPConnection):
         async def populate(starts, counts):
             array = await self.get_subarray(uid, starts, counts)
             ends = starts + counts
-            slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
+            slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
 
         await asyncio.gather(*[
             populate(starts, counts)
-            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype)
+            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
         ])
 
         return buffer
