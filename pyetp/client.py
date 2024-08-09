@@ -562,10 +562,21 @@ class ETPClient(ETPConnection):
         chk = self.check_bound(points, x, y)
         if chk == False:
             return None
-        first_x = np.searchsorted(points[:,0],x)
-        first_y = np.searchsorted(points[:,1],y)
+        x_lower_bound_index = np.argwhere(points[:,0]<x)[-1,0]
+        first_x = np.argwhere(points[:,0]==points[x_lower_bound_index,0])[0,0]
+
+        x_upper_bound_index = np.argwhere(points[:,0]>x)[0,0]
+        last_x = np.argwhere(points[:,0]==points[x_upper_bound_index,0])[-1,0]
+
+        y_lower_bound_index = np.argwhere(points[:,1]<y)[-1,0]
+        first_y = np.argwhere(points[:,1]==points[y_lower_bound_index,1])[0,0]
+
+        y_upper_bound_index = np.argwhere(points[:,1]>y)[0,0]
+        last_y = np.argwhere(points[:,1]==points[y_upper_bound_index,1])[-1,0]
+
+
         first_idx = min(first_x,first_y)
-        last_idx = max(first_x,first_y)
+        last_idx = max(last_x,last_y)
         filtered = points[first_idx:last_idx,:]
         cprop, = await self.get_resqml_objects(prop_uri)
         assert str(cprop.indexable_element) == 'IndexableElements.NODES'
