@@ -553,7 +553,7 @@ class ETPClient(ETPConnection):
             return False
         return True
     
-    async def get_epc_mesh_property_x_y(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str], x: float, y: float, top: float, base: float):
+    async def get_epc_mesh_property_x_y(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str], x: float, y: float):
         uns, = await self.get_resqml_objects(uns_uri)
         points = await self.get_array(
         DataArrayIdentifier(
@@ -592,8 +592,11 @@ class ETPClient(ETPConnection):
             method = "nearest"
         else:
             method = "linear"
-        resolution= 100
-        requested_depth = np.arange(top,base+1,resolution)
+        
+        # resolution= np.mean(np.diff(filtered[:,-1]))
+        top = np.min(filtered[:,-1])
+        base = np.max(filtered[:,-1])
+        requested_depth = np.arange(top,base+1,100)
         request = np.tile([x, y, 0], (requested_depth.size,1))
         request[:,2]=requested_depth
         interpolated = griddata(filtered, values, request, method=method)
