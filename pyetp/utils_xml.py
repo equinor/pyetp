@@ -439,6 +439,10 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
             return ro.ResqmlUom.U_W_M3
         if (pt == 'dynamic nodes') or (pt=='points'):
             return ro.ResqmlUom.M
+        if (pt == 'thermal_conductivity'):
+            return ro.ResqmlUom.W_M_K
+        if (pt == 'Vitrinite reflectance'):
+            return ro.ResqmlUom.VALUE
         return ro.ResqmlUom.EUC
 
     model = rq.Model(epc_filename)
