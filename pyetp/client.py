@@ -79,10 +79,12 @@ class ETPClient(ETPConnection):
     #
 
     async def send(self, body: ETPModel):
+        # correlation_id = await self._send(body)
+        # return await self._recv(correlation_id)
         try:
             correlation_id = await self._send(body)
             return await self._recv(correlation_id)
-        except:
+        except asyncio.TimeoutError:
             time.sleep(10)
             await self.connect()
             correlation_id = await self._send(body)
