@@ -2,6 +2,7 @@ import asyncio
 import sys
 import datetime
 import logging
+import time
 import typing as T
 import uuid
 from collections import defaultdict
@@ -78,9 +79,15 @@ class ETPClient(ETPConnection):
     #
 
     async def send(self, body: ETPModel):
-        correlation_id = await self._send(body)
-        return await self._recv(correlation_id)
-
+        try:
+            correlation_id = await self._send(body)
+            return await self._recv(correlation_id)
+        except:
+            time.sleep(10)
+            await self.connect()
+            correlation_id = await self._send(body)
+            return await self._recv(correlation_id)
+        
     async def _send(self, body: ETPModel):
 
         msg = Message.get_object_message(
