@@ -73,6 +73,7 @@ class ETPClient(ETPConnection):
         self.timeout = timeout
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
         self.__recvtask = asyncio.create_task(self.__recv__())
+        self.safeMode = False
 
     #
     # client
@@ -881,24 +882,28 @@ class ETPClient(ETPConnection):
             ends = starts + counts
             slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
-
-        await asyncio.gather(*[
-            populate(starts, counts)
-            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
-        ])
-
+        if self.safeMode:
+            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset):
+                await populate(starts, counts)
+        else:
+            await asyncio.gather(*[
+                populate(starts, counts)
+                for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
+            ])
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
 
         transport_array_type = utils_arrays.get_transport(data.dtype)
         await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
-
-        await asyncio.gather(*[
-            self.put_subarray(uid, data, starts, counts)
-            for starts, counts in self._get_chunk_sizes(data.shape, data.dtype)
-        ])
-
+        if self.safeMode:
+            for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
+                await self.put_subarray(uid, data, starts, counts)
+        else:
+            await asyncio.gather(*[
+                self.put_subarray(uid, data, starts, counts)
+                for starts, counts in self._get_chunk_sizes(data.shape, data.dtype)
+            ])
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
