@@ -74,22 +74,18 @@ class ETPClient(ETPConnection):
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
         self.__recvtask = asyncio.create_task(self.__recv__())
         self.safeMode = False
+        self.retryPause = 30
 
     #
     # client
     #
 
     async def send(self, body: ETPModel):
-        # correlation_id = await self._send(body)
-        # return await self._recv(correlation_id)
-        try:
-            correlation_id = await self._send(body)
-            return await self._recv(correlation_id)
-        except asyncio.TimeoutError:
-            time.sleep(10)
+        if self.ws.closed:
             await self.connect()
-            correlation_id = await self._send(body)
-            return await self._recv(correlation_id)
+        correlation_id = await self._send(body)
+        return await self._recv(correlation_id)
+
         
     async def _send(self, body: ETPModel):
 
@@ -876,34 +872,42 @@ class ETPClient(ETPConnection):
 
         dtype = utils_arrays.get_dtype(metadata.transport_array_type)
         buffer = np.zeros(buffer_shape, dtype=dtype)
-
+        params = []
         async def populate(starts, counts):
+            params.append([starts, counts])
             array = await self.get_subarray(uid, starts, counts)
             ends = starts + counts
             slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
-        if self.safeMode:
-            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset):
-                await populate(starts, counts)
-        else:
-            await asyncio.gather(*[
-                populate(starts, counts)
-                for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
-            ])
+            return
+
+        r = await asyncio.gather(*[
+            populate(starts, counts)
+            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
+        ], return_exceptions=True)
+        if any(r):
+            time.sleep(self.retryPause)
+            if self.ws.closed:
+                await self.connect()
+
+            [await populate(params[idx][0], params[idx][1]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
 
         transport_array_type = utils_arrays.get_transport(data.dtype)
         await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
-        if self.safeMode:
-            for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
-                await self.put_subarray(uid, data, starts, counts)
-        else:
-            await asyncio.gather(*[
-                self.put_subarray(uid, data, starts, counts)
-                for starts, counts in self._get_chunk_sizes(data.shape, data.dtype)
-            ])
+        params = []
+        coro = []
+        for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
+            params.append([starts, counts])
+            coro.append(self.put_subarray(uid, data, starts, counts))
+        r = await asyncio.gather(*coro, return_exceptions=True)
+        if any(r):
+            time.sleep(self.retryPause)
+            if self.ws.closed:
+                await self.connect()
+            [await self.put_subarray(uid, data, params[idx][0], params[idx][1]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
