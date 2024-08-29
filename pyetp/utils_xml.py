@@ -449,7 +449,7 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
     assert model is not None
     p = model.uuids(title=prop_title)
     p = rqp.Property(model, uuid=p[0])
-    use_timeseries = p.time_index()#(timeseries is not None) and (time_indices)
+    use_timeseries = isinstance(p.time_index(), int)
     if not use_timeseries:
         prop_uuid0 = model.uuid(title=prop_title)
         prop0 = rqp.Property(model, uuid=prop_uuid0)
