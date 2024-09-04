@@ -641,7 +641,7 @@ class ETPClient(ETPConnection):
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
             ),
-            hexa.nodes_per_face  # type: ignore
+            hexa.nodes_per_face.astype(np.int32)  # type: ignore
         )
 
         response = await self.put_array(
@@ -684,11 +684,13 @@ class ETPClient(ETPConnection):
             if timeseries is not None:
                 time_indices = list(range(len(timeseries.time)))
                 # print(f"prop {propname}: len of timeseries: {len(timeseries.time)}")
+                print(propname)
                 cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc, timeseries=timeseries, time_indices=time_indices)
             else:
                 time_indices = [-1]
                 cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc)
-
+            if isinstance(cprop0s, type(None)):
+                continue
             cprop_uris = []
             for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
                 assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
