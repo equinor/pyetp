@@ -231,34 +231,39 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     # ts_uuid_2 = model.uuid(obj_type='GeologicTimeSeries')
     # print("TS UUIDs: ", ts_uuid, ts_uuid_2)
     gts = rts.GeologicTimeSeries(model, uuid=ts_uuid)
+
     print("gts: ", gts)
     timeseries = None
     # dynamic_points = []    
     if (ts_uuid is not None) and (gts is not None):
-        temp_uuids = model.uuids(title = 'Temperature')
-        node_uuids = model.uuids(title = 'points')        
-        # print("temp_uuids", temp_uuids)
-        # print("node_uuids", node_uuids)
 
-        points_cached_series = []
-        Temp_per_vertex_series = []
 
-        # for uuid in node_uuids[0:-1:10]:
+
         ro_timestamps = []
-        for uuid in node_uuids:
-            prop = rqp.Property(model, uuid = uuid)
-            # print(uuid, prop)
-            tst = float(str(gts.timestamp( prop.time_index())).replace(' Ma',''))
-            # print(f'index: {prop.time_index()}  time stamp: {gts.timestamp( prop.time_index())}   tst: {int(tst*1e6)}' )
+        for i in gts.iter_timestamps(as_string=False):
             ro_timestamps.append(
                 ro.Timestamp(
                     date_time=XmlDateTime.from_string("0001-01-01T00:00:00.00+00:00"),
-                    year_offset=int(tst*1e6),
+                    year_offset=int(i),
                 )
             )
-            # points = prop.array_ref()
-            # # print(f'time stamp: {gts.timestamp( prop.time_index())} -- thickness of crust+sed: {(np.amax(points)-np.amin(points)):.2f}    shape: {points.shape}')  # type: ignore
-            # dynamic_points.append(points)
+        # for uuid in node_uuids[0:-1:10]:
+        
+
+        # for uuid in node_uuids:
+        #     prop = rqp.Property(model, uuid = uuid)
+        #     # print(uuid, prop)
+        #     tst = float(str(gts.timestamp( prop.time_index())).replace(' Ma',''))
+        #     # print(f'index: {prop.time_index()}  time stamp: {gts.timestamp( prop.time_index())}   tst: {int(tst*1e6)}' )
+        #     ro_timestamps.append(
+        #         ro.Timestamp(
+        #             date_time=XmlDateTime.from_string("0001-01-01T00:00:00.00+00:00"),
+        #             year_offset=int(tst*1e6),
+        #         )
+        #     )
+        #     # points = prop.array_ref()
+        #     # # print(f'time stamp: {gts.timestamp( prop.time_index())} -- thickness of crust+sed: {(np.amax(points)-np.amin(points)):.2f}    shape: {points.shape}')  # type: ignore
+        #     # dynamic_points.append(points)
 
         print(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
 
@@ -420,7 +425,7 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
     import resqpy.model as rq
     import resqpy.property as rqp
 
-    def uom_for_prop_title(pt):
+    def uom_for_prop_title(pt: str):
         if (pt == "Age"):
             return ro.ResqmlUom.A_1
         if (pt == "Temperature"):
@@ -441,20 +446,29 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
             return ro.ResqmlUom.M
         if (pt == 'thermal_conductivity'):
             return ro.ResqmlUom.W_M_K
-        if (pt == 'Vitrinite reflectance'):
+        if (pt == 'Vitrinite reflectance' or pt == '%Ro'):
+            return ro.ResqmlUom.VALUE
+        if ("Expelled" in pt):
+            return ro.ResqmlUom.KG_M3
+        if ("Transformation" in pt):
             return ro.ResqmlUom.VALUE
         return ro.ResqmlUom.EUC
 
     model = rq.Model(epc_filename)
     assert model is not None
-    p = model.uuids(title=prop_title)
-    p = rqp.Property(model, uuid=p[0])
-    use_timeseries = isinstance(p.time_index(), int)
+    prop_types = ['obj_ContinuousProperty', 'obj_DiscreteProperty', 'obj_CategoricalProperty', 'obj_PointsProperty']
+    p = []
+    for i in prop_types:
+        p1 = model.uuids(title=prop_title, obj_type=i)
+        p.extend(p1)
+    p_test = rqp.Property(model, uuid=p[0])
+
+    use_timeseries = isinstance(p_test.time_index(), int)
     if not use_timeseries:
-        prop_uuid0 = model.uuid(title=prop_title)
+        prop_uuid0 = p[0]
         prop0 = rqp.Property(model, uuid=prop_uuid0)
     else:
-        prop_uuids = model.uuids(title=prop_title)
+        prop_uuids = p
         prop_uuid0 = prop_uuids[time_indices[0]]
         prop0 = rqp.Property(model, uuid=prop_uuid0)   # a prop representative of all in the timeseries
 
