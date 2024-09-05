@@ -568,44 +568,86 @@ class ETPClient(ETPConnection):
         chk = self.check_bound(points, x, y)
         if chk == False:
             return None
-        x_lower_bound_index = np.argwhere(points[:,0]<x)[-1,0]
-        first_x = np.argwhere(points[:,0]==points[x_lower_bound_index,0])[0,0]
+        unique_y=np.unique(points[:,1])
+        y_smaller_sorted = np.sort(unique_y[np.argwhere(unique_y<y).flatten()])
+        if y_smaller_sorted.size > 1:
+            y_floor = y_smaller_sorted[-2]
+        elif y_smaller_sorted.size == 1:
+            y_floor = y_smaller_sorted[-1]
+        else:
+            pass
+        y_larger_sorted  = np.sort(unique_y[np.argwhere(unique_y>y).flatten()])
+        if y_larger_sorted.size > 1:
+            y_ceil = y_larger_sorted[1]
+        elif y_larger_sorted.size == 1:
+            y_ceil=y_larger_sorted[0]
+        else:
+            pass
+        start_new_row_idx = np.argwhere(np.diff(points[:,1]) !=0).flatten() +1
 
-        x_upper_bound_index = np.argwhere(points[:,0]>x)[0,0]
-        last_x = np.argwhere(points[:,0]==points[x_upper_bound_index,0])[-1,0]
+        to_fetch = []
+        initial_result_arr_idx = 0
+        for i in range(start_new_row_idx.size-1):
+            sliced = points[start_new_row_idx[i]:start_new_row_idx[i+1],:]
+            if sliced[0,1] <= y_ceil and sliced[0,1] >= y_floor:
+                # Found slice that has same y
+                x_diff = sliced[:,0]-x
+                if all([np.any((x_diff>=0)), np.any((x_diff<=0))]): # y within this slice
+                    first_idx = start_new_row_idx[i]
+                    count = start_new_row_idx[i+1]-first_idx
+                    to_fetch.append([start_new_row_idx[i],start_new_row_idx[i+1], count,initial_result_arr_idx])
+                    initial_result_arr_idx+=count
 
-        y_lower_bound_index = np.argwhere(points[:,1]<y)[-1,0]
-        first_y = np.argwhere(points[:,1]==points[y_lower_bound_index,1])[0,0]
-
-        y_upper_bound_index = np.argwhere(points[:,1]>y)[0,0]
-        last_y = np.argwhere(points[:,1]==points[y_upper_bound_index,1])[-1,0]
+        total_points_filtered = sum([i[2] for i in to_fetch])
 
 
-        first_idx = min(first_x,first_y)
-        last_idx = max(last_x,last_y)
-        filtered = points[first_idx:last_idx,:]
         cprop, = await self.get_resqml_objects(prop_uri)
         assert str(cprop.indexable_element) == 'IndexableElements.NODES'
         props_uid = DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=cprop.patch_of_values[0].values.values.path_in_hdf_file,
-                )
+                    uri=str(epc_uri), pathInResource=cprop.patch_of_values[0].values.values.path_in_hdf_file)
         meta, = await self.get_array_metadata(props_uid)
-        if utils_arrays.get_nbytes(meta)* filtered.shape[0]/points.shape[0] < self.max_array_size:
-            values = await self._get_array_chuncked(props_uid,first_idx,filtered.shape[0])
-        else:
-            values = await self.get_subarray(props_uid, [first_idx], [filtered.shape[0]])
+        filtered_points = np.zeros((total_points_filtered,3), dtype=np.float64)
+        all_values = np.empty(total_points_filtered, dtype=np.float64)
+        async def populate(i):
+            end_indx = i[2]+i[3]
+            filtered_points[i[3]:end_indx] = points[i[0]:i[1]]
+            if utils_arrays.get_nbytes(meta)* i[2]/points.shape[0] > self.max_array_size:
+                all_values[i[3]:end_indx] = await self._get_array_chuncked(props_uid, i[0], i[2])
+            else:
+                all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
+            return
+        
+        r = await asyncio.gather(*[populate(i) for i in to_fetch], return_exceptions=True)
+        if any(r):
+            time.sleep(self.retryPause)
+            if self.ws.closed:
+                await self.connect()
+
+            [await populate(to_fetch[idx]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
+
+
+        # for i in to_fetch:
+        #     end_indx = i[2]+i[3]
+        #     filtered_points[i[3]:end_indx] = points[i[0]:i[1]]
+
+        #     if utils_arrays.get_nbytes(meta)* i[2]/points.shape[0] > self.max_array_size:
+        #         all_values[i[3]:end_indx] = await self._get_array_chuncked(props_uid, i[0], i[2])
+        #     else:
+        #         all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
+
         if isinstance(cprop, ro.DiscreteProperty):
             method = "nearest"
         else:
             method = "linear"
         
         # resolution= np.mean(np.diff(filtered[:,-1]))
-        top = np.min(filtered[:,-1])
-        base = np.max(filtered[:,-1])
+        top = round(np.min(filtered_points[:,-1]),1)
+        base = round(np.max(filtered_points[:,-1]),1)
         requested_depth = np.arange(top,base+1,100)
+        requested_depth = requested_depth[requested_depth>0]
         request = np.tile([x, y, 0], (requested_depth.size,1))
         request[:,2]=requested_depth
-        interpolated = griddata(filtered, values, request, method=method)
+        interpolated = griddata(filtered_points, all_values, request, method=method)
         response = np.vstack((requested_depth,interpolated))
         response_filtered = response[:, ~np.isnan(response[1])]
         return {"depth": response_filtered[0], "values": response_filtered[1]}
