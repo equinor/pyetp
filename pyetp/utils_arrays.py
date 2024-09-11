@@ -70,3 +70,12 @@ def to_data_array(data: np.ndarray):
         dimensions=data.shape,  # type: ignore
         data=AnyArray(item=cls(values=data.flatten().tolist()))
     )
+
+def mid_point_rectangle(arr: np.ndarray):
+    all_x=arr[:,0]
+    all_y= arr[:,1]
+    min_x = np.min(all_x)
+    min_y = np.min(all_y)
+    mid_x = ((np.max(all_x)-min_x)/2)+min_x
+    mid_y = ((np.max(all_y)-min_y)/2)+min_y
+    return np.array([mid_x, mid_y])

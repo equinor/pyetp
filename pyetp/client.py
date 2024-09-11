@@ -10,6 +10,7 @@ from types import TracebackType
 from async_timeout import timeout
 import numpy as np
 from pydantic import SecretStr
+from scipy import interpolate
 import websockets
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
@@ -562,9 +563,7 @@ class ETPClient(ETPConnection):
     async def get_epc_mesh_property_x_y(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str], x: float, y: float):
         uns, = await self.get_resqml_objects(uns_uri)
         points = await self.get_array(
-        DataArrayIdentifier(
-            uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
-        ))
+                    DataArrayIdentifier(uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file))
         chk = self.check_bound(points, x, y)
         if chk == False:
             return None
@@ -624,17 +623,6 @@ class ETPClient(ETPConnection):
                 await self.connect()
 
             [await populate(to_fetch[idx]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
-
-
-        # for i in to_fetch:
-        #     end_indx = i[2]+i[3]
-        #     filtered_points[i[3]:end_indx] = points[i[0]:i[1]]
-
-        #     if utils_arrays.get_nbytes(meta)* i[2]/points.shape[0] > self.max_array_size:
-        #         all_values[i[3]:end_indx] = await self._get_array_chuncked(props_uid, i[0], i[2])
-        #     else:
-        #         all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
-
         if isinstance(cprop, ro.DiscreteProperty):
             method = "nearest"
         else:
@@ -752,7 +740,99 @@ class ETPClient(ETPConnection):
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
+    
+    async def get_epc_property_surface_slice(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
+        # n_node_per_pos number of nodes in a 1D location
+        # node_index index of slice from top. Warmth has 2 nodes per sediment layer. E.g. top of second layer will have index 2
+        
+        cprop0, = await self.get_resqml_objects(prop_uri)
+        prop_at_node = False
+        if str(cprop0.indexable_element) == 'IndexableElements.NODES':
+            prop_at_node = True
+        uns, = await self.get_resqml_objects(uns_uri)
+        points = await self.get_array(
+                DataArrayIdentifier(
+                    uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+                )
+            )
+        # node_per_sed = 2
+        # n_sed_node = n_sed *node_per_sed
+        # n_crust_node = 4
+        # n_node_per_pos = n_sed_node + n_crust_node
+        # start_idx_pos = sediment_id *node_per_sed
+        if prop_at_node:
+            indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
+            results = points[indexing_array,:]
+            arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
+                    uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
+                    [i], [1]) for i in indexing_array])
+            arr =np.array(arr).flatten()
+            assert results.shape[0] == arr.size
+            results[:,2] = arr
+        else:
+            m,=await self.get_array_metadata(DataArrayIdentifier(
+                        uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,))
+            n_cells = m.dimensions[0]
+            layers_per_sediment_unit=2
+            n_cell_per_pos = n_node_per_pos -1
+            indexing_array = np.empty(int(n_cells/n_cell_per_pos), dtype=np.int32)
+            results = np.empty((int(n_cells/n_cell_per_pos),3), dtype=np.int32)
+            grid_x_pos = np.unique(points[:,0])
+            grid_y_pos = np.unique(points[:,1])
+            counter = 0
+            # find cell index and location
+            for y_ind in range(0,len(grid_y_pos)-1):
+                for x_ind in range(0,len(grid_x_pos)-1):
+                    cell_idx_at_pos = y_ind*(len(grid_x_pos)-1) + x_ind
+                    if counter != 0:
+                        indexing_array[counter] = (cell_idx_at_pos*n_cell_per_pos) +node_index
+                    else:
+                        indexing_array[counter] = cell_idx_at_pos+node_index
+                    top_depth= []
+                    for corner_x in range(layers_per_sediment_unit):
+                        for corner_y in range(layers_per_sediment_unit):
+                            node_indx = (( (y_ind+corner_y)*len(grid_x_pos) + (x_ind+corner_x) ) * n_node_per_pos)+ node_index
+                            top_depth.append( points[node_indx])
+                    results[counter,0:2] = utils_arrays.mid_point_rectangle(np.array(top_depth))
+                    counter+=1
+            arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
+                    uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
+                    [i], [1]) for i in indexing_array])
+            arr =np.array(arr).flatten()
+            assert results.shape[0] == arr.size
+            results[:,2] = arr
+        return results
+    
+    async def get_epc_property_surface_slice_xtgeo(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
+        data = await self.get_epc_property_surface_slice(epc_uri, uns_uri,prop_uri,node_index, n_node_per_pos)
+        max_x = np.nanmax(data[:,0])
+        max_y = np.nanmax(data[:,1])
+        min_x = np.nanmin(data[:,0])
+        min_y = np.nanmin(data[:,1])
+        u_x = np.sort(np.unique(data[:,0]))
+        u_y = np.sort(np.unique(data[:,1]))
+        xinc = u_x[1]- u_x[0]
+        yinc = u_y[1]- u_y[0]
+        grid_x, grid_y = np.mgrid[
+            min_x: max_x + xinc: xinc,
+            min_y: max_y + yinc: yinc,
+        ]
 
+        interp = interpolate.LinearNDInterpolator(data[:,:-1], data[:,-1], fill_value=np.nan, rescale=False)
+        z = interp(np.array([grid_x.flatten(), grid_y.flatten() ]).T )
+        zz = np.reshape(z,grid_x.shape)
+
+        surf = xtgeo.RegularSurface(
+            ncol=grid_x.shape[0],
+            nrow=grid_x.shape[1],
+            xori=min_x,
+            yori=min_y,
+            xinc=xinc,
+            yinc=yinc,
+            rotation=0.0,
+            values=zz,
+        )
+        return surf
     #
     # array
     #

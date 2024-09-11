@@ -72,3 +72,8 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
             assert isinstance(prop0, DiscreteProperty) == (not continuous), "property types must match"
             np.testing.assert_allclose(prop.array_ref(), values, err_msg=f"property {key} at time_index {time_index} does not match")   # type: ignore
             found_indices.add(time_index)
+    
+    arr = await eclient.get_epc_property_surface_slice(rddms_uris[0],rddms_uris[2], prop_uris["Temperature"][1][0],2,13)
+    assert np.std(arr[:,-1]) < 10
+    arr = await eclient.get_epc_property_surface_slice(rddms_uris[0],rddms_uris[2], prop_uris["LayerID"][1][0],2,13)
+    assert np.all(np.diff(arr[:,-1]) == 0)
