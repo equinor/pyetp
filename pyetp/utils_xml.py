@@ -247,23 +247,6 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
                     year_offset=int(i),
                 )
             )
-        # for uuid in node_uuids[0:-1:10]:
-        
-
-        # for uuid in node_uuids:
-        #     prop = rqp.Property(model, uuid = uuid)
-        #     # print(uuid, prop)
-        #     tst = float(str(gts.timestamp( prop.time_index())).replace(' Ma',''))
-        #     # print(f'index: {prop.time_index()}  time stamp: {gts.timestamp( prop.time_index())}   tst: {int(tst*1e6)}' )
-        #     ro_timestamps.append(
-        #         ro.Timestamp(
-        #             date_time=XmlDateTime.from_string("0001-01-01T00:00:00.00+00:00"),
-        #             year_offset=int(tst*1e6),
-        #         )
-        #     )
-        #     # points = prop.array_ref()
-        #     # # print(f'time stamp: {gts.timestamp( prop.time_index())} -- thickness of crust+sed: {(np.amax(points)-np.amin(points)):.2f}    shape: {points.shape}')  # type: ignore
-        #     # dynamic_points.append(points)
 
         print(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
 
@@ -274,49 +257,7 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
             time = ro_timestamps,
         )
 
-        # for tti in self.time_indices:
-        #     x_original_order, T_per_vertex = self.get_node_pos_and_temp(tti)
-        #     T_per_vertex_filt = [ T_per_vertex[i] for i in range(x_original_order.shape[0]) if i in p_to_keep  ]
-        #     Temp_per_vertex_series.append(np.array(T_per_vertex_filt))
-        #     points_cached = []
-        #     point_original_to_cached = np.ones(x_original_order.shape[0], dtype = np.int32)  * (-1)
-        #     for i in range(x_original_order.shape[0]):
-        #         if (i in p_to_keep):
-        #             point_original_to_cached[i] = len(points_cached)
-        #             points_cached.append(x_original_order[i,:])
-        #     points_cached_series.append(np.array(points_cached))
 
-        # for uuid_t,uuid_p in zip(temp_uuids[0:-1:10], node_uuids[0:-1:10]):
-        #     prop = rqp.Property(model, uuid = uuid_t)
-        #     temperature = prop.array_ref()
-        #     prop_p = rqp.Property(model, uuid = uuid_p)
-        #     points = prop_p.array_ref()
-        #     sumT = 0
-        #     sumW = 0
-        #     for i,c in enumerate(cells):
-        #         p0 = points[c,:]
-        #         vv = volumeOfHex(p0[[0,2,6,4,1,3,7,5]])
-        #         sumT = sumT + temperature[i]*vv
-        #         sumW = sumW + vv
-        #     Tmean = sumT / sumW
-        #     print(f'time stamp: {gts.timestamp( prop.time_index())} -- mean temperature: {Tmean:.2f}')
-
-        # import numpy as np
-        # for uuid in node_uuids[0:-1:10]:
-        #     prop = rqp.Property(model, uuid = uuid)
-        #     points = prop.array_ref()
-        #     print(f'time stamp: {gts.timestamp( prop.time_index())} -- thickness of crust+sed: {(np.amax(points)-np.amin(points)):.2f}    shape: {points.shape}')  # type: ignore
-        #     c0 = cells[0,:]
-        #     p0 = points[c0,:]
-        #     vv = volumeOfHex(p0[[0,2,6,4,1,3,7,5]])
-        #     if ( np.abs(vv-312805.18)<1) :
-        #         print(vv)
-        #         print(c0)
-        #         print(p0)
-                
-        #     print(f'time stamp: {gts.timestamp( prop.time_index())} -- volume of cell 0: {vv:.2f}')
-
-        pass
 
     crs = create_common_crs(title, projected_epsg)
 
