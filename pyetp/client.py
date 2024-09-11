@@ -740,54 +740,42 @@ class ETPClient(ETPConnection):
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
-    
-    async def get_epc_property_surface_slice(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
-        # n_node_per_pos number of nodes in a 1D location
-        # node_index index of slice from top. Warmth has 2 nodes per sediment layer. E.g. top of second layer will have index 2
-        
-        cprop0, = await self.get_resqml_objects(prop_uri)
-        prop_at_node = False
-        if str(cprop0.indexable_element) == 'IndexableElements.NODES':
-            prop_at_node = True
+    async def get_mesh_points(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str]):
         uns, = await self.get_resqml_objects(uns_uri)
         points = await self.get_array(
                 DataArrayIdentifier(
                     uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
                 )
             )
-        # node_per_sed = 2
-        # n_sed_node = n_sed *node_per_sed
-        # n_crust_node = 4
-        # n_node_per_pos = n_sed_node + n_crust_node
-        # start_idx_pos = sediment_id *node_per_sed
-        if prop_at_node:
-            indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
-            results = points[indexing_array,:]
-            arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
-                    [i], [1]) for i in indexing_array])
-            arr =np.array(arr).flatten()
-            assert results.shape[0] == arr.size
-            results[:,2] = arr
-        else:
-            m,=await self.get_array_metadata(DataArrayIdentifier(
-                        uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,))
-            n_cells = m.dimensions[0]
-            layers_per_sediment_unit=2
-            n_cell_per_pos = n_node_per_pos -1
-            indexing_array = np.empty(int(n_cells/n_cell_per_pos), dtype=np.int32)
-            results = np.empty((int(n_cells/n_cell_per_pos),3), dtype=np.int32)
-            grid_x_pos = np.unique(points[:,0])
-            grid_y_pos = np.unique(points[:,1])
-            counter = 0
-            # find cell index and location
+        return points
+    
+    async def get_epc_property_surface_slice_node(self,epc_uri:T.Union[DataObjectURI , str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int):
+        #indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
+        indexing_array = np.arange(node_index, points.shape[0], n_node_per_pos, dtype=np.int32)
+        results = points[indexing_array,:]
+        arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
+                [i], [1]) for i in indexing_array])
+        arr =np.array(arr).flatten()
+        assert results.shape[0] == arr.size
+        results[:,2] = arr
+        return results
+    
+    async def get_epc_property_surface_slice_cell(self,epc_uri:T.Union[DataObjectURI , str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int, get_cell_pos=True):
+        m,=await self.get_array_metadata(DataArrayIdentifier(
+                    uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,))
+        n_cells = m.dimensions[0]
+        layers_per_sediment_unit=2
+        n_cell_per_pos = n_node_per_pos -1
+        indexing_array = np.arange(node_index,n_cells,n_cell_per_pos, dtype=np.int32)
+        results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.int32)
+        grid_x_pos = np.unique(points[:,0])
+        grid_y_pos = np.unique(points[:,1])
+        counter = 0
+        # find cell index and location
+        if get_cell_pos:
             for y_ind in range(0,len(grid_y_pos)-1):
                 for x_ind in range(0,len(grid_x_pos)-1):
-                    cell_idx_at_pos = y_ind*(len(grid_x_pos)-1) + x_ind
-                    if counter != 0:
-                        indexing_array[counter] = (cell_idx_at_pos*n_cell_per_pos) +node_index
-                    else:
-                        indexing_array[counter] = cell_idx_at_pos+node_index
                     top_depth= []
                     for corner_x in range(layers_per_sediment_unit):
                         for corner_y in range(layers_per_sediment_unit):
@@ -795,13 +783,31 @@ class ETPClient(ETPConnection):
                             top_depth.append( points[node_indx])
                     results[counter,0:2] = utils_arrays.mid_point_rectangle(np.array(top_depth))
                     counter+=1
-            arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
-                    [i], [1]) for i in indexing_array])
-            arr =np.array(arr).flatten()
-            assert results.shape[0] == arr.size
-            results[:,2] = arr
+        arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
+                [i], [1]) for i in indexing_array])
+        arr =np.array(arr).flatten()
+        assert results.shape[0] == arr.size
+        results[:,2] = arr
         return results
+
+    async def get_epc_property_surface_slice(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
+        # n_node_per_pos number of nodes in a 1D location
+        # node_index index of slice from top. Warmth has 2 nodes per sediment layer. E.g. top of second layer will have index 2
+        points = await self.get_mesh_points(epc_uri, uns_uri)
+        cprop0, = await self.get_resqml_objects(prop_uri)
+        prop_at_node = False
+        if str(cprop0.indexable_element) == 'IndexableElements.NODES':
+            prop_at_node = True
+        # node_per_sed = 2
+        # n_sed_node = n_sed *node_per_sed
+        # n_crust_node = 4
+        # n_node_per_pos = n_sed_node + n_crust_node
+        # start_idx_pos = sediment_id *node_per_sed
+        if prop_at_node:
+            return await self.get_epc_property_surface_slice_node(epc_uri, cprop0, points,node_index, n_node_per_pos)
+        else:
+            return await self.get_epc_property_surface_slice_cell(epc_uri, cprop0, points,node_index, n_node_per_pos)
     
     async def get_epc_property_surface_slice_xtgeo(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
         data = await self.get_epc_property_surface_slice(epc_uri, uns_uri,prop_uri,node_index, n_node_per_pos)
