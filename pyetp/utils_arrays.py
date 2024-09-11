@@ -1,6 +1,8 @@
 
 import typing as T
 import numpy as np
+from scipy import interpolate
+import xtgeo
 
 from .types import (AnyArray, AnyArrayType, ArrayOfBoolean, ArrayOfDouble,
                     ArrayOfFloat, ArrayOfInt, ArrayOfLong, DataArray,
@@ -79,3 +81,33 @@ def mid_point_rectangle(arr: np.ndarray):
     mid_x = ((np.max(all_x)-min_x)/2)+min_x
     mid_y = ((np.max(all_y)-min_y)/2)+min_y
     return np.array([mid_x, mid_y])
+
+def grid_xtgeo(data: np.ndarray):
+    max_x = np.nanmax(data[:,0])
+    max_y = np.nanmax(data[:,1])
+    min_x = np.nanmin(data[:,0])
+    min_y = np.nanmin(data[:,1])
+    u_x = np.sort(np.unique(data[:,0]))
+    u_y = np.sort(np.unique(data[:,1]))
+    xinc = u_x[1]- u_x[0]
+    yinc = u_y[1]- u_y[0]
+    grid_x, grid_y = np.mgrid[
+        min_x: max_x + xinc: xinc,
+        min_y: max_y + yinc: yinc,
+    ]
+
+    interp = interpolate.LinearNDInterpolator(data[:,:-1], data[:,-1], fill_value=np.nan, rescale=False)
+    z = interp(np.array([grid_x.flatten(), grid_y.flatten() ]).T )
+    zz = np.reshape(z,grid_x.shape)
+
+    surf = xtgeo.RegularSurface(
+        ncol=grid_x.shape[0],
+        nrow=grid_x.shape[1],
+        xori=min_x,
+        yori=min_y,
+        xinc=xinc,
+        yinc=yinc,
+        rotation=0.0,
+        values=zz,
+    )
+    return surf

@@ -768,7 +768,7 @@ class ETPClient(ETPConnection):
         layers_per_sediment_unit=2
         n_cell_per_pos = n_node_per_pos -1
         indexing_array = np.arange(node_index,n_cells,n_cell_per_pos, dtype=np.int32)
-        results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.int32)
+        results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.float64)
         grid_x_pos = np.unique(points[:,0])
         grid_y_pos = np.unique(points[:,1])
         counter = 0
@@ -811,34 +811,8 @@ class ETPClient(ETPConnection):
     
     async def get_epc_property_surface_slice_xtgeo(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
         data = await self.get_epc_property_surface_slice(epc_uri, uns_uri,prop_uri,node_index, n_node_per_pos)
-        max_x = np.nanmax(data[:,0])
-        max_y = np.nanmax(data[:,1])
-        min_x = np.nanmin(data[:,0])
-        min_y = np.nanmin(data[:,1])
-        u_x = np.sort(np.unique(data[:,0]))
-        u_y = np.sort(np.unique(data[:,1]))
-        xinc = u_x[1]- u_x[0]
-        yinc = u_y[1]- u_y[0]
-        grid_x, grid_y = np.mgrid[
-            min_x: max_x + xinc: xinc,
-            min_y: max_y + yinc: yinc,
-        ]
-
-        interp = interpolate.LinearNDInterpolator(data[:,:-1], data[:,-1], fill_value=np.nan, rescale=False)
-        z = interp(np.array([grid_x.flatten(), grid_y.flatten() ]).T )
-        zz = np.reshape(z,grid_x.shape)
-
-        surf = xtgeo.RegularSurface(
-            ncol=grid_x.shape[0],
-            nrow=grid_x.shape[1],
-            xori=min_x,
-            yori=min_y,
-            xinc=xinc,
-            yinc=yinc,
-            rotation=0.0,
-            values=zz,
-        )
-        return surf
+        return utils_arrays.grid_xtgeo(data)
+    
     #
     # array
     #
