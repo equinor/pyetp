@@ -84,7 +84,14 @@ class ETPClient(ETPConnection):
     async def send(self, body: ETPModel):
         if self.ws.closed:
             await self.connect()
-        correlation_id = await self._send(body)
+        try:
+            correlation_id = await self._send(body)
+        except websockets.ConnectionClosed:
+            logger.warning(f"Connection closed. Attempt to reconnection after {self.retryPause}s")
+            time.sleep(self.retryPause)
+            await self.connect()
+            logger.warning("Reconnect successful")
+            correlation_id = await self._send(body)
         return await self._recv(correlation_id)
 
         
