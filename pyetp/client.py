@@ -21,9 +21,9 @@ from scipy.interpolate import griddata
 import pyetp.resqml_objects as ro
 from pyetp.config import SETTINGS
 
-from . import utils_arrays, utils_xml
-from .types import *
-from .uri import DataObjectURI, DataspaceURI
+from pyetp import utils_arrays, utils_xml
+from pyetp.types import *
+from pyetp.uri import DataObjectURI, DataspaceURI
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -75,7 +75,7 @@ class ETPClient(ETPConnection):
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
         self.__recvtask = asyncio.create_task(self.__recv__())
         self.safeMode = False
-        self.retryPause = 30
+        self.retryPause = 15
 
     #
     # client
@@ -128,6 +128,7 @@ class ETPClient(ETPConnection):
 
         for body in bodies:
             if isinstance(body, ProtocolException):
+                logger.debug(body)
                 raise ETPError.from_proto(body)
 
         if len(bodies) > 1:
@@ -775,21 +776,10 @@ class ETPClient(ETPConnection):
         layers_per_sediment_unit=2
         n_cell_per_pos = n_node_per_pos -1
         indexing_array = np.arange(node_index,n_cells,n_cell_per_pos, dtype=np.int32)
-        results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.float64)
-        grid_x_pos = np.unique(points[:,0])
-        grid_y_pos = np.unique(points[:,1])
-        counter = 0
-        # find cell index and location
         if get_cell_pos:
-            for y_ind in range(0,len(grid_y_pos)-1):
-                for x_ind in range(0,len(grid_x_pos)-1):
-                    top_depth= []
-                    for corner_x in range(layers_per_sediment_unit):
-                        for corner_y in range(layers_per_sediment_unit):
-                            node_indx = (( (y_ind+corner_y)*len(grid_x_pos) + (x_ind+corner_x) ) * n_node_per_pos)+ node_index
-                            top_depth.append( points[node_indx])
-                    results[counter,0:2] = utils_arrays.mid_point_rectangle(np.array(top_depth))
-                    counter+=1
+            results = utils_arrays.get_cells_positions(points, n_cells, n_cell_per_pos, layers_per_sediment_unit, n_node_per_pos, node_index)
+        else:
+            results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.float64)
         arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
                 uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
                 [i], [1]) for i in indexing_array])
@@ -797,6 +787,7 @@ class ETPClient(ETPConnection):
         assert results.shape[0] == arr.size
         results[:,2] = arr
         return results
+
 
     async def get_epc_property_surface_slice(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
         # n_node_per_pos number of nodes in a 1D location

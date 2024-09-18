@@ -111,3 +111,21 @@ def grid_xtgeo(data: np.ndarray):
         values=zz,
     )
     return surf
+
+def get_cells_positions(points: np.ndarray, n_cells:int, n_cell_per_pos:int,layers_per_sediment_unit:int,n_node_per_pos:int,node_index: int):
+    results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.float64)
+    grid_x_pos = np.unique(points[:,0])
+    grid_y_pos = np.unique(points[:,1])
+    counter = 0
+    # find cell index and location
+
+    for y_ind in range(0,len(grid_y_pos)-1):
+        for x_ind in range(0,len(grid_x_pos)-1):
+            top_depth= []
+            for corner_x in range(layers_per_sediment_unit):
+                for corner_y in range(layers_per_sediment_unit):
+                    node_indx = (( (y_ind+corner_y)*len(grid_x_pos) + (x_ind+corner_x) ) * n_node_per_pos)+ node_index
+                    top_depth.append( points[node_indx])
+            results[counter,0:2] = mid_point_rectangle(np.array(top_depth))
+            counter+=1
+    return results
