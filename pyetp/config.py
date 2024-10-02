@@ -1,5 +1,6 @@
 from pydantic import AnyUrl, BaseSettings, Field, RedisDsn, SecretStr
 from pyetp.uri import DataspaceURI
+from typing import Optional
 
 class WebSocketUrl(AnyUrl):
     allowed_schemes = {'wss', 'ws'}
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     dataspace: str = Field(default='demo/pss-data-gateway')
     etp_url: WebSocketUrl = Field(default='wss://host.com')
     etp_timeout: float = Field(default=60., description="Timeout in seconds")
+    data_partition: Optional[str] = None
 
     @property
     def duri(self):
