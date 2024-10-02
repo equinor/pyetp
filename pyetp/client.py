@@ -991,7 +991,6 @@ class ETPClient(ETPConnection):
             time.sleep(self.retryPause)
             if self.ws.closed:
                 await self.connect()
-
             [await populate(params[idx][0], params[idx][1]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
         return buffer
 
@@ -1044,6 +1043,7 @@ class connect:
     def __init__(self, authorization: T.Optional[SecretStr] = None, timeout=10.):
         self.server_url = SETTINGS.etp_url
         self.authorization = authorization
+        self.data_partition = SETTINGS.data_partition
         self.timeout = timeout
         self.default_dataspace_uri = DataspaceURI.from_name(SETTINGS.dataspace)
 
@@ -1053,10 +1053,15 @@ class connect:
             token = self.authorization
         elif isinstance(self.authorization, SecretStr):
             token = self.authorization.get_secret_value()
+        headers = {}
+        if isinstance(self.authorization, type(None)) is False:
+            headers["Authorization"] = token
+        if isinstance(self.data_partition, str):
+            headers["data-partition-id"] = self.data_partition
         ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            extra_headers={"Authorization": token} if self.authorization else {},
+            extra_headers=headers,
             max_size=MAXPAYLOADSIZE,
             ping_timeout=self.timeout,
             open_timeout=None,
