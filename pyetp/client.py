@@ -1040,11 +1040,11 @@ class ETPClient(ETPConnection):
 # define an asynchronous context manager
 class connect:
 
-    def __init__(self, authorization: T.Optional[SecretStr] = None, timeout=10.):
+    def __init__(self, authorization: T.Optional[SecretStr] = None):
         self.server_url = SETTINGS.etp_url
         self.authorization = authorization
         self.data_partition = SETTINGS.data_partition
-        self.timeout = timeout
+        self.timeout = SETTINGS.etp_timeout
         self.default_dataspace_uri = DataspaceURI.from_name(SETTINGS.dataspace)
 
     # enter the async context manager
