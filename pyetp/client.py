@@ -26,7 +26,7 @@ from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 MAXPAYLOADSIZE = 10_000_000  # 10MB
@@ -449,9 +449,18 @@ class ETPClient(ETPConnection):
         )
         return regridded.get_value_from_xy((x,y))
     
-    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str]):
-        gri, = await self.get_resqml_objects(gri_uri)
-
+    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str], crs_uri: T.Union[DataObjectURI , str, None] = None):
+        if isinstance(crs_uri, type(None)):
+            print("NO crs")
+            gri, = await self.get_resqml_objects(gri_uri)
+            crs_uuid = gri.grid2d_patch.geometry.local_crs.uuid
+            dataspace_uri = self.get_dataspace_or_default_uri(epc_uri)
+            crs_eml = f"{dataspace_uri}/resqml20.LocalDepth3dCrs({crs_uuid})"
+            crs, = await self.get_resqml_objects(crs_eml)
+            print("got crs")
+        else:
+            gri, crs, = await self.get_resqml_objects(gri_uri, crs_uri)
+        rotation = crs.areal_rotation.value
         # some checks
         
         assert isinstance(gri, ro.Grid2dRepresentation), "obj must be Grid2dRepresentation"
@@ -475,6 +484,7 @@ class ETPClient(ETPConnection):
             xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,  # type: ignore
             xori=sgeo.origin.coordinate1, yori=sgeo.origin.coordinate2,
             values=array,  # type: ignore
+            rotation=rotation,
             masked=True
         )
 

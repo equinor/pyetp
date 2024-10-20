@@ -23,7 +23,7 @@ from pyetp.utils_xml import (create_epc,
                                           parse_xtgeo_surface_to_resqml_grid)
 
 
-def create_surface(ncol: int, nrow: int):
+def create_surface(ncol: int, nrow: int, rotation: float):
     surface = xtgeo.RegularSurface(
         ncol=ncol,
         nrow=nrow,
@@ -31,6 +31,7 @@ def create_surface(ncol: int, nrow: int):
         yori=np.random.rand() * 1000,
         xinc=np.random.rand() * 1000,
         yinc=np.random.rand() * 1000,
+        rotation=rotation,
         values=np.random.random((nrow, ncol)).astype(np.float32),
     )
     return surface
@@ -176,7 +177,7 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
 
 @pytest.mark.asyncio
 async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
-    surf = create_surface(100, 50)
+    surf = create_surface(100, 50, 0)
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
 
     uris = await eclient.put_resqml_objects(epc, crs, gri, dataspace=duri)
@@ -186,7 +187,7 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     assert len(resp) == 3
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(3, 4), create_surface(100, 40)])
+@pytest.mark.parametrize('surface', [create_surface(3, 4, 0), create_surface(100, 40, 0)])
 async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
@@ -222,8 +223,23 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
 
 @pytest.mark.asyncio
 async def test_surface(eclient: ETPClient, duri: DataspaceURI):
-    surf = create_surface(100, 50)
-    epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
+    surf = create_surface(100, 50, 100)
+    epc_uri, crs_uri , gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
+
+    nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
+    np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
+
+    print(repr(surf))
+    print(repr(nsurf))
+
+    # ensure rotation, step, origin etc is equal
+    compare_surf(surf, nsurf)
+    #assert surf.generate_hash() == nsurf.generate_hash()
+
+@pytest.mark.asyncio
+async def test_surface_no_crs(eclient: ETPClient, duri: DataspaceURI):
+    surf = create_surface(100, 50, 100)
+    epc_uri, _ , gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
 
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
@@ -232,10 +248,16 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     print(repr(nsurf))
 
     # ensure rotation, step, origin etc is equal
-    assert surf.generate_hash() == nsurf.generate_hash()
+    compare_surf(surf, nsurf)
+    #assert surf.generate_hash() == nsurf.generate_hash()
+
+def compare_surf (surf1: xtgeo.RegularSurface, surf2: xtgeo.RegularSurface):
+    m1 = surf1.metadata.get_metadata()
+    m2 = surf2.metadata.get_metadata()
+    assert m1 == m2
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(100, 40), create_surface(3, 3)])
+@pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
 async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
@@ -270,7 +292,7 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
     assert linear_ii is None
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(100, 40), create_surface(3, 3)])
+@pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
 async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     epc, crs, gri = instantiate_resqml_grid("name", 0, surface.xori, surface.yori, surface.xinc, surface.yinc, surface.ncol, surface.nrow, 12345)
     epc_uri, _, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace=duri)

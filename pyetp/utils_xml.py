@@ -115,10 +115,9 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
     return epc, crs, gri
 
 def instantiate_resqml_grid(name:str, rotation: float, x0: float, y0: float, dx: float, dy: float, nx: int, ny: int, epsg: int):
-    assert np.abs(rotation) < 1e-7, "Maps should have no rotation!"
 
     epc = create_epc()
-    crs = create_common_crs(name, epsg, rotation)   # Here rotation should be zero!
+    crs = create_common_crs(name, epsg, rotation)  
 
 
     gri = ro.Grid2dRepresentation(
