@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     application_name: str = Field(default='etpClient')
     application_version: str = Field(default='0.0.1')
 
-
-    dataspace: str = Field(default='demo/pss-data-gateway')
-    etp_url: WebSocketUrl = Field(default='wss://host.com')
+    dataspace: str = Field(default='demo/pss-data-gateway')    
+    # etp_url: WebSocketUrl = Field(default='ws://localhost:9002')  # Field(default='wss://host.com')
+    etp_url: WebSocketUrl = Field(default='ws://192.168.68.59:9002')  # Field(default='wss://host.com')
     etp_timeout: float = Field(default=60., description="Timeout in seconds")
     data_partition: Optional[str] = None
 
