@@ -664,71 +664,11 @@ class ETPClient(ETPConnection):
         response_filtered = response[:, ~np.isnan(response[1])]
         return {"depth": response_filtered[0], "values": response_filtered[1]}
 
-    async def put_mesh_initial( self, epc, crs, uns, timeseries, dataspace: T.Union[DataspaceURI , str , None]=None):
-        """ pushes first rddms objects of a mesh to rddms server """
-        epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace )
-        timeseries_uri = ""
-        if timeseries is not None:
-            timeseries_uris = await self.put_resqml_objects(timeseries, dataspace=dataspace)
-            timeseries_uri = list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
-        return epc_uri, crs_uri, uns_uri, timeseries_uri
+    async def put_rddms_property(self, epc_uri: T.Union[DataObjectURI , str], 
+            cprop0: T.Union[ro.ContinuousProperty, ro.DiscreteProperty], 
+            propertykind0: ro.PropertyKind, 
+            array_ref: np.ndarray, dataspace: T.Union[DataspaceURI , str , None] ):
 
-    async def put_hexamesh_support( self, epc_uri, 
-                uns, points_cached, nodes_per_face, nodes_per_face_cl, 
-                faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed):
-        #
-        # mesh geometry (six arrays)
-        #
-
-        response = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
-            ),
-            points_cached  # type: ignore
-        )
-
-        response = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
-            ),
-            nodes_per_face.astype(np.int32)  # type: ignore
-        )
-
-        response = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
-            ),
-            nodes_per_face_cl  # type: ignore
-        )
-
-        response = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
-            ),
-            faces_per_cell  # type: ignore
-        )
-
-        response = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
-            ),
-            faces_per_cell_cl  # type: ignore
-        )
-
-        response = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
-            ),
-            cell_face_is_right_handed  # type: ignore
-        )
-
-    async def put_rddms_property(self, epc_uri, cprop0, propertykind0, array_ref, dataspace):
         assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
         assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
@@ -745,7 +685,8 @@ class ETPClient(ETPConnection):
         return cprop_uri, propkind_uri
 
     async def put_epc_mesh(
-        self, epc_filename, title_in, property_titles, projected_epsg, dataspace
+        self, epc_filename: str, title_in: str, property_titles: T.List[str], projected_epsg: int, 
+        dataspace: T.Union[DataspaceURI , str , None]
     ):
         uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
@@ -754,16 +695,56 @@ class ETPClient(ETPConnection):
             timeseries_uris = await self.put_resqml_objects(timeseries, dataspace=dataspace)
             timeseries_uri = list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
         
-        # print("put_epc_mesh", uns, crs, epc, timeseries)
-        # print("put_epc_mesh", epc_uri, crs_uri, uns_uri, timeseries_uri)
-        print("put_epc_mesh property_titles", property_titles)
-
         #
         # mesh geometry (six arrays)
         #
-        await self.put_hexamesh_support(epc_uri, uns, hexa.points_cached, hexa.nodes_per_face, 
-            hexa.nodes_per_face_cl, hexa.faces_per_cell, hexa.faces_per_cell_cl, hexa.cell_face_is_right_handed)
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
+            ),
+            hexa.points_cached  # type: ignore
+        )
 
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file
+            ),
+            hexa.nodes_per_face.astype(np.int32)  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file
+            ),
+            hexa.nodes_per_face_cl  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file
+            ),
+            hexa.faces_per_cell  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file
+            ),
+            hexa.faces_per_cell_cl  # type: ignore
+        )
+
+        response = await self.put_array(
+            DataArrayIdentifier(
+                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
+                pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file
+            ),
+            hexa.cell_face_is_right_handed  # type: ignore
+        )
 
         #
         # mesh properties: one Property, one array of values, and an optional PropertyKind per property
@@ -780,19 +761,6 @@ class ETPClient(ETPConnection):
                 continue
             cprop_uris = []
             for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
-                # assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
-                # assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
-
-                # propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
-                # cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
-
-                # response = await self.put_array(
-                #     DataArrayIdentifier(
-                #         uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                #         pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
-                #     ),
-                #     prop.array_ref(),  # type: ignore
-                # )
                 cprop_uri, propkind_uri = await self.put_rddms_property(epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace)
                 cprop_uris.extend(cprop_uri)
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]

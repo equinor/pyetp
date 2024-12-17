@@ -264,7 +264,7 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         uuid=str(pk_uuid),
     )
 
-    prop_uuid = uuid4() # 'x'
+    prop_uuid = uuid4()
 
     pov = ro.PatchOfValues(
         values=ro.DoubleHdf5Array(
@@ -350,25 +350,6 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         )
     return cprop0, propertykind0
 
-
-# @dataclass
-# class rddms_upload_data_initial:
-#     tti: int
-#     poro0_per_cell: np.ndarray[np.float64]
-#     decay_per_cell: np.ndarray[np.float64]
-#     density_per_cell: np.ndarray[np.float64]
-#     cond_per_cell: np.ndarray[np.float64]
-#     rhp_per_cell: np.ndarray[np.float64]
-#     lid_per_cell: np.ndarray[np.int32]
-#     hexa_renumbered: List[List[int]]
-#     geotimes: List[int]
-
-# @dataclass
-# class rddms_upload_data_timestep:
-#     tti: int
-#     Temp_per_vertex: np.ndarray[np.float64]
-#     points_cached: np.ndarray[np.float64]
-#     Ro_per_vertex_series: np.ndarray[np.float64]
 def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_data_initial, rddms_upload_data_timestep)
     import numpy as np
 
@@ -430,13 +411,6 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_dat
             faces_repeat[int(fidx0/4)] = face_is_repeated
     set_cell_count = int(len(faces_per_cell)/6)
     face_count = int(len(nodes_per_face)/4)
-
-    # hexa.set_cell_count(set_cell_count)
-    # hexa.face_count = face_count
-    # hexa.faces_per_cell_cl = np.arange(6, 6 * set_cell_count + 1, 6, dtype = int)
-    # hexa.faces_per_cell = np.array(faces_per_cell)
-    # nodes
-    # hexa.node_count = node_count
 
     node_count=node_count
     face_count=face_count
@@ -534,7 +508,6 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_dat
     return uns, crs, epc, timeseries
 
 
-
 def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     import numpy as np
     import resqpy.model as rq
@@ -558,17 +531,10 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     hexa.check_hexahedral()
 
     ts_uuid = model.uuid(obj_type = "TimeSeries")
-    # ts_uuid_2 = model.uuid(obj_type='GeologicTimeSeries')
-    # print("TS UUIDs: ", ts_uuid, ts_uuid_2)
     gts = rts.GeologicTimeSeries(model, uuid=ts_uuid)
-
     print("gts: ", gts)
     timeseries = None
-    # dynamic_points = []    
     if (ts_uuid is not None) and (gts is not None):
-
-
-
         ro_timestamps = []
         for i in gts.iter_timestamps(as_string=False):
             ro_timestamps.append(
@@ -577,16 +543,13 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
                     year_offset=int(i),
                 )
             )
-
         print(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
-
         timeseries = ro.TimeSeries(
             citation=create_common_citation(str(gts.citation_title)),
             schema_version=schema_version,
             uuid=str(gts.uuid),
             time = ro_timestamps,
         )
-
 
 
     crs = create_common_crs(title, projected_epsg)
@@ -742,6 +705,8 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
         else:
             prop_uuid = prop_uuids[time_indices[i]]
             prop = rqp.Property(model, uuid=prop_uuid)
+
+        # def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, min_val=0.0, max_val=1.0, timeseries=None, time_index=-1):
 
         pov = ro.PatchOfValues(
             values=ro.DoubleHdf5Array(
