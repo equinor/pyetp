@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import logging
 import sys
-import time
 import typing as T
 import uuid
 from collections import defaultdict
@@ -16,7 +15,6 @@ from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
 from pydantic import SecretStr
-from scipy import interpolate
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
 
@@ -75,24 +73,13 @@ class ETPClient(ETPConnection):
         self.timeout = timeout
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
         self.__recvtask = asyncio.create_task(self.__recv__())
-        self.safeMode = False
-        self.retryPause = 15
 
     #
     # client
     #
 
     async def send(self, body: ETPModel):
-        if self.ws.closed:
-            await self.connect()
-        try:
-            correlation_id = await self._send(body)
-        except websockets.ConnectionClosed:
-            logger.warning(f"Connection closed. Attempt to reconnection after {self.retryPause}s")
-            time.sleep(self.retryPause)
-            await self.connect()
-            logger.warning("Reconnect successful")
-            correlation_id = await self._send(body)
+        correlation_id = await self._send(body)
         return await self._recv(correlation_id)
 
     async def _send(self, body: ETPModel):
@@ -137,6 +124,11 @@ class ETPClient(ETPConnection):
         return bodies[0]
 
     async def close(self, reason=''):
+        if self.ws.closed:
+            self.__recvtask.cancel("stopped")
+            # fast exit if already closed
+            return
+
         try:
             await self._send(CloseSession(reason=reason))
         finally:
@@ -180,7 +172,9 @@ class ETPClient(ETPConnection):
             logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
             self._add_msg_to_buffer(msg)
 
-    async def connect(self):
+    async def request_session(self):
+        # Handshake protocol
+
         msg = await self.send(
             RequestSession(
                 applicationName=SETTINGS.application_name,
@@ -451,13 +445,13 @@ class ETPClient(ETPConnection):
 
     async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], crs_uri: T.Union[DataObjectURI, str, None] = None):
         if isinstance(crs_uri, type(None)):
-            print("NO crs")
+            logger.debug("NO crs")
             gri, = await self.get_resqml_objects(gri_uri)
             crs_uuid = gri.grid2d_patch.geometry.local_crs.uuid
             dataspace_uri = self.get_dataspace_or_default_uri(epc_uri)
             crs_eml = f"{dataspace_uri}/resqml20.LocalDepth3dCrs({crs_uuid})"
             crs, = await self.get_resqml_objects(crs_eml)
-            print("got crs")
+            logger.debug("got crs")
         else:
             gri, crs, = await self.get_resqml_objects(gri_uri, crs_uri)
         rotation = crs.areal_rotation.value
@@ -634,13 +628,8 @@ class ETPClient(ETPConnection):
                 all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
             return
 
-        r = await asyncio.gather(*[populate(i) for i in to_fetch], return_exceptions=True)
-        if any(r):
-            time.sleep(self.retryPause)
-            if self.ws.closed:
-                await self.connect()
+        r = await asyncio.gather(*[populate(i) for i in to_fetch])
 
-            [await populate(to_fetch[idx]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
         if isinstance(cprop, ro.DiscreteProperty):
             method = "nearest"
         else:
@@ -668,9 +657,7 @@ class ETPClient(ETPConnection):
             timeseries_uris = await self.put_resqml_objects(timeseries, dataspace=dataspace)
             timeseries_uri = list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
 
-        # print("put_epc_mesh", uns, crs, epc, timeseries)
-        # print("put_epc_mesh", epc_uri, crs_uri, uns_uri, timeseries_uri)
-        print("put_epc_mesh property_titles", property_titles)
+        logger.debug(f"put_epc_mesh property_titles {property_titles}")
 
         #
         # mesh geometry (six arrays)
@@ -730,8 +717,6 @@ class ETPClient(ETPConnection):
         for propname in property_titles:
             if timeseries is not None:
                 time_indices = list(range(len(timeseries.time)))
-                # print(f"prop {propname}: len of timeseries: {len(timeseries.time)}")
-                print(propname)
                 cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc, timeseries=timeseries, time_indices=time_indices)
             else:
                 time_indices = [-1]
@@ -997,12 +982,8 @@ class ETPClient(ETPConnection):
         r = await asyncio.gather(*[
             populate(starts, counts)
             for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
-        ], return_exceptions=True)
-        if any(r):
-            time.sleep(self.retryPause)
-            if self.ws.closed:
-                await self.connect()
-            [await populate(params[idx][0], params[idx][1]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
+        ])
+
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
@@ -1014,12 +995,8 @@ class ETPClient(ETPConnection):
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
             params.append([starts, counts])
             coro.append(self.put_subarray(uid, data, starts, counts))
-        r = await asyncio.gather(*coro, return_exceptions=True)
-        if any(r):
-            time.sleep(self.retryPause)
-            if self.ws.closed:
-                await self.connect()
-            [await self.put_subarray(uid, data, params[idx][0], params[idx][1]) for idx, res in enumerate(r) if isinstance(res, type(None)) == False]
+        r = await asyncio.gather(*coro)
+
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
@@ -1058,7 +1035,13 @@ class connect:
         self.timeout = SETTINGS.etp_timeout
         self.default_dataspace_uri = DataspaceURI.from_name(SETTINGS.dataspace)
 
-    # enter the async context manager
+    # ... = await connect(...)
+
+    def __await__(self):
+        return self.__aenter__().__await__()
+
+    # async with connect(...) as ...:
+
     async def __aenter__(self):
         if isinstance(self.authorization, str):
             token = self.authorization
@@ -1078,7 +1061,7 @@ class connect:
             open_timeout=None,
         )
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
-        await self.client.connect()
+        await self.client.request_session()
 
         return self.client
 
