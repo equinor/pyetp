@@ -1,27 +1,28 @@
 import asyncio
-import sys
 import datetime
 import logging
+import sys
 import time
 import typing as T
 import uuid
 from collections import defaultdict
 from types import TracebackType
-from async_timeout import timeout
+
 import numpy as np
-from pydantic import SecretStr
-from scipy import interpolate
 import websockets
+import xtgeo
+from async_timeout import timeout
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
-from xtgeo import RegularSurface
-import xtgeo
+from pydantic import SecretStr
+from scipy import interpolate
 from scipy.interpolate import griddata
-import pyetp.resqml_objects as ro
-from pyetp.config import SETTINGS
+from xtgeo import RegularSurface
 
+import pyetp.resqml_objects as ro
 from pyetp import utils_arrays, utils_xml
+from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
 
@@ -64,7 +65,7 @@ class ETPClient(ETPConnection):
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: T.Union[DataspaceURI , None], timeout=10.):
+    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: T.Union[DataspaceURI, None], timeout=10.):
         super().__init__(connection_type=ConnectionType.CLIENT)
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
@@ -94,7 +95,6 @@ class ETPClient(ETPConnection):
             correlation_id = await self._send(body)
         return await self._recv(correlation_id)
 
-        
     async def _send(self, body: ETPModel):
 
         msg = Message.get_object_message(
@@ -227,10 +227,10 @@ class ETPClient(ETPConnection):
         return self._default_duri
 
     @default_dataspace_uri.setter
-    def default_dataspace_uri(self, v: T.Union[DataspaceURI , str , None]):
+    def default_dataspace_uri(self, v: T.Union[DataspaceURI, str, None]):
         self._default_duri = None if v is None else DataspaceURI.from_any(v)
 
-    def get_dataspace_or_default_uri(self, ds: T.Union[DataspaceURI , str , None]) -> DataspaceURI:
+    def get_dataspace_or_default_uri(self, ds: T.Union[DataspaceURI, str, None]) -> DataspaceURI:
         """Returns default dataspace or user spefied one"""
 
         if ds is not None:
@@ -245,7 +245,7 @@ class ETPClient(ETPConnection):
     # dataspace
     #
 
-    async def put_dataspaces(self, *uris: T.Union[DataspaceURI , str]):
+    async def put_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
             PutDataspaces
         from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
@@ -266,13 +266,13 @@ class ETPClient(ETPConnection):
 
         return response.success
 
-    async def put_dataspaces_no_raise(self, *uris: T.Union[DataspaceURI , str]):
+    async def put_dataspaces_no_raise(self, *uris: T.Union[DataspaceURI, str]):
         try:
             return await self.put_dataspaces(*uris)
         except ETPError:
             pass
 
-    async def delete_dataspaces(self, *uris:T.Union[DataspaceURI , str]):
+    async def delete_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
         from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
             DeleteDataspaces
         from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
@@ -288,7 +288,7 @@ class ETPClient(ETPConnection):
     # data objects
     #
 
-    async def get_data_objects(self, *uris: T.Union[DataObjectURI , str]):
+    async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
 
         from etptypes.energistics.etp.v12.protocol.store.get_data_objects import \
             GetDataObjects
@@ -321,11 +321,11 @@ class ETPClient(ETPConnection):
 
         return response.success
 
-    async def get_resqml_objects(self, *uris: T.Union[DataObjectURI , str]) -> T.List[ro.AbstractObject]:
+    async def get_resqml_objects(self, *uris: T.Union[DataObjectURI, str]) -> T.List[ro.AbstractObject]:
         data_objects = await self.get_data_objects(*uris)
         return utils_xml.parse_resqml_objects(data_objects)
 
-    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: T.Union[DataspaceURI ,str , None] = None):
+    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: T.Union[DataspaceURI, str, None] = None):
         from etptypes.energistics.etp.v12.datatypes.object.resource import \
             Resource
 
@@ -352,7 +352,7 @@ class ETPClient(ETPConnection):
         response = await self.put_data_objects(*dobjs)
         return uris
 
-    async def delete_data_objects(self, *uris: T.Union[DataObjectURI , str], pruneContainedObjects=False):
+    async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], pruneContainedObjects=False):
         from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import \
             DeleteDataObjects
         from etptypes.energistics.etp.v12.protocol.store.delete_data_objects_response import \
@@ -375,9 +375,9 @@ class ETPClient(ETPConnection):
     # xtgeo
     #
     @staticmethod
-    def check_inside(x:float,y:float,patch:ro.Grid2dPatch):
-        xori= patch.geometry.points.supporting_geometry.origin.coordinate1
-        yori = patch.geometry.points.supporting_geometry.origin.coordinate2 
+    def check_inside(x: float, y: float, patch: ro.Grid2dPatch):
+        xori = patch.geometry.points.supporting_geometry.origin.coordinate1
+        yori = patch.geometry.points.supporting_geometry.origin.coordinate2
         xmax = xori + (patch.geometry.points.supporting_geometry.offset[0].spacing.value*patch.geometry.points.supporting_geometry.offset[0].spacing.count)
         ymax = yori + (patch.geometry.points.supporting_geometry.offset[1].spacing.value*patch.geometry.points.supporting_geometry.offset[1].spacing.count)
         if x < xori:
@@ -387,56 +387,56 @@ class ETPClient(ETPConnection):
         if x > xmax:
             return False
         if y > ymax:
-            return False  
+            return False
         return True
-    
+
     @staticmethod
-    def find_closest_index(x,y,patch:ro.Grid2dPatch):
+    def find_closest_index(x, y, patch: ro.Grid2dPatch):
         x_ind = (x-patch.geometry.points.supporting_geometry.origin.coordinate1)/patch.geometry.points.supporting_geometry.offset[0].spacing.value
         y_ind = (y-patch.geometry.points.supporting_geometry.origin.coordinate2)/patch.geometry.points.supporting_geometry.offset[1].spacing.value
-        return round(x_ind),round(y_ind)
-    
-    async def get_surface_value_x_y(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str], x: T.Union[int,float], y: T.Union[int,float], method:T.Literal["bilinear","nearest"]):
-        gri, = await self.get_resqml_objects(gri_uri) # parallelized using subarray
-        xori= gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate1
-        yori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate2 
+        return round(x_ind), round(y_ind)
+
+    async def get_surface_value_x_y(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], x: T.Union[int, float], y: T.Union[int, float], method: T.Literal["bilinear", "nearest"]):
+        gri, = await self.get_resqml_objects(gri_uri)  # parallelized using subarray
+        xori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate1
+        yori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate2
         xinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[0].spacing.value
         yinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[1].spacing.value
         max_x_index_in_gri = gri.grid2d_patch.geometry.points.supporting_geometry.offset[0].spacing.count
         max_y_index_in_gri = gri.grid2d_patch.geometry.points.supporting_geometry.offset[1].spacing.count
         buffer = 4
-        if not self.check_inside(x,y,gri.grid2d_patch):
+        if not self.check_inside(x, y, gri.grid2d_patch):
             logger.info(f"Points not inside {x}:{y} {gri}")
             return
-        uid=DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
-                )
+        uid = DataArrayIdentifier(
+            uri=str(epc_uri), pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        )
         if max_x_index_in_gri <= 10 or max_y_index_in_gri <= 10:
-            surf = await self.get_xtgeo_surface(epc_uri,gri_uri)
-            return surf.get_value_from_xy((x,y),sampling=method)
-        
-        x_ind,y_ind=self.find_closest_index(x,y,gri.grid2d_patch)
+            surf = await self.get_xtgeo_surface(epc_uri, gri_uri)
+            return surf.get_value_from_xy((x, y), sampling=method)
+
+        x_ind, y_ind = self.find_closest_index(x, y, gri.grid2d_patch)
         if method == "nearest":
-            arr = await self.get_subarray(uid,[x_ind,y_ind],[1,1])
+            arr = await self.get_subarray(uid, [x_ind, y_ind], [1, 1])
             return arr[0][0]
-        min_x_ind = max(x_ind-(buffer/2),0)
-        min_y_ind = max(y_ind-(buffer/2),0)
-        count_x = min(max_x_index_in_gri-min_x_ind,buffer)
-        count_y = min(max_y_index_in_gri-min_y_ind,buffer)
-        ## shift start index to left if not enough buffer on right
+        min_x_ind = max(x_ind-(buffer/2), 0)
+        min_y_ind = max(y_ind-(buffer/2), 0)
+        count_x = min(max_x_index_in_gri-min_x_ind, buffer)
+        count_y = min(max_y_index_in_gri-min_y_ind, buffer)
+        # shift start index to left if not enough buffer on right
         if count_x < buffer:
-            x_index_to_add = 3- count_x
-            min_x_ind_new = max(0,min_x_ind-x_index_to_add)
-            count_x=count_x + min_x_ind-min_x_ind_new+1
+            x_index_to_add = 3 - count_x
+            min_x_ind_new = max(0, min_x_ind-x_index_to_add)
+            count_x = count_x + min_x_ind-min_x_ind_new+1
             min_x_ind = min_x_ind_new
         if count_y < buffer:
-            y_index_to_add = 3- count_y
-            min_y_ind_new = max(0,min_y_ind-y_index_to_add)
-            count_y=count_y + min_y_ind-min_y_ind_new+1
+            y_index_to_add = 3 - count_y
+            min_y_ind_new = max(0, min_y_ind-y_index_to_add)
+            count_y = count_y + min_y_ind-min_y_ind_new+1
             min_y_ind = min_y_ind_new
-        arr = await self.get_subarray(uid,[min_x_ind,min_y_ind],[count_x,count_y])
+        arr = await self.get_subarray(uid, [min_x_ind, min_y_ind], [count_x, count_y])
         new_x_ori = xori+(min_x_ind*xinc)
-        new_y_ori = yori+(min_y_ind*yinc) 
+        new_y_ori = yori+(min_y_ind*yinc)
         regridded = xtgeo.RegularSurface(
             ncol=arr.shape[0],
             nrow=arr.shape[1],
@@ -447,9 +447,9 @@ class ETPClient(ETPConnection):
             rotation=0.0,
             values=arr.flatten(),
         )
-        return regridded.get_value_from_xy((x,y))
-    
-    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI , str] ,gri_uri: T.Union[DataObjectURI , str], crs_uri: T.Union[DataObjectURI , str, None] = None):
+        return regridded.get_value_from_xy((x, y))
+
+    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], crs_uri: T.Union[DataObjectURI, str, None] = None):
         if isinstance(crs_uri, type(None)):
             print("NO crs")
             gri, = await self.get_resqml_objects(gri_uri)
@@ -462,7 +462,7 @@ class ETPClient(ETPConnection):
             gri, crs, = await self.get_resqml_objects(gri_uri, crs_uri)
         rotation = crs.areal_rotation.value
         # some checks
-        
+
         assert isinstance(gri, ro.Grid2dRepresentation), "obj must be Grid2dRepresentation"
         sgeo = gri.grid2d_patch.geometry.points.supporting_geometry  # type: ignore
         if sys.version_info[1] != 10:
@@ -471,7 +471,7 @@ class ETPClient(ETPConnection):
             assert isinstance(gri.grid2d_patch.geometry.points.supporting_geometry, ro.Point3dLatticeArray), "Points support_geo must be Point3dLatticeArray"
             assert isinstance(sgeo, ro.Point3dLatticeArray), "supporting_geometry must be Point3dLatticeArray"
         assert isinstance(gri.grid2d_patch.geometry.points.zvalues.values, ro.Hdf5Dataset), "Values must be Hdf5Dataset"
-        
+
         # get array
         array = await self.get_array(
             DataArrayIdentifier(
@@ -488,7 +488,7 @@ class ETPClient(ETPConnection):
             masked=True
         )
 
-    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: T.Union[DataspaceURI , str , None] = None):
+    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: T.Union[DataspaceURI, str, None] = None):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
 
@@ -508,7 +508,7 @@ class ETPClient(ETPConnection):
     # resqpy meshes
     #
 
-    async def get_epc_mesh(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str]):
+    async def get_epc_mesh(self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str]):
         uns, = await self.get_resqml_objects(uns_uri)
 
         # some checks
@@ -554,7 +554,7 @@ class ETPClient(ETPConnection):
 
         return uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed
 
-    async def get_epc_mesh_property(self, epc_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str]):
+    async def get_epc_mesh_property(self, epc_uri: T.Union[DataObjectURI, str], prop_uri: T.Union[DataObjectURI, str]):
         cprop0, = await self.get_resqml_objects(prop_uri)
 
         # some checks
@@ -569,71 +569,71 @@ class ETPClient(ETPConnection):
         )
 
         return cprop0, values
-    
+
     @staticmethod
-    def check_bound(points, x:float, y:float):
-        if x > points[:,0].max() or x < points[:,0].min():
+    def check_bound(points, x: float, y: float):
+        if x > points[:, 0].max() or x < points[:, 0].min():
             return False
-        if y > points[:,1].max() or y < points[:,1].min():
+        if y > points[:, 1].max() or y < points[:, 1].min():
             return False
         return True
-    
-    async def get_epc_mesh_property_x_y(self, epc_uri: T.Union[DataObjectURI , str], uns_uri: T.Union[DataObjectURI , str], prop_uri: T.Union[DataObjectURI , str], x: float, y: float):
+
+    async def get_epc_mesh_property_x_y(self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str], prop_uri: T.Union[DataObjectURI, str], x: float, y: float):
         uns, = await self.get_resqml_objects(uns_uri)
         points = await self.get_array(
-                    DataArrayIdentifier(uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file))
+            DataArrayIdentifier(uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file))
         chk = self.check_bound(points, x, y)
         if chk == False:
             return None
-        unique_y=np.unique(points[:,1])
-        y_smaller_sorted = np.sort(unique_y[np.argwhere(unique_y<y).flatten()])
+        unique_y = np.unique(points[:, 1])
+        y_smaller_sorted = np.sort(unique_y[np.argwhere(unique_y < y).flatten()])
         if y_smaller_sorted.size > 1:
             y_floor = y_smaller_sorted[-2]
         elif y_smaller_sorted.size == 1:
             y_floor = y_smaller_sorted[-1]
         else:
             pass
-        y_larger_sorted  = np.sort(unique_y[np.argwhere(unique_y>y).flatten()])
+        y_larger_sorted = np.sort(unique_y[np.argwhere(unique_y > y).flatten()])
         if y_larger_sorted.size > 1:
             y_ceil = y_larger_sorted[1]
         elif y_larger_sorted.size == 1:
-            y_ceil=y_larger_sorted[0]
+            y_ceil = y_larger_sorted[0]
         else:
             pass
-        start_new_row_idx = np.argwhere(np.diff(points[:,1]) !=0).flatten() +1
+        start_new_row_idx = np.argwhere(np.diff(points[:, 1]) != 0).flatten() + 1
 
         to_fetch = []
         initial_result_arr_idx = 0
         for i in range(start_new_row_idx.size-1):
-            sliced = points[start_new_row_idx[i]:start_new_row_idx[i+1],:]
-            if sliced[0,1] <= y_ceil and sliced[0,1] >= y_floor:
+            sliced = points[start_new_row_idx[i]:start_new_row_idx[i+1], :]
+            if sliced[0, 1] <= y_ceil and sliced[0, 1] >= y_floor:
                 # Found slice that has same y
-                x_diff = sliced[:,0]-x
-                if all([np.any((x_diff>=0)), np.any((x_diff<=0))]): # y within this slice
+                x_diff = sliced[:, 0]-x
+                if all([np.any((x_diff >= 0)), np.any((x_diff <= 0))]):  # y within this slice
                     first_idx = start_new_row_idx[i]
                     count = start_new_row_idx[i+1]-first_idx
-                    to_fetch.append([start_new_row_idx[i],start_new_row_idx[i+1], count,initial_result_arr_idx])
-                    initial_result_arr_idx+=count
+                    to_fetch.append([start_new_row_idx[i], start_new_row_idx[i+1], count, initial_result_arr_idx])
+                    initial_result_arr_idx += count
 
         total_points_filtered = sum([i[2] for i in to_fetch])
-
 
         cprop, = await self.get_resqml_objects(prop_uri)
         assert str(cprop.indexable_element) == 'IndexableElements.NODES'
         props_uid = DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=cprop.patch_of_values[0].values.values.path_in_hdf_file)
+            uri=str(epc_uri), pathInResource=cprop.patch_of_values[0].values.values.path_in_hdf_file)
         meta, = await self.get_array_metadata(props_uid)
-        filtered_points = np.zeros((total_points_filtered,3), dtype=np.float64)
+        filtered_points = np.zeros((total_points_filtered, 3), dtype=np.float64)
         all_values = np.empty(total_points_filtered, dtype=np.float64)
+
         async def populate(i):
             end_indx = i[2]+i[3]
             filtered_points[i[3]:end_indx] = points[i[0]:i[1]]
-            if utils_arrays.get_nbytes(meta)* i[2]/points.shape[0] > self.max_array_size:
+            if utils_arrays.get_nbytes(meta) * i[2]/points.shape[0] > self.max_array_size:
                 all_values[i[3]:end_indx] = await self._get_array_chuncked(props_uid, i[0], i[2])
             else:
                 all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
             return
-        
+
         r = await asyncio.gather(*[populate(i) for i in to_fetch], return_exceptions=True)
         if any(r):
             time.sleep(self.retryPause)
@@ -645,19 +645,18 @@ class ETPClient(ETPConnection):
             method = "nearest"
         else:
             method = "linear"
-        
+
         # resolution= np.mean(np.diff(filtered[:,-1]))
-        top = round(np.min(filtered_points[:,-1]),1)
-        base = round(np.max(filtered_points[:,-1]),1)
-        requested_depth = np.arange(top,base+1,100)
-        requested_depth = requested_depth[requested_depth>0]
-        request = np.tile([x, y, 0], (requested_depth.size,1))
-        request[:,2]=requested_depth
+        top = round(np.min(filtered_points[:, -1]), 1)
+        base = round(np.max(filtered_points[:, -1]), 1)
+        requested_depth = np.arange(top, base+1, 100)
+        requested_depth = requested_depth[requested_depth > 0]
+        request = np.tile([x, y, 0], (requested_depth.size, 1))
+        request[:, 2] = requested_depth
         interpolated = griddata(filtered_points, all_values, request, method=method)
-        response = np.vstack((requested_depth,interpolated))
+        response = np.vstack((requested_depth, interpolated))
         response_filtered = response[:, ~np.isnan(response[1])]
         return {"depth": response_filtered[0], "values": response_filtered[1]}
-       
 
     async def put_epc_mesh(
         self, epc_filename, title_in, property_titles, projected_epsg, dataspace
@@ -668,7 +667,7 @@ class ETPClient(ETPConnection):
         if timeseries is not None:
             timeseries_uris = await self.put_resqml_objects(timeseries, dataspace=dataspace)
             timeseries_uri = list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
-        
+
         # print("put_epc_mesh", uns, crs, epc, timeseries)
         # print("put_epc_mesh", epc_uri, crs_uri, uns_uri, timeseries_uri)
         print("put_epc_mesh property_titles", property_titles)
@@ -746,7 +745,7 @@ class ETPClient(ETPConnection):
 
                 propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
                 cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
-                
+
                 response = await self.put_array(
                     DataArrayIdentifier(
                         uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -758,48 +757,48 @@ class ETPClient(ETPConnection):
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
-    async def get_mesh_points(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str]):
+
+    async def get_mesh_points(self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str]):
         uns, = await self.get_resqml_objects(uns_uri)
         points = await self.get_array(
-                DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
-                )
+            DataArrayIdentifier(
+                uri=str(epc_uri), pathInResource=uns.geometry.points.coordinates.path_in_hdf_file
             )
+        )
         return points
-    
-    async def get_epc_property_surface_slice_node(self,epc_uri:T.Union[DataObjectURI , str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int):
-        #indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
+
+    async def get_epc_property_surface_slice_node(self, epc_uri: T.Union[DataObjectURI, str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int):
+        # indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
         indexing_array = np.arange(node_index, points.shape[0], n_node_per_pos, dtype=np.int32)
-        results = points[indexing_array,:]
-        arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
-                uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
-                [i], [1]) for i in indexing_array])
-        arr =np.array(arr).flatten()
+        results = points[indexing_array, :]
+        arr = await asyncio.gather(*[self.get_subarray(DataArrayIdentifier(
+            uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
+            [i], [1]) for i in indexing_array])
+        arr = np.array(arr).flatten()
         assert results.shape[0] == arr.size
-        results[:,2] = arr
+        results[:, 2] = arr
         return results
-    
-    async def get_epc_property_surface_slice_cell(self,epc_uri:T.Union[DataObjectURI , str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int, get_cell_pos=True):
-        m,=await self.get_array_metadata(DataArrayIdentifier(
-                    uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,))
+
+    async def get_epc_property_surface_slice_cell(self, epc_uri: T.Union[DataObjectURI, str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int, get_cell_pos=True):
+        m, = await self.get_array_metadata(DataArrayIdentifier(
+            uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,))
         n_cells = m.dimensions[0]
-        layers_per_sediment_unit=2
-        n_cell_per_pos = n_node_per_pos -1
-        indexing_array = np.arange(node_index,n_cells,n_cell_per_pos, dtype=np.int32)
+        layers_per_sediment_unit = 2
+        n_cell_per_pos = n_node_per_pos - 1
+        indexing_array = np.arange(node_index, n_cells, n_cell_per_pos, dtype=np.int32)
         if get_cell_pos:
             results = utils_arrays.get_cells_positions(points, n_cells, n_cell_per_pos, layers_per_sediment_unit, n_node_per_pos, node_index)
         else:
-            results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.float64)
-        arr = await asyncio.gather(*[self.get_subarray( DataArrayIdentifier(
-                uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
-                [i], [1]) for i in indexing_array])
-        arr =np.array(arr).flatten()
+            results = np.zeros((int(n_cells/n_cell_per_pos), 3), dtype=np.float64)
+        arr = await asyncio.gather(*[self.get_subarray(DataArrayIdentifier(
+            uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,),
+            [i], [1]) for i in indexing_array])
+        arr = np.array(arr).flatten()
         assert results.shape[0] == arr.size
-        results[:,2] = arr
+        results[:, 2] = arr
         return results
 
-
-    async def get_epc_property_surface_slice(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
+    async def get_epc_property_surface_slice(self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str], prop_uri: T.Union[DataObjectURI, str], node_index: int, n_node_per_pos: int):
         # n_node_per_pos number of nodes in a 1D location
         # node_index index of slice from top. Warmth has 2 nodes per sediment layer. E.g. top of second layer will have index 2
         points = await self.get_mesh_points(epc_uri, uns_uri)
@@ -813,14 +812,14 @@ class ETPClient(ETPConnection):
         # n_node_per_pos = n_sed_node + n_crust_node
         # start_idx_pos = sediment_id *node_per_sed
         if prop_at_node:
-            return await self.get_epc_property_surface_slice_node(epc_uri, cprop0, points,node_index, n_node_per_pos)
+            return await self.get_epc_property_surface_slice_node(epc_uri, cprop0, points, node_index, n_node_per_pos)
         else:
-            return await self.get_epc_property_surface_slice_cell(epc_uri, cprop0, points,node_index, n_node_per_pos)
-    
-    async def get_epc_property_surface_slice_xtgeo(self, epc_uri:T.Union[DataObjectURI , str], uns_uri:T.Union[DataObjectURI , str], prop_uri:T.Union[DataObjectURI , str], node_index: int, n_node_per_pos: int):
-        data = await self.get_epc_property_surface_slice(epc_uri, uns_uri,prop_uri,node_index, n_node_per_pos)
+            return await self.get_epc_property_surface_slice_cell(epc_uri, cprop0, points, node_index, n_node_per_pos)
+
+    async def get_epc_property_surface_slice_xtgeo(self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str], prop_uri: T.Union[DataObjectURI, str], node_index: int, n_node_per_pos: int):
+        data = await self.get_epc_property_surface_slice(epc_uri, uns_uri, prop_uri, node_index, n_node_per_pos)
         return utils_arrays.grid_xtgeo(data)
-    
+
     #
     # array
     #
@@ -881,7 +880,7 @@ class ETPClient(ETPConnection):
         assert len(response.success) == 1, "expected one success from put_array"
         return response.success
 
-    async def get_subarray(self, uid: DataArrayIdentifier, starts: T.Union[np.ndarray , T.List[int]], counts: T.Union[np.ndarray , T.List[int]]):
+    async def get_subarray(self, uid: DataArrayIdentifier, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]]):
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
 
@@ -907,18 +906,19 @@ class ETPClient(ETPConnection):
         arrays = list(response.data_subarrays.values())
         return utils_arrays.to_numpy(arrays[0])
 
-    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray ,T.List[int]], counts: T.Union[np.ndarray , T.List[int]], put_uninitialized=False):
+    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]], put_uninitialized=False):
         from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
             PutDataSubarraysType
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
             PutDataSubarrays
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
             PutDataSubarraysResponse
+
         # starts [start_X, starts_Y]
         # counts [count_X, count_Y]
-        starts = np.array(starts).astype(np.int64) # len = 2 [x_start_index, y_start_index]
-        counts = np.array(counts).astype(np.int64) # len = 2
-        ends = starts + counts # len = 2
+        starts = np.array(starts).astype(np.int64)  # len = 2 [x_start_index, y_start_index]
+        counts = np.array(counts).astype(np.int64)  # len = 2
+        ends = starts + counts  # len = 2
         if put_uninitialized:
             transport_array_type = utils_arrays.get_transport(data.dtype)
             await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
@@ -946,7 +946,7 @@ class ETPClient(ETPConnection):
     # chuncked get array - ETP will not chunck response - so we need to do it manually
     #
 
-    def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset = 0):
+    def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0):
         shape = np.array(shape)
 
         # capsize blocksize
@@ -971,7 +971,7 @@ class ETPClient(ETPConnection):
                 continue
             yield starts, counts
 
-    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset:int = 0, total_count: T.Union[int, None] = None):
+    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset: int = 0, total_count: T.Union[int, None] = None):
 
         metadata = (await self.get_array_metadata(uid))[0]
         if len(metadata.dimensions) != 1 and offset != 0:
@@ -985,6 +985,7 @@ class ETPClient(ETPConnection):
         dtype = utils_arrays.get_dtype(metadata.transport_array_type)
         buffer = np.zeros(buffer_shape, dtype=dtype)
         params = []
+
         async def populate(starts, counts):
             params.append([starts, counts])
             array = await self.get_subarray(uid, starts, counts)
