@@ -106,6 +106,14 @@ async def test_manual_open_close():
 
 
 @pytest.mark.asyncio
+async def test_auth():
+
+    async with connect() as client:
+        resp = await client.authorize("test")
+        assert resp.success  # test server not protected, so any auth will do
+
+
+@pytest.mark.asyncio
 async def test_datapaces(eclient: ETPClient, duri: DataspaceURI):
     pass  # basicically just testing if eclient and temp dataspace fixtures
 

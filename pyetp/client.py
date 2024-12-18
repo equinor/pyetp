@@ -172,6 +172,10 @@ class ETPClient(ETPConnection):
             logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
             self._add_msg_to_buffer(msg)
 
+    #
+    # session related
+    #
+
     async def request_session(self):
         # Handshake protocol
 
@@ -201,6 +205,23 @@ class ETPClient(ETPConnection):
         self.client_info.negotiate(msg)
 
         return self
+
+    async def authorize(self, authorization: str, supplemental_authorization: T.Mapping[str, str] = {}):
+
+        from etptypes.energistics.etp.v12.protocol.core.authorize import \
+            Authorize
+        from etptypes.energistics.etp.v12.protocol.core.authorize_response import \
+            AuthorizeResponse
+
+        msg = await self.send(
+            Authorize(
+                authorization=authorization,
+                supplementalAuthorization=supplemental_authorization
+            )
+        )
+        assert msg and isinstance(msg, AuthorizeResponse)
+
+        return msg
 
     #
 
