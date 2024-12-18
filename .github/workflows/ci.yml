@@ -2,9 +2,9 @@ name: Tests
 
 on:
   pull_request:
-    types: [assigned]
+    branches: [ main ]
   push:
-    branches: [ "main" ]
+    branches: [ main ]
     paths-ignore:
       - '.devcontainer/**'
       - '.github/**'
