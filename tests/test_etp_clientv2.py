@@ -218,6 +218,7 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
     np.testing.assert_allclose(arr, data[starts[0]:ends[0], starts[0]:ends[1]])
 
 
+@pytest.mark.skip(reason="Regression on test server - enable after bug fix from openetp image")
 @pytest.mark.asyncio
 async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 0)
