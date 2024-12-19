@@ -2,9 +2,9 @@ name: Tests
 
 on:
   pull_request:
-    types: [assigned]
+    branches: [ main ]
   push:
-    branches: [ "main" ]
+    branches: [ main ]
     paths-ignore:
       - '.devcontainer/**'
       - '.github/**'
@@ -30,15 +30,23 @@ jobs:
     - uses: actions/checkout@v3
       with:
         lfs: true
+    
     - name: Checkout LFS objects
       run: git lfs pull
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install testing deps
+
+
+    - name: Install poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
+
+    - name: Install testing deps
+      run: |
         poetry install --with dev --no-interaction
         docker compose -f tests/compose.yml up --detach
 

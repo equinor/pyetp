@@ -14,7 +14,7 @@ lxml = "^4.9.4"
 pydantic = "^1.10"
 redis = "^5.0.1"
 async-lru = "^2.0.4"
-pyarrow = "^15.0.0"  # added to fix pandas deprecated warning in xtgeo
+pyarrow = "^15.0.0"      # added to fix pandas deprecated warning in xtgeo
 etpproto = "^1.0.5"
 httpx = "^0.26.0"
 xtgeo = "^3.8.0"
@@ -30,11 +30,15 @@ fakeredis = "^2.21.0"
 pytest-cov = "^4.1.0"
 notebook = "^7.2.1"
 
+[tool.pytest.ini_options]
+addopts = "-ra -v --color=yes"
+testpaths = ["tests"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: Apache Software License"
+  "License :: OSI Approved :: Apache Software License",
 ]

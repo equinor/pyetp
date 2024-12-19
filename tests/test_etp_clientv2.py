@@ -136,13 +136,13 @@ async def test_disconnect_error(eclient: ETPClient):
 
 
 @pytest.mark.asyncio
-async def test_timeout_error(eclient: ETPClient, uid_with: Tuple[np.ndarray, DataArrayIdentifier], monkeypatch: pytest.MonkeyPatch):
+async def test_timeout_error(eclient: ETPClient, uid_not_exists: DataArrayIdentifier, monkeypatch: pytest.MonkeyPatch):
 
-    eclient.timeout = 0.1
+    monkeypatch.setattr(eclient, 'timeout', 0.1)
     monkeypatch.setattr(asyncio.Event, 'set', lambda: None)  # will never signal set
 
     with pytest.raises(asyncio.exceptions.TimeoutError):
-        await eclient.get_array_metadata(uid_with[1])
+        await eclient.get_array_metadata(uid_not_exists)
 
 
 @pytest.mark.asyncio
@@ -218,6 +218,7 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
     np.testing.assert_allclose(arr, data[starts[0]:ends[0], starts[0]:ends[1]])
 
 
+@pytest.mark.skip(reason="Regression on test server - enable after bug fix from openetp image")
 @pytest.mark.asyncio
 async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 0)
