@@ -18,6 +18,7 @@ from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifi
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import \
     DataArrayMetadata
 from etptypes.energistics.etp.v12.datatypes.data_value import DataValue
+from etptypes.energistics.etp.v12.datatypes.error_info import ErrorInfo
 from etptypes.energistics.etp.v12.datatypes.message_header import MessageHeader
 from etptypes.energistics.etp.v12.datatypes.object.data_object import \
     DataObject

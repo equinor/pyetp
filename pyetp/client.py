@@ -23,6 +23,13 @@ from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
 
+try:
+    # for py >3.11, we can raise grouped exceptions
+    from builtins import ExceptionGroup  # type: ignore
+except ImportError:
+    def ExceptionGroup(msg, errors):
+        return errors[0]
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -37,10 +44,13 @@ class ETPError(Exception):
         super().__init__(f"{message} ({code=:})")
 
     @classmethod
-    def from_proto(cls, msg: ProtocolException):
-        assert msg.error is not None or msg.errors is not None, "passed no error info"
-        error = msg.error or list(msg.errors.values())[0]
+    def from_proto(cls, error: ErrorInfo):
+        assert error is not None, "passed no error info"
         return cls(error.message, error.code)
+
+    @classmethod
+    def from_protos(cls, errors: T.Iterable[ErrorInfo]):
+        return list(map(cls.from_proto, errors))
 
 
 def get_all_etp_protocol_classes():
@@ -112,15 +122,30 @@ class ETPClient(ETPConnection):
         # cleanup
         bodies = self._clear_msg_on_buffer(correlation_id)
 
-        for body in bodies:
-            if isinstance(body, ProtocolException):
-                logger.debug(body)
-                raise ETPError.from_proto(body)
+        # error handling
+        errors = self._parse_error_info(bodies)
+
+        if len(errors) == 1:
+            raise ETPError.from_proto(errors.pop())
+        elif len(errors) > 1:
+            raise ExceptionGroup("Server responded with ETPErrors:", ETPError.from_protos(errors))
 
         if len(bodies) > 1:
             logger.warning(f"Recived {len(bodies)} messages, but only expected one")
 
+        # ok
         return bodies[0]
+
+    @staticmethod
+    def _parse_error_info(bodies: list[ETPModel]) -> list[ErrorInfo]:
+        # returns all error infos from bodies
+        errors = []
+        for body in bodies:
+            if isinstance(body, ProtocolException):
+                if body.error is not None:
+                    errors.append(body.error)
+                errors.extend(body.errors.values())
+        return errors
 
     async def close(self, reason=''):
         if self.ws.closed:
