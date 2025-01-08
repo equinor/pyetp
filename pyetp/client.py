@@ -9,7 +9,6 @@ from types import TracebackType
 
 import numpy as np
 import websockets
-from async_timeout import timeout
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
@@ -113,11 +112,8 @@ class ETPClient(ETPConnection):
     async def _recv(self, correlation_id: int) -> ETPModel:
         assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
 
-        try:
-            async with timeout(self.timeout):
-                await self._recv_events[correlation_id].wait()
-        except asyncio.CancelledError as e:
-            raise TimeoutError(f'Timeout before reciving {correlation_id=}') from e
+        async with asyncio.timeout(self.timeout):
+            await self._recv_events[correlation_id].wait()
 
         # cleanup
         bodies = self._clear_msg_on_buffer(correlation_id)
