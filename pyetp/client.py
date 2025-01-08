@@ -1081,8 +1081,15 @@ class connect:
             ping_timeout=self.timeout,
             open_timeout=None,
         )
+
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
-        await self.client.request_session()
+
+        try:
+            await self.client.request_session()
+        except Exception as e:
+            # aexit not called if raised in aenter - so manual cleanup here needed
+            await self.client.close("Failed to request session")
+            raise e
 
         return self.client
 
