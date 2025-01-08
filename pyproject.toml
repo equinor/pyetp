@@ -5,30 +5,32 @@ description = "Interface with OSDU RDDMS using ETP protocol"
 authors = ["Adam Cheng <52572642+adamchengtkc@users.noreply.github.com>"]
 readme = "README.md"
 homepage = "https://github.com/equinor/pyetp"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+]
+
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9, <3.13"
 numpy = "^1.26.3"
 websockets = "^12.0"
-lxml = "^4.9.4"
+lxml = ">=4.9.4, <6.0"
 pydantic = "^1.10"
 redis = "^5.0.1"
 async-lru = "^2.0.4"
-pyarrow = "^15.0.0"      # added to fix pandas deprecated warning in xtgeo
 etpproto = "^1.0.5"
-httpx = "^0.26.0"
+resqpy = ">4.16.0, <5.2"
+
+pyarrow = "^15.0.0" # added to fix pandas deprecated warning in xtgeo
 xtgeo = "^3.8.0"
 xsdata = "^24.3.1"
-resqpy = "^4.16.2"
-async-timeout = "^4.0.3"
-pillow = "^10.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
 pytest-asyncio = "^0.23.4"
 fakeredis = "^2.21.0"
 pytest-cov = "^4.1.0"
-notebook = "^7.2.1"
 
 [tool.pytest.ini_options]
 addopts = "-ra -v --color=yes"
@@ -37,8 +39,3 @@ testpaths = ["tests"]
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-classifiers = [
-  "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: Apache Software License",
-]
