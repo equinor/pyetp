@@ -9,7 +9,6 @@ from types import TracebackType
 
 import numpy as np
 import websockets
-import xtgeo
 from async_timeout import timeout
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
@@ -452,7 +451,7 @@ class ETPClient(ETPConnection):
         arr = await self.get_subarray(uid, [min_x_ind, min_y_ind], [count_x, count_y])
         new_x_ori = xori+(min_x_ind*xinc)
         new_y_ori = yori+(min_y_ind*yinc)
-        regridded = xtgeo.RegularSurface(
+        regridded = RegularSurface(
             ncol=arr.shape[0],
             nrow=arr.shape[1],
             xori=new_x_ori,
@@ -465,7 +464,7 @@ class ETPClient(ETPConnection):
         return regridded.get_value_from_xy((x, y))
 
     async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], crs_uri: T.Union[DataObjectURI, str, None] = None):
-        if isinstance(crs_uri, type(None)):
+        if crs_uri is None:
             logger.debug("NO crs")
             gri, = await self.get_resqml_objects(gri_uri)
             crs_uuid = gri.grid2d_patch.geometry.local_crs.uuid
@@ -742,8 +741,10 @@ class ETPClient(ETPConnection):
             else:
                 time_indices = [-1]
                 cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc)
-            if isinstance(cprop0s, type(None)):
+
+            if cprop0s is None:
                 continue
+
             cprop_uris = []
             for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
                 assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
@@ -1064,15 +1065,19 @@ class connect:
     # async with connect(...) as ...:
 
     async def __aenter__(self):
+
+        token = None
         if isinstance(self.authorization, str):
             token = self.authorization
         elif isinstance(self.authorization, SecretStr):
             token = self.authorization.get_secret_value()
+
         headers = {}
-        if isinstance(self.authorization, type(None)) is False:
+        if token is not None:
             headers["Authorization"] = token
-        if isinstance(self.data_partition, str):
+        if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
+
         ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
