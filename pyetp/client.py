@@ -5,6 +5,7 @@ import sys
 import typing as T
 import uuid
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from types import TracebackType
 
 import numpy as np
@@ -28,6 +29,20 @@ try:
 except ImportError:
     def ExceptionGroup(msg, errors):
         return errors[0]
+
+try:
+    from asyncio import timeout
+except ImportError:
+    import async_timeout
+
+    @asynccontextmanager
+    async def timeout(delay: T.Optional[float]) -> T.Any:
+        try:
+            async with async_timeout.timeout(delay):
+                yield None
+        except asyncio.CancelledError as e:
+            raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -112,7 +127,7 @@ class ETPClient(ETPConnection):
     async def _recv(self, correlation_id: int) -> ETPModel:
         assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
 
-        async with asyncio.timeout(self.timeout):
+        async with timeout(self.timeout):
             await self._recv_events[correlation_id].wait()
 
         # cleanup
