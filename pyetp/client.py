@@ -1102,15 +1102,11 @@ class connect:
 
     async def __aenter__(self):
 
-        token = None
-        if isinstance(self.authorization, str):
-            token = self.authorization
-        elif isinstance(self.authorization, SecretStr):
-            token = self.authorization.get_secret_value()
-
         headers = {}
-        if token is not None:
-            headers["Authorization"] = token
+        if isinstance(self.authorization, str):
+            headers["Authorization"] = self.authorization
+        elif isinstance(self.authorization, SecretStr):
+            headers["Authorization"] = self.authorization.get_secret_value()
         if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
 
