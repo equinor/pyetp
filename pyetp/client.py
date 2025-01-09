@@ -79,7 +79,7 @@ class ETPClient(ETPConnection):
     #
 
     async def send(self, body: ETPModel):
-            correlation_id = await self._send(body)
+        correlation_id = await self._send(body)
         return await self._recv(correlation_id)
 
     async def _send(self, body: ETPModel):

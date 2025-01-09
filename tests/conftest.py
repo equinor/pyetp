@@ -7,7 +7,7 @@ from pyetp.config import SETTINGS
 from pyetp.uri import  DataspaceURI
 
 SETTINGS.application_name = "geomin_testing"
-SETTINGS.etp_url = "ws://localhost:9002"
+SETTINGS.etp_url = "ws://localhost:9100"
 
 SETTINGS.dataspace = "testing_space"
 
@@ -22,7 +22,7 @@ async def eclient():
     import socket
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ws_open = sock.connect_ex(('127.0.0.1', 9002)) == 0
+    ws_open = sock.connect_ex(('127.0.0.1', 9100)) == 0
 
     if not ws_open:
         pytest.skip(reason="websocket for test server not open", allow_module_level=True)

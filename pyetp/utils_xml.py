@@ -352,7 +352,6 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
 
 def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_data_initial, rddms_upload_data_timestep)
     import numpy as np
-
     ro_timestamps = []
     for i in geotimes:
         ro_timestamps.append(
