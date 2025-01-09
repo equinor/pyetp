@@ -328,7 +328,7 @@ class ETPClient(ETPConnection):
             PutDataObjectsResponse
 
         response = await self.send(
-            PutDataObjects(dataObjects={p.resource.name: p for p in objs})
+            PutDataObjects(dataObjects={p.resource.uri: p for p in objs})
         )
         # logger.info(f"objects {response=:}")
         assert isinstance(response, PutDataObjectsResponse), "Expected PutDataObjectsResponse"
