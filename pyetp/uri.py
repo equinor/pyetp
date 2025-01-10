@@ -51,8 +51,10 @@ class DataspaceURI(_DataspaceURI, _Mixin):
         if isinstance(v, DataObjectURI):
             return cls.from_name(v.dataspace)
         if isinstance(v, str):
-            return cls(v) if v.startswith('eml://') else cls.from_name(v)
-
+            if v.startswith('eml://'):
+                return cls(v) if v.endswith('\')') else cls.from_name(DataObjectURI(v).dataspace)
+            else:
+                return cls.from_name(v)
         raise TypeError(f"Type {type(v)} not supported dataspace uri")
 
 
