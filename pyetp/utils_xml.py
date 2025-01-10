@@ -1,10 +1,9 @@
 import datetime
+import logging
 import typing as T
 from uuid import uuid4
 
 import lxml.etree as ET
-import numpy as np
-import xtgeo
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
 from xsdata.formats.dataclass.serializers import XmlSerializer
@@ -13,10 +12,14 @@ from xsdata.models.datatype import XmlDateTime
 
 import pyetp.resqml_objects as ro
 from pyetp.config import SETTINGS
-import logging
+from pyetp.types import DataObject
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-from .types import DataObject
+
+if T.TYPE_CHECKING:
+    from xtgeo import RegularSurface
+
 
 schema_version = "2.0"
 
@@ -98,7 +101,7 @@ def create_epc(schema_version="2.0"):
     )
 
 
-def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_epsg: int):
+def parse_xtgeo_surface_to_resqml_grid(surf: 'RegularSurface', projected_epsg: int):
     # Build the RESQML-objects "manually" from the generated dataclasses.
     # Their content is described also in the RESQML v2.0.1 standard that is
     # available for download here:
@@ -114,11 +117,11 @@ def parse_xtgeo_surface_to_resqml_grid(surf: 'xtgeo.RegularSurface', projected_e
     epc, crs, gri = instantiate_resqml_grid(title, surf.get_rotation(), surf.xori, surf.yori, surf.xinc, surf.yinc, surf.ncol, surf.nrow, projected_epsg)
     return epc, crs, gri
 
-def instantiate_resqml_grid(name:str, rotation: float, x0: float, y0: float, dx: float, dy: float, nx: int, ny: int, epsg: int):
+
+def instantiate_resqml_grid(name: str, rotation: float, x0: float, y0: float, dx: float, dy: float, nx: int, ny: int, epsg: int):
 
     epc = create_epc()
-    crs = create_common_crs(name, epsg, rotation)  
-
+    crs = create_common_crs(name, epsg, rotation)
 
     gri = ro.Grid2dRepresentation(
         uuid=(grid_uuid := str(uuid4())),
@@ -204,12 +207,11 @@ def instantiate_resqml_grid(name:str, rotation: float, x0: float, y0: float, dx:
     )
     return epc, crs, gri
 
+
 def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
-    import numpy as np
     import resqpy.model as rq
-    import resqpy.unstructured as rug
-    import resqpy.property as rqp
     import resqpy.time_series as rts
+    import resqpy.unstructured as rug
 
     title = title_in or "hexamesh"
 
@@ -226,17 +228,15 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     assert hexa.cell_shape == 'hexahedral'
     hexa.check_hexahedral()
 
-    ts_uuid = model.uuid(obj_type = "TimeSeries")
+    ts_uuid = model.uuid(obj_type="TimeSeries")
     # ts_uuid_2 = model.uuid(obj_type='GeologicTimeSeries')
-    # print("TS UUIDs: ", ts_uuid, ts_uuid_2)
+    # logger.debug(f"TS UUIDs: {ts_uuid} {ts_uuid_2}")
     gts = rts.GeologicTimeSeries(model, uuid=ts_uuid)
 
-    print("gts: ", gts)
+    logger.debug(f"gts: {gts}")
     timeseries = None
-    # dynamic_points = []    
+    # dynamic_points = []
     if (ts_uuid is not None) and (gts is not None):
-
-
 
         ro_timestamps = []
         for i in gts.iter_timestamps(as_string=False):
@@ -247,16 +247,14 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
                 )
             )
 
-        print(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
+        logger.info(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
 
         timeseries = ro.TimeSeries(
             citation=create_common_citation(str(gts.citation_title)),
             schema_version=schema_version,
             uuid=str(gts.uuid),
-            time = ro_timestamps,
+            time=ro_timestamps,
         )
-
-
 
     crs = create_common_crs(title, projected_epsg)
 
@@ -361,7 +359,7 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     return uns, crs, epc, timeseries, hexa
 
 
-def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns, epc, timeseries=None, time_indices:list[int]=[]):
+def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns, epc, timeseries=None, time_indices: list[int] = []):
     import resqpy.model as rq
     import resqpy.property as rqp
 
@@ -382,7 +380,7 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
             return ro.ThermalInsulanceUom.DELTA_K_M2_W
         if (pt == "Radiogenic_heat_production"):
             return ro.ResqmlUom.U_W_M3
-        if (pt == 'dynamic nodes') or (pt=='points'):
+        if (pt == 'dynamic nodes') or (pt == 'points'):
             return ro.ResqmlUom.M
         if (pt == 'thermal_conductivity'):
             return ro.ResqmlUom.W_M_K
@@ -430,10 +428,9 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
             uuid=str(pk.uuid),
         )
 
-
     cprop0s, props = [], []
 
-    for i in range( len(time_indices) if use_timeseries else 1 ):
+    for i in range(len(time_indices) if use_timeseries else 1):
         if (not use_timeseries):
             prop_uuid = prop_uuid0
             prop = prop0
@@ -469,22 +466,22 @@ def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns
         if use_timeseries:
             time_index = time_indices[i]
             timeindex_ref = ro.TimeIndex(
-                index = time_index,
-                time_series = ro.DataObjectReference(
+                index=time_index,
+                time_series=ro.DataObjectReference(
                     content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(timeseries)}",
                     title=timeseries.citation.title,
                     uuid=timeseries.uuid,
                 )
             )
 
-        r_uom = ro.ResqmlUom( value= uom_for_prop_title(prop_title) ) if (prop.uom() is None) else prop.uom()
+        r_uom = ro.ResqmlUom(value=uom_for_prop_title(prop_title)) if (prop.uom() is None) else prop.uom()
 
         if (continuous):
             cprop0 = ro.ContinuousProperty(
                 schema_version=schema_version,
                 citation=create_common_citation(f"{prop_title}"),
                 uuid=str(prop.uuid),
-                uom = r_uom,
+                uom=r_uom,
                 count=1,
                 indexable_element=prop.indexable_element(),
                 supporting_representation=ro.DataObjectReference(
