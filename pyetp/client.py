@@ -22,6 +22,7 @@ from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
+from pyetp.utils import short_id
 
 try:
     # for py >3.11, we can raise grouped exceptions
@@ -363,7 +364,7 @@ class ETPClient(ETPConnection):
             PutDataObjectsResponse
 
         response = await self.send(
-            PutDataObjects(dataObjects={p.resource.uri: p for p in objs})
+            PutDataObjects(dataObjects={f"{p.resource.name}_{short_id()}": p for p in objs})
         )
         # logger.info(f"objects {response=:}")
         assert isinstance(response, PutDataObjectsResponse), "Expected PutDataObjectsResponse"
