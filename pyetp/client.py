@@ -6,6 +6,7 @@ import typing as T
 import uuid
 from collections import defaultdict
 from types import TracebackType
+import time
 
 import numpy as np
 import websockets
@@ -672,9 +673,13 @@ class ETPClient(ETPConnection):
         assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
         assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
+        st = time.time()
         propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
         cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+        delay = time.time() - st
+        print(f"pyetp: put_rddms_property: put objects took {delay} s")
         
+        st = time.time()
         response = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -682,6 +687,8 @@ class ETPClient(ETPConnection):
             ),
             array_ref,  # type: ignore
         )
+        delay = time.time() - st
+        print(f"pyetp: put_rddms_property: put array ({array_ref.shape}) took {delay} s")
         return cprop_uri, propkind_uri
 
     async def put_epc_mesh(
