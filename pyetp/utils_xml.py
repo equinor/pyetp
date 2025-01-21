@@ -234,7 +234,8 @@ def uom_for_prop_title(pt: str):
         return ro.ResqmlUom.VALUE
     return ro.ResqmlUom.EUC
 
-def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, min_val=0.0, max_val=1.0, timeseries=None, time_index=-1):
+def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, min_val=0.0, max_val=1.0, 
+                           timeseries=None, time_index=-1, pre_existing_propertykind = None):
     timeindex_ref = None
     use_timeseries = timeseries is not None
     if use_timeseries:
@@ -251,18 +252,21 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
     r_uom = ro.ResqmlUom( value= uom_for_prop_title(prop_title) )
     # r_uom = ro.ResqmlUom( uom )
 
-    pk_uuid = uuid4()
-    propertykind0 = ro.PropertyKind(
-        schema_version=schema_version,
-        citation=create_common_citation(f"{prop_title}"),
-        naming_system="urn:resqml:bp.com:resqpy",
-        is_abstract=False,
-        representative_uom=uom_for_prop_title(prop_title),
-        parent_property_kind=ro.StandardPropertyKind(
-            kind=ro.ResqmlPropertyKind.CONTINUOUS if continuous else ro.ResqmlPropertyKind.DISCRETE
-        ),
-        uuid=str(pk_uuid),
-    )
+    if (pre_existing_propertykind is None):
+        pk_uuid = uuid4()
+        propertykind0 = ro.PropertyKind(
+            schema_version=schema_version,
+            citation=create_common_citation(f"{prop_title}"),
+            naming_system="urn:resqml:bp.com:resqpy",
+            is_abstract=False,
+            representative_uom=uom_for_prop_title(prop_title),
+            parent_property_kind=ro.StandardPropertyKind(
+                kind=ro.ResqmlPropertyKind.CONTINUOUS if continuous else ro.ResqmlPropertyKind.DISCRETE
+            ),
+            uuid=str(pk_uuid),
+        )
+    else:
+        propertykind0 = pre_existing_propertykind
 
     prop_uuid = uuid4()
 
