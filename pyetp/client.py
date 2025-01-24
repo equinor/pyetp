@@ -782,14 +782,18 @@ class ETPClient(ETPConnection):
             if cprop0s is None:
                 continue
 
-            cprop_uris = []
-            for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
+            for cprop0 in cprop0s:
                 assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
                 assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
-                propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
-                cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+            propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
 
+            cprop_uris = await self.put_resqml_objects(*cprop0s, dataspace=dataspace)
+            # for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
+            #     cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+            #     cprop_uris.extend(cprop_uri)
+
+            for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
                 response = await self.put_array(
                     DataArrayIdentifier(
                         uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -797,7 +801,6 @@ class ETPClient(ETPConnection):
                     ),
                     prop.array_ref(),  # type: ignore
                 )
-                cprop_uris.extend(cprop_uri)
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
