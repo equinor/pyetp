@@ -24,6 +24,7 @@ from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
+from pyetp.utils import short_id
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -329,7 +330,7 @@ class ETPClient(ETPConnection):
             PutDataObjectsResponse
 
         response = await self.send(
-            PutDataObjects(dataObjects={p.resource.name: p for p in objs})
+            PutDataObjects(dataObjects={f"{p.resource.name.replace(' ','_')}_{short_id()}": p for p in objs})
         )
         # logger.info(f"objects {response=:}")
         assert isinstance(response, PutDataObjectsResponse), "Expected PutDataObjectsResponse"
@@ -1093,7 +1094,6 @@ class connect:
         )
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         await self.client.request_session()
-
         return self.client
 
     # exit the async context manager
