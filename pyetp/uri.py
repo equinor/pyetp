@@ -69,16 +69,18 @@ class DataObjectURI(_DataObjectURI, _Mixin):
     def from_obj(cls, dataspace: Union[DataspaceURI , str], obj: ro.AbstractObject):
 
         objname = obj.__class__.__name__
-        namespace: str = getattr(obj.Meta, 'namespace', None) or getattr(obj.Meta, 'target_namespace')
-        namespace = namespace.lower()
-
-        # TODO: we can rather look at citation.format - which could be used for xmlformat ? - however to be backward capatiable we check namespaces instead
-        if namespace.endswith('resqmlv2'):
-            domain = "resqml20"
-        elif namespace.endswith('data/commonv2'):
-            domain = "eml20"
+        if getattr(obj, 'Meta', None):
+            namespace: str = getattr(obj.Meta, 'namespace', None) or getattr(obj.Meta, 'target_namespace')
+            namespace = namespace.lower()
+            # TODO: we can rather look at citation.format - which could be used for xmlformat ? - however to be backward capatiable we check namespaces instead
+            if namespace.endswith('resqmlv2'):
+                domain = "resqml20"
+            elif namespace.endswith('data/commonv2'):
+                domain = "eml20"
+            else:
+                raise TypeError(f"Could not parse domain from namespace ({namespace})")
         else:
-            raise TypeError(f"Could not parse domain from namespace ({namespace})")
+            domain = "eml20"  # fallback to eml20 for backwards compatibility. 
 
         return cls.from_parts(dataspace, domain, objname, obj.uuid)
 

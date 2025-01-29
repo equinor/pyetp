@@ -8,6 +8,7 @@ from pyetp.uri import  DataspaceURI
 
 SETTINGS.application_name = "geomin_testing"
 SETTINGS.etp_url = "ws://localhost:9100"
+
 SETTINGS.dataspace = "testing_space"
 
 
