@@ -24,7 +24,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v3
@@ -34,25 +34,21 @@ jobs:
     - name: Checkout LFS objects
       run: git lfs pull
 
-
-    - name: Install poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'poetry'
 
     - name: Install testing deps
       run: |
+        pip install poetry
+        poetry config virtualenvs.create false --local
         poetry install --with dev --no-interaction
         docker compose -f tests/compose.yml up --detach
 
     - name: Test
       run: |
-        poetry run python -m pytest -v -x -s -color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/
+        python -m pytest -v -x -s --color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/
         
     # - name: Comment coverage
     #   if: ${{ github.event_name == 'pull_request'}}

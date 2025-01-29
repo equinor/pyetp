@@ -1,6 +1,9 @@
-from pydantic import AnyUrl, BaseSettings, Field, RedisDsn, SecretStr
-from pyetp.uri import DataspaceURI
 from typing import Optional
+
+from pydantic import AnyUrl, BaseSettings, Field, RedisDsn, SecretStr
+
+from pyetp.uri import DataspaceURI
+
 
 class WebSocketUrl(AnyUrl):
     allowed_schemes = {'wss', 'ws'}
@@ -26,8 +29,6 @@ class Settings(BaseSettings):
     @property
     def duri(self):
         return DataspaceURI.from_name(self.dataspace)
-
-
 
 
 SETTINGS = Settings()

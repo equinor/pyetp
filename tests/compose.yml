@@ -1,7 +1,7 @@
 # Local ETP-server for testing of the map-api
 services:
   open-etp-server:
-    image: community.opengroup.org:5555/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server/open-etp-server-main:latest
+    image: community.opengroup.org:5555/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server/open-etp-server-v0-26-0:latest
     # TODO: Use the same image as the published ETP-server
     environment:
       RDMS_DATA_PARTITION_MODE: "single"

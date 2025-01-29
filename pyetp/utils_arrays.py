@@ -1,14 +1,15 @@
 
 import typing as T
+
 import numpy as np
 from scipy import interpolate
-import xtgeo
+from xtgeo import RegularSurface
 
-from .types import (AnyArray, AnyArrayType, ArrayOfBoolean, ArrayOfDouble,
-                    ArrayOfFloat, ArrayOfInt, ArrayOfLong, DataArray,
-                    DataArrayMetadata)
+from pyetp.types import (AnyArray, AnyArrayType, ArrayOfBoolean, ArrayOfDouble,
+                         ArrayOfFloat, ArrayOfInt, ArrayOfLong, DataArray,
+                         DataArrayMetadata)
 
-SUPPORED_ARRAY_TYPES = T.Union[ArrayOfFloat , ArrayOfBoolean, ArrayOfInt, ArrayOfLong , ArrayOfDouble]
+SUPPORED_ARRAY_TYPES = T.Union[ArrayOfFloat, ArrayOfBoolean, ArrayOfInt, ArrayOfLong, ArrayOfDouble]
 
 _ARRAY_MAP_TYPES: dict[AnyArrayType, np.dtype[T.Any]] = {
     AnyArrayType.ARRAY_OF_FLOAT: np.dtype(np.float32),
@@ -44,7 +45,7 @@ def get_cls(dtype: np.dtype):
     return _ARRAY_MAP[get_transport(dtype)]
 
 
-def get_dtype(item: T.Union[AnyArray ,AnyArrayType]):
+def get_dtype(item: T.Union[AnyArray, AnyArrayType]):
     atype = item if isinstance(item, AnyArrayType) else get_transport_from_name(item.item.__class__.__name__)
 
     if atype not in _ARRAY_MAP_TYPES:
@@ -73,34 +74,36 @@ def to_data_array(data: np.ndarray):
         data=AnyArray(item=cls(values=data.flatten().tolist()))
     )
 
+
 def mid_point_rectangle(arr: np.ndarray):
-    all_x=arr[:,0]
-    all_y= arr[:,1]
+    all_x = arr[:, 0]
+    all_y = arr[:, 1]
     min_x = np.min(all_x)
     min_y = np.min(all_y)
     mid_x = ((np.max(all_x)-min_x)/2)+min_x
     mid_y = ((np.max(all_y)-min_y)/2)+min_y
     return np.array([mid_x, mid_y])
 
+
 def grid_xtgeo(data: np.ndarray):
-    max_x = np.nanmax(data[:,0])
-    max_y = np.nanmax(data[:,1])
-    min_x = np.nanmin(data[:,0])
-    min_y = np.nanmin(data[:,1])
-    u_x = np.sort(np.unique(data[:,0]))
-    u_y = np.sort(np.unique(data[:,1]))
-    xinc = u_x[1]- u_x[0]
-    yinc = u_y[1]- u_y[0]
+    max_x = np.nanmax(data[:, 0])
+    max_y = np.nanmax(data[:, 1])
+    min_x = np.nanmin(data[:, 0])
+    min_y = np.nanmin(data[:, 1])
+    u_x = np.sort(np.unique(data[:, 0]))
+    u_y = np.sort(np.unique(data[:, 1]))
+    xinc = u_x[1] - u_x[0]
+    yinc = u_y[1] - u_y[0]
     grid_x, grid_y = np.mgrid[
         min_x: max_x + xinc: xinc,
         min_y: max_y + yinc: yinc,
     ]
 
-    interp = interpolate.LinearNDInterpolator(data[:,:-1], data[:,-1], fill_value=np.nan, rescale=False)
-    z = interp(np.array([grid_x.flatten(), grid_y.flatten() ]).T )
-    zz = np.reshape(z,grid_x.shape)
+    interp = interpolate.LinearNDInterpolator(data[:, :-1], data[:, -1], fill_value=np.nan, rescale=False)
+    z = interp(np.array([grid_x.flatten(), grid_y.flatten()]).T)
+    zz = np.reshape(z, grid_x.shape)
 
-    surf = xtgeo.RegularSurface(
+    return RegularSurface(
         ncol=grid_x.shape[0],
         nrow=grid_x.shape[1],
         xori=min_x,
@@ -110,22 +113,22 @@ def grid_xtgeo(data: np.ndarray):
         rotation=0.0,
         values=zz,
     )
-    return surf
 
-def get_cells_positions(points: np.ndarray, n_cells:int, n_cell_per_pos:int,layers_per_sediment_unit:int,n_node_per_pos:int,node_index: int):
-    results = np.zeros((int(n_cells/n_cell_per_pos),3), dtype=np.float64)
-    grid_x_pos = np.unique(points[:,0])
-    grid_y_pos = np.unique(points[:,1])
+
+def get_cells_positions(points: np.ndarray, n_cells: int, n_cell_per_pos: int, layers_per_sediment_unit: int, n_node_per_pos: int, node_index: int):
+    results = np.zeros((int(n_cells/n_cell_per_pos), 3), dtype=np.float64)
+    grid_x_pos = np.unique(points[:, 0])
+    grid_y_pos = np.unique(points[:, 1])
     counter = 0
     # find cell index and location
 
-    for y_ind in range(0,len(grid_y_pos)-1):
-        for x_ind in range(0,len(grid_x_pos)-1):
-            top_depth= []
+    for y_ind in range(0, len(grid_y_pos)-1):
+        for x_ind in range(0, len(grid_x_pos)-1):
+            top_depth = []
             for corner_x in range(layers_per_sediment_unit):
                 for corner_y in range(layers_per_sediment_unit):
-                    node_indx = (( (y_ind+corner_y)*len(grid_x_pos) + (x_ind+corner_x) ) * n_node_per_pos)+ node_index
-                    top_depth.append( points[node_indx])
-            results[counter,0:2] = mid_point_rectangle(np.array(top_depth))
-            counter+=1
+                    node_indx = (((y_ind+corner_y)*len(grid_x_pos) + (x_ind+corner_x)) * n_node_per_pos) + node_index
+                    top_depth.append(points[node_indx])
+            results[counter, 0:2] = mid_point_rectangle(np.array(top_depth))
+            counter += 1
     return results

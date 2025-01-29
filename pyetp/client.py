@@ -5,13 +5,12 @@ import sys
 import typing as T
 import uuid
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from types import TracebackType
 import time
 
 import numpy as np
 import websockets
-import xtgeo
-from async_timeout import timeout
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
@@ -25,6 +24,27 @@ from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils import short_id
+
+try:
+    # for py >3.11, we can raise grouped exceptions
+    from builtins import ExceptionGroup  # type: ignore
+except ImportError:
+    def ExceptionGroup(msg, errors):
+        return errors[0]
+
+try:
+    from asyncio import timeout
+except ImportError:
+    import async_timeout
+
+    @asynccontextmanager
+    async def timeout(delay: T.Optional[float]) -> T.Any:
+        try:
+            async with async_timeout.timeout(delay):
+                yield None
+        except asyncio.CancelledError as e:
+            raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -40,10 +60,13 @@ class ETPError(Exception):
         super().__init__(f"{message} ({code=:})")
 
     @classmethod
-    def from_proto(cls, msg: ProtocolException):
-        assert msg.error is not None or msg.errors is not None, "passed no error info"
-        error = msg.error or list(msg.errors.values())[0]
+    def from_proto(cls, error: ErrorInfo):
+        assert error is not None, "passed no error info"
         return cls(error.message, error.code)
+
+    @classmethod
+    def from_protos(cls, errors: T.Iterable[ErrorInfo]):
+        return list(map(cls.from_proto, errors))
 
 
 def get_all_etp_protocol_classes():
@@ -124,6 +147,18 @@ class ETPClient(ETPConnection):
             logger.warning(f"Recived {len(bodies)} messages, but only expected one")
 
         return bodies[0]
+
+
+    @staticmethod
+    def _parse_error_info(bodies: list[ETPModel]) -> list[ErrorInfo]:
+        # returns all error infos from bodies
+        errors = []
+        for body in bodies:
+            if isinstance(body, ProtocolException):
+                if body.error is not None:
+                    errors.append(body.error)
+                errors.extend(body.errors.values())
+        return errors
 
     async def close(self, reason=''):
         if self.ws.closed:
@@ -330,7 +365,7 @@ class ETPClient(ETPConnection):
             PutDataObjectsResponse
 
         response = await self.send(
-            PutDataObjects(dataObjects={f"{p.resource.name.replace(' ','_')}_{short_id()}": p for p in objs})
+            PutDataObjects(dataObjects={f"{p.resource.name}_{short_id()}": p for p in objs})
         )
         # logger.info(f"objects {response=:}")
         assert isinstance(response, PutDataObjectsResponse), "Expected PutDataObjectsResponse"
@@ -362,6 +397,7 @@ class ETPClient(ETPConnection):
                 targetCount=None
             )
         ) for uri, obj in zip(uris, objs)]
+
         response = await self.put_data_objects(*dobjs)
         return uris
 
@@ -463,7 +499,7 @@ class ETPClient(ETPConnection):
         return regridded.get_value_from_xy((x, y))
 
     async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], crs_uri: T.Union[DataObjectURI, str, None] = None):
-        if isinstance(crs_uri, type(None)):
+        if crs_uri is None:
             logger.debug("NO crs")
             gri, = await self.get_resqml_objects(gri_uri)
             crs_uuid = gri.grid2d_patch.geometry.local_crs.uuid
@@ -765,8 +801,10 @@ class ETPClient(ETPConnection):
             else:
                 time_indices = [-1]
                 cprop0s, props, propertykind0 = utils_xml.convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, propname, uns, epc)
-            if isinstance(cprop0s, type(None)):
+
+            if cprop0s is None:
                 continue
+
             cprop_uris = []
             for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
                 cprop_uri, propkind_uri = await self.put_rddms_property(epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace)
@@ -1075,15 +1113,15 @@ class connect:
     # async with connect(...) as ...:
 
     async def __aenter__(self):
-        if isinstance(self.authorization, str):
-            token = self.authorization
-        elif isinstance(self.authorization, SecretStr):
-            token = self.authorization.get_secret_value()
+
         headers = {}
-        if isinstance(self.authorization, type(None)) is False:
-            headers["Authorization"] = token
-        if isinstance(self.data_partition, str):
+        if isinstance(self.authorization, str):
+            headers["Authorization"] = self.authorization
+        elif isinstance(self.authorization, SecretStr):
+            headers["Authorization"] = self.authorization.get_secret_value()
+        if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
+
         ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
@@ -1092,8 +1130,16 @@ class connect:
             ping_timeout=self.timeout,
             open_timeout=None,
         )
+
         self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
-        await self.client.request_session()
+
+        try:
+            await self.client.request_session()
+        except Exception as e:
+            # aexit not called if raised in aenter - so manual cleanup here needed
+            await self.client.close("Failed to request session")
+            raise e
+
         return self.client
 
     # exit the async context manager
