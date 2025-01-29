@@ -129,23 +129,24 @@ class ETPClient(ETPConnection):
     async def _recv(self, correlation_id: int) -> ETPModel:
         assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
 
-        try:
-            async with timeout(self.timeout):
-                await self._recv_events[correlation_id].wait()
-        except asyncio.CancelledError as e:
-            raise TimeoutError(f'Timeout before reciving {correlation_id=}') from e
+        async with timeout(self.timeout):
+            await self._recv_events[correlation_id].wait()
 
         # cleanup
         bodies = self._clear_msg_on_buffer(correlation_id)
 
-        for body in bodies:
-            if isinstance(body, ProtocolException):
-                logger.debug(body)
-                raise ETPError.from_proto(body)
+        # error handling
+        errors = self._parse_error_info(bodies)
+
+        if len(errors) == 1:
+            raise ETPError.from_proto(errors.pop())
+        elif len(errors) > 1:
+            raise ExceptionGroup("Server responded with ETPErrors:", ETPError.from_protos(errors))
 
         if len(bodies) > 1:
             logger.warning(f"Recived {len(bodies)} messages, but only expected one")
 
+        # ok
         return bodies[0]
 
 
@@ -486,7 +487,7 @@ class ETPClient(ETPConnection):
         arr = await self.get_subarray(uid, [min_x_ind, min_y_ind], [count_x, count_y])
         new_x_ori = xori+(min_x_ind*xinc)
         new_y_ori = yori+(min_y_ind*yinc)
-        regridded = xtgeo.RegularSurface(
+        regridded = RegularSurface(
             ncol=arr.shape[0],
             nrow=arr.shape[1],
             xori=new_x_ori,
