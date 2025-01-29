@@ -715,7 +715,7 @@ class ETPClient(ETPConnection):
         propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
         cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
         delay = time.time() - st
-        print(f"pyetp: put_rddms_property: put objects took {delay} s")
+        logger.debug(f"pyetp: put_rddms_property: put objects took {delay} s")
         
         st = time.time()
         response = await self.put_array(
@@ -726,7 +726,7 @@ class ETPClient(ETPConnection):
             array_ref,  # type: ignore
         )
         delay = time.time() - st
-        print(f"pyetp: put_rddms_property: put array ({array_ref.shape}) took {delay} s")
+        logger.debug(f"pyetp: put_rddms_property: put array ({array_ref.shape}) took {delay} s")
         return cprop_uri, propkind_uri
 
     async def put_epc_mesh(

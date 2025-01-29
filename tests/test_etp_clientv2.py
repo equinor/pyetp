@@ -246,7 +246,7 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
 
     np.testing.assert_allclose(array, np.array(surface.values.filled(np.nan)))
 
-    print(epc, crs, gri)
+    # print(epc, crs, gri)
 
     assert isinstance(epc, ro.EpcExternalPartReference)
     assert isinstance(crs, ro.LocalDepth3dCrs)
@@ -275,8 +275,8 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
 
-    print(repr(surf))
-    print(repr(nsurf))
+    # print(repr(surf))
+    # print(repr(nsurf))
 
     # ensure rotation, step, origin etc is equal
     compare_surf(surf, nsurf)
@@ -291,8 +291,8 @@ async def test_surface_no_crs(eclient: ETPClient, duri: DataspaceURI):
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
 
-    print(repr(surf))
-    print(repr(nsurf))
+    # print(repr(surf))
+    # print(repr(nsurf))
 
     # ensure rotation, step, origin etc is equal
     compare_surf(surf, nsurf)

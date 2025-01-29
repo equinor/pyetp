@@ -56,8 +56,8 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
         for prop_uri in value[1]:        
             prop0, values = await eclient.get_epc_mesh_property(rddms_uris[0], prop_uri)
             assert prop0.supporting_representation.uuid == str(uns.uuid), "property support must match the mesh"
-            if len(found_indices)==0:
-                print(f"prop {prop0.citation.title}, evaluating {len(value[1])} time indices")
+            # if len(found_indices)==0:
+                # print(f"prop {prop0.citation.title}, evaluating {len(value[1])} time indices")
             time_index = prop0.time_index.index if prop0.time_index else -1
             assert(time_index not in found_indices), f"Duplicate time index {time_index}"        
             if mesh_has_timeseries:
