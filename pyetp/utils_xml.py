@@ -310,7 +310,7 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
                 title=uns.citation.title,
                 uuid=uns.uuid,
             ),
-            property_kind= propertykind0 if pre_existing_propertykind is True else ro.LocalPropertyKind(
+            property_kind= propertykind0 if pre_existing_propertykind is not None else ro.LocalPropertyKind(
                 local_property_kind=ro.DataObjectReference(
                     content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
                     title=propertykind0.citation.title,
@@ -339,7 +339,7 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
                 title=uns.citation.title,
                 uuid=uns.uuid,
             ),
-            property_kind=propertykind0 if pre_existing_propertykind is True else ro.LocalPropertyKind(
+            property_kind=propertykind0 if pre_existing_propertykind is not None else ro.LocalPropertyKind(
                 local_property_kind=ro.DataObjectReference(
                     content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
                     title=propertykind0.citation.title,
