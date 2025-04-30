@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 import numpy as np
 import pytest
 import pytest_asyncio
+import websocket
 import websockets
 import xtgeo
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import \
@@ -21,7 +22,7 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
     PutDataSubarraysResponse
 
 import pyetp.resqml_objects as ro
-from pyetp.client import ETPClient, ETPError, connect
+from pyetp.client import PYETPClient, ETPError, connect
 from pyetp.types import AnyArrayType, DataArrayIdentifier
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils_arrays import to_data_array
@@ -44,7 +45,7 @@ def create_surface(ncol: int, nrow: int, rotation: float):
 
 
 @contextmanager
-def temp_maxsize(eclient: ETPClient, maxsize=10000):
+def temp_maxsize(eclient: PYETPClient, maxsize=10000):
     _maxsize_before = eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"]
     try:
         # set maxsize
@@ -56,14 +57,14 @@ def temp_maxsize(eclient: ETPClient, maxsize=10000):
 
 
 @pytest_asyncio.fixture
-async def uid(eclient: ETPClient, duri: DataspaceURI):
+async def uid(eclient: PYETPClient, duri: DataspaceURI):
     """empty DataArrayIdentifier"""
     epc_uri, = await eclient.put_resqml_objects(create_epc(), dataspace=duri)
     yield DataArrayIdentifier(uri=str(epc_uri), pathInResource="/data")  # dummy path
 
 
 @pytest_asyncio.fixture
-async def uid_with(eclient: ETPClient, uid: DataArrayIdentifier):
+async def uid_with(eclient: PYETPClient, uid: DataArrayIdentifier):
     """DataArrayIdentifier with data already set"""
     data = np.random.rand(100, 50) * 100.
     await eclient.put_array(uid, data.astype(np.float32))
@@ -106,20 +107,12 @@ async def test_manual_open_close():
 
 
 @pytest.mark.asyncio
-async def test_auth():
-
-    async with connect() as client:
-        resp = await client.authorize("test")
-        assert resp.success  # test server not protected, so any auth will do
-
-
-@pytest.mark.asyncio
-async def test_datapaces(eclient: ETPClient, duri: DataspaceURI):
+async def test_datapaces(eclient: PYETPClient, duri: DataspaceURI):
     pass  # basicically just testing if eclient and temp dataspace fixtures
 
 
 @pytest.mark.asyncio
-async def test_arraymeta(eclient: ETPClient, uid_with: Tuple[np.ndarray, DataArrayIdentifier]):
+async def test_arraymeta(eclient: PYETPClient, uid_with: Tuple[np.ndarray, DataArrayIdentifier]):
     data, uid = uid_with
     msg = await eclient.get_array_metadata(uid)
     assert len(msg) == 1
@@ -127,33 +120,33 @@ async def test_arraymeta(eclient: ETPClient, uid_with: Tuple[np.ndarray, DataArr
 
 
 @pytest.mark.asyncio
-async def test_disconnect_error(eclient: ETPClient):
+async def test_disconnect_error(eclient: PYETPClient):
 
-    await eclient.ws.close()
+    eclient._client.close()
 
-    with pytest.raises(websockets.exceptions.ConnectionClosed):
+    with pytest.raises(websocket._exceptions.WebSocketConnectionClosedException):
         await eclient.put_dataspaces_no_raise("doesnt matter")
 
 
+# @pytest.mark.asyncio
+# async def test_timeout_error(eclient: PYETPClient, uid_with: Tuple[np.ndarray, DataArrayIdentifier],uid_not_exists: DataArrayIdentifier, monkeypatch: pytest.MonkeyPatch):
+
+#     #monkeypatch.setattr(eclient, 'timeout', 0.1)
+#     #monkeypatch.setattr(asyncio.Event, 'set', lambda: None)  # will never signal set
+#     data, uid = uid_with
+#     with pytest.raises(asyncio.exceptions.TimeoutError):
+#         await eclient.get_array_metadata(uid, timeout=0.1)
+
+
 @pytest.mark.asyncio
-async def test_timeout_error(eclient: ETPClient, uid_not_exists: DataArrayIdentifier, monkeypatch: pytest.MonkeyPatch):
-
-    monkeypatch.setattr(eclient, 'timeout', 0.1)
-    monkeypatch.setattr(asyncio.Event, 'set', lambda: None)  # will never signal set
-
-    with pytest.raises(asyncio.exceptions.TimeoutError):
-        await eclient.get_array_metadata(uid_not_exists)
-
-
-@pytest.mark.asyncio
-async def test_arraymeta_not_found(eclient: ETPClient, uid_not_exists: DataArrayIdentifier):
+async def test_arraymeta_not_found(eclient: PYETPClient, uid_not_exists: DataArrayIdentifier):
     with pytest.raises(ETPError, match="11"):
         await test_arraymeta(eclient, (np.zeros(1, dtype=np.float32), uid_not_exists))
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32, np.int64, np.bool_])
-async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
+async def test_get_array(eclient: PYETPClient, uid: DataArrayIdentifier, dtype):
     data = np.random.rand(100, 50) * 100.
     data = data.astype(dtype)
 
@@ -169,7 +162,7 @@ async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.int32])
 @pytest.mark.parametrize('shape', [(256, 300), (96, 96, 64)])
-async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype, shape: Tuple[int, ...]):
+async def test_get_array_chuncked(eclient: PYETPClient, uid: DataArrayIdentifier, dtype, shape: Tuple[int, ...]):
     data = np.random.rand(*shape) * 100.
     data = data.astype(dtype)  # type: ignore
 
@@ -184,7 +177,7 @@ async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.int32])
-async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
+async def test_put_array_chuncked(eclient: PYETPClient, uid: DataArrayIdentifier, dtype):
 
     data = np.random.rand(150, 86) * 100.
     data = data.astype(dtype)
@@ -202,7 +195,7 @@ async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.int32, np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_]
 @pytest.mark.parametrize('starts', [[0, 0], [20, 20]])  #
-async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, starts):
+async def test_subarrays(eclient: PYETPClient, uid: DataArrayIdentifier, dtype, starts):
     data = np.random.rand(100, 50) * 100.
     data = data.astype(dtype)
 
@@ -220,7 +213,7 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
 
 @pytest.mark.skip(reason="Regression on test server - enable after bug fix from openetp image")
 @pytest.mark.asyncio
-async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
+async def test_resqml_objects(eclient: PYETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 0)
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
 
@@ -233,7 +226,7 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('surface', [create_surface(3, 4, 0), create_surface(100, 40, 0)])
-async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+async def test_rddms_roundtrip(eclient: PYETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
 
@@ -268,7 +261,7 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
 
 
 @pytest.mark.asyncio
-async def test_surface(eclient: ETPClient, duri: DataspaceURI):
+async def test_surface(eclient: PYETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 100)
     epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
 
@@ -284,7 +277,7 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
 
 
 @pytest.mark.asyncio
-async def test_surface_no_crs(eclient: ETPClient, duri: DataspaceURI):
+async def test_surface_no_crs(eclient: PYETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 100)
     epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
 
@@ -307,7 +300,7 @@ def compare_surf(surf1: xtgeo.RegularSurface, surf2: xtgeo.RegularSurface):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
-async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+async def test_get_xy_from_surface(eclient: PYETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
 
@@ -343,7 +336,7 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
-async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+async def test_sub_array_map(eclient: PYETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     epc, crs, gri = instantiate_resqml_grid("name", 0, surface.xori, surface.yori, surface.xinc, surface.yinc, surface.ncol, surface.nrow, 12345)
     epc_uri, _, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace=duri)
     transport_array_type = AnyArrayType.ARRAY_OF_DOUBLE

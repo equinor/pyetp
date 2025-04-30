@@ -57,6 +57,11 @@ class DataspaceURI(_DataspaceURI, _Mixin):
                 return cls.from_name(v)
         raise TypeError(f"Type {type(v)} not supported dataspace uri")
 
+    @classmethod
+    def name_from_uri(cls, v):
+        first = v.index("(") +2
+        end = v.index(")")-1
+        return v[first:end]
 
 class DataObjectURI(_DataObjectURI, _Mixin):
 

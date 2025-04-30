@@ -10,21 +10,30 @@ from types import TracebackType
 import time
 
 import numpy as np
-import websockets
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
 from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
-
+from py_etp_client.requests import _create_data_object
 import pyetp.resqml_objects as ro
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils import short_id
-
+from py_etp_client.etpconfig import ETPConfig
+from py_etp_client.etpclient import ETPClient
+from etptypes.energistics.etp.v12.protocol.store.put_data_objects import \
+    PutDataObjects
+from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import \
+    PutDataObjectsResponse
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
+    PutUninitializedDataArrayType
+from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
+    PutUninitializedDataArrays
+from time import sleep, perf_counter
 try:
     # for py >3.11, we can raise grouped exceptions
     from builtins import ExceptionGroup  # type: ignore
@@ -81,73 +90,35 @@ def get_all_etp_protocol_classes():
     return pddict
 
 
-class ETPClient(ETPConnection):
+class PYETPClient:
 
     generic_transition_table = get_all_etp_protocol_classes()
 
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: T.Union[DataspaceURI, None], timeout=10.):
-        super().__init__(connection_type=ConnectionType.CLIENT)
-        self._recv_events = {}
-        self._recv_buffer = defaultdict(lambda: list())  # type: ignore
+    def __init__(self, client: ETPClient, default_dataspace_uri: T.Union[DataspaceURI, None], timeout: int =10.):
         self._default_duri = default_dataspace_uri
-        self.ws = ws
-
         self.timeout = timeout
-        self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
-        self.__recvtask = asyncio.create_task(self.__recv__())
+        self._client = client
 
     #
     # client
     #
+    # async def send(self, body: ETPModel):
+    #     correlation_id = await self._send(body)
+    #     return await self._recv(correlation_id)
 
-    async def send(self, body: ETPModel):
-        correlation_id = await self._send(body)
-        return await self._recv(correlation_id)
-
-    async def _send(self, body: ETPModel):
-
-        msg = Message.get_object_message(
-            body, message_flags=MessageFlags.FINALPART
-        )
-        if msg == None:
-            raise TypeError(f"{type(body)} not valid etp protocol")
-
-        msg.header.message_id = self.consume_msg_id()
-        logger.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
-
-        # create future recv event
-        self._recv_events[msg.header.message_id] = asyncio.Event()
-
-        async for msg_part in msg.encode_message_generator(self.max_size, self):
-            await self.ws.send(msg_part)
-
-        return msg.header.message_id
-
-    async def _recv(self, correlation_id: int) -> ETPModel:
-        assert correlation_id in self._recv_events, "trying to recv response on non-existing message"
-
-        async with timeout(self.timeout):
-            await self._recv_events[correlation_id].wait()
-
-        # cleanup
-        bodies = self._clear_msg_on_buffer(correlation_id)
-
-        # error handling
-        errors = self._parse_error_info(bodies)
-
-        if len(errors) == 1:
-            raise ETPError.from_proto(errors.pop())
-        elif len(errors) > 1:
-            raise ExceptionGroup("Server responded with ETPErrors:", ETPError.from_protos(errors))
-
-        if len(bodies) > 1:
-            logger.warning(f"Recived {len(bodies)} messages, but only expected one")
-
-        # ok
-        return bodies[0]
+    async def send(self, body, timeout: int = None):
+        if isinstance(time,type(None)):
+            timeout = self.timeout
+        r = self._client.send_and_wait(body, timeout)
+        if hasattr(r[0].body, "error"):
+            e = next(iter(r[0].body.errors.values()))
+            raise ETPError(e.message, e.code)
+        # test
+        return r[0].body
+    
 
 
     @staticmethod
@@ -161,108 +132,53 @@ class ETPClient(ETPConnection):
                 errors.extend(body.errors.values())
         return errors
 
-    async def close(self, reason=''):
-        if self.ws.closed:
-            self.__recvtask.cancel("stopped")
-            # fast exit if already closed
-            return
+    async def close(self):
+        if self._client.closed is False:
+            self._client.close()
 
-        try:
-            await self._send(CloseSession(reason=reason))
-        finally:
-            await self.ws.close(reason=reason)
-            self.is_connected = False
-            self.__recvtask.cancel("stopped")
-
-            if len(self._recv_buffer):
-                logger.error(f"Closed connection - but had stuff left in buffers ({len(self._recv_buffer)})")
-                # logger.warning(self._recv_buffer)  # may contain data so lets not flood logs
-
-    #
-    #
-    #
-
-    def _clear_msg_on_buffer(self, correlation_id: int):
-        del self._recv_events[correlation_id]
-        return self._recv_buffer.pop(correlation_id)
-
-    def _add_msg_to_buffer(self, msg: Message):
-        self._recv_buffer[msg.header.correlation_id].append(msg.body)
-
-        # NOTE: should we add task to autoclear buffer message if never waited on ?
-        if msg.is_final_msg():
-            self._recv_events[msg.header.correlation_id].set()  # set response on send event
-
-    async def __recv__(self):
-
-        logger.debug(f"starting recv loop")
-
-        while (True):
-            msg_data = await self.ws.recv()
-            msg = Message.decode_binary_message(
-                T.cast(bytes, msg_data), ETPClient.generic_transition_table
-            )
-
-            if msg is None:
-                logger.error(f"Could not parse {msg_data}")
-                continue
-
-            logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
-            self._add_msg_to_buffer(msg)
 
     #
     # session related
     #
 
-    async def request_session(self):
-        # Handshake protocol
+    # async def request_session(self):
+    #     # Handshake protocol
 
-        msg = await self.send(
-            RequestSession(
-                applicationName=SETTINGS.application_name,
-                applicationVersion=SETTINGS.application_version,
-                clientInstanceId=uuid.uuid4(),  # type: ignore
-                requestedProtocols=[
-                    SupportedProtocol(protocol=p.value, protocolVersion=Version(major=1, minor=2), role='store')
-                    for p in [CommunicationProtocol.DISCOVERY, CommunicationProtocol.STORE, CommunicationProtocol.DATA_ARRAY, CommunicationProtocol.DATASPACE]
-                ],
-                supportedDataObjects=[SupportedDataObject(qualifiedType="resqml20.*"), SupportedDataObject(qualifiedType="eml20.*")],
-                currentDateTime=self.timestamp,
-                earliestRetainedChangeTime=0,
-                endpointCapabilities=dict(
-                    MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size)
-                )
-            )
-        )
-        assert msg and isinstance(msg, OpenSession)
+    #     msg = await self.send(
+    #         RequestSession(
+    #             applicationName=SETTINGS.application_name,
+    #             applicationVersion=SETTINGS.application_version,
+    #             clientInstanceId=uuid.uuid4(),  # type: ignore
+    #             requestedProtocols=[
+    #                 SupportedProtocol(protocol=p.value, protocolVersion=Version(major=1, minor=2), role='store')
+    #                 for p in [CommunicationProtocol.DISCOVERY, CommunicationProtocol.STORE, CommunicationProtocol.DATA_ARRAY, CommunicationProtocol.DATASPACE]
+    #             ],
+    #             supportedDataObjects=[SupportedDataObject(qualifiedType="resqml20.*"), SupportedDataObject(qualifiedType="eml20.*")],
+    #             currentDateTime=self.timestamp,
+    #             earliestRetainedChangeTime=0,
+    #             endpointCapabilities=dict(
+    #                 MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size)
+    #             )
+    #         )
+    #     )
+    #     assert msg and isinstance(msg, OpenSession)
 
-        self.is_connected = True
+    #     self.is_connected = True
 
-        # ignore this endpoint
-        _ = msg.endpoint_capabilities.pop('MessageQueueDepth', None)
-        self.client_info.negotiate(msg)
+    #     # ignore this endpoint
+    #     _ = msg.endpoint_capabilities.pop('MessageQueueDepth', None)
+    #     self.client_info.negotiate(msg)
 
-        return self
+    #     return self
 
-    async def authorize(self, authorization: str, supplemental_authorization: T.Mapping[str, str] = {}):
+    @property
+    def is_connected(self):
+        return self._client.is_connected()
 
-        from etptypes.energistics.etp.v12.protocol.core.authorize import \
-            Authorize
-        from etptypes.energistics.etp.v12.protocol.core.authorize_response import \
-            AuthorizeResponse
-
-        msg = await self.send(
-            Authorize(
-                authorization=authorization,
-                supplementalAuthorization=supplemental_authorization
-            )
-        )
-        assert msg and isinstance(msg, AuthorizeResponse)
-
-        return msg
-
-    #
-
+    @property
+    def client_info(self):
+        return self._client.spec.client_info
+    
     @property
     def max_size(self):
         return self.client_info.getCapability("MaxWebSocketMessagePayloadSize")
@@ -298,110 +214,115 @@ class ETPClient(ETPConnection):
     # dataspace
     #
 
-    async def put_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
-        from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
-            PutDataspaces
-        from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
-            PutDataspacesResponse
+    async def put_dataspaces(self, *names: str):
+        return self._client.put_dataspace([i for i in names])
+        # from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
+        #     PutDataspaces
+        # from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
+        #     PutDataspacesResponse
 
-        _uris = list(map(DataspaceURI.from_any, uris))
+        # _uris = list(map(DataspaceURI.from_any, uris))
 
-        time = self.timestamp
-        response = await self.send(
-            PutDataspaces(dataspaces={
-                d.raw_uri: Dataspace(uri=d.raw_uri, storeCreated=time, storeLastWrite=time, path=d.dataspace)
-                for d in _uris
-            })
-        )
-        assert isinstance(response, PutDataspacesResponse), "Expected PutDataspacesResponse"
+        # time = self.timestamp
+        # response = await self.send(
+        #     PutDataspaces(dataspaces={
+        #         d.raw_uri: Dataspace(uri=d.raw_uri, storeCreated=time, storeLastWrite=time, path=d.dataspace)
+        #         for d in _uris
+        #     })
+        # )
+        # assert isinstance(response, PutDataspacesResponse), "Expected PutDataspacesResponse"
 
-        assert len(response.success) == len(uris), f"expected {len(uris)} success's"
+        # assert len(response.success) == len(uris), f"expected {len(uris)} success's"
 
-        return response.success
+        # return response.success
 
-    async def put_dataspaces_no_raise(self, *uris: T.Union[DataspaceURI, str]):
+    async def put_dataspaces_no_raise(self, *uris: str):
         try:
             return await self.put_dataspaces(*uris)
         except ETPError:
             pass
 
-    async def delete_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
-        from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
-            DeleteDataspaces
-        from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
-            DeleteDataspacesResponse
+    async def delete_dataspaces(self, *names: str):
+        return self._client.delete_dataspace([i for i in names])
+        # from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
+        #     DeleteDataspaces
+        # from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
+        #     DeleteDataspacesResponse
 
-        _uris = list(map(str, uris))
+        # _uris = list(map(str, uris))
 
-        response = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
-        assert isinstance(response, DeleteDataspacesResponse), "Expected DeleteDataspacesResponse"
-        return response.success
+        # response = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
+        # assert isinstance(response, DeleteDataspacesResponse), "Expected DeleteDataspacesResponse"
+        # return response.success
 
     #
     # data objects
     #
 
-    async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
-
-        from etptypes.energistics.etp.v12.protocol.store.get_data_objects import \
-            GetDataObjects
-        from etptypes.energistics.etp.v12.protocol.store.get_data_objects_response import \
-            GetDataObjectsResponse
-
-        _uris = list(map(str, uris))
-
-        msg = await self.send(
-            GetDataObjects(uris=dict(zip(_uris, _uris)))
-        )
-        assert isinstance(msg, GetDataObjectsResponse), "Expected dataobjectsresponse"
-        assert len(msg.data_objects) == len(_uris), "Here we assume that all three objects fit in a single record"
-
-        return [msg.data_objects[u] for u in _uris]
-
-    async def put_data_objects(self, *objs: DataObject):
-
-        from etptypes.energistics.etp.v12.protocol.store.put_data_objects import \
-            PutDataObjects
-        from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import \
-            PutDataObjectsResponse
-
-        response = await self.send(
-            PutDataObjects(dataObjects={f"{p.resource.name}_{short_id()}": p for p in objs})
-        )
-        # logger.info(f"objects {response=:}")
-        assert isinstance(response, PutDataObjectsResponse), "Expected PutDataObjectsResponse"
-        # assert len(response.success) == len(objs)  # might be 0 if objects exists
-
-        return response.success
-
     async def get_resqml_objects(self, *uris: T.Union[DataObjectURI, str]) -> T.List[ro.AbstractObject]:
-        data_objects = await self.get_data_objects(*uris)
+        uris_parsed = []
+        for i in uris:
+            if isinstance(i,DataObjectURI):
+                uris_parsed.append(i.raw_uri)
+            else:
+                uris_parsed.append(i)
+        data_objects = await self._client.get_data_object(uris_parsed)
         return utils_xml.parse_resqml_objects(data_objects)
+    
+    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: str):
+        if isinstance(dataspace, DataspaceURI):
+            dataspace = dataspace.raw_uri
+        dataspace = DataspaceURI.name_from_uri(dataspace)
+        uri = []
+        do_dict = {}
+        for o in objs:
+            obj =_create_data_object(obj=o, dataspace_name=dataspace, format="xml")
+            do_dict[str(len(do_dict))] = obj
+            uri.append(obj.resource.uri)
+        pdor_msg_list = self._client.send_and_wait(PutDataObjects(data_objects=do_dict))
+        # for k,v in response.items():
+        #     print(k,v,"put_resqml")
+        return uri
+        # from etptypes.energistics.etp.v12.datatypes.object.resource import \
+        #     Resource
+        # time = self.timestamp
+        # duri = self.get_dataspace_or_default_uri(dataspace)
+        # uris = [DataObjectURI.from_obj(duri, obj) for obj in objs]
+        # dobjs = [DataObject(
+        #     format="xml",
+        #     data=utils_xml.resqml_to_xml(obj),
+        #     resource=Resource(
+        #         uri=uri.raw_uri,
+        #         name=obj.citation.title if obj.citation else obj.__class__.__name__,
+        #         lastChanged=time,
+        #         storeCreated=time,
+        #         storeLastWrite=time,
+        #         activeStatus="Inactive",  # type: ignore
+        #         sourceCount=None,
+        #         targetCount=None
+        #     )
+        # ) for uri, obj in zip(uris, objs)]
+        # do_dict = {}
+        # for o in dobjs:
+        #     do_dict[str(len(do_dict))] = o
+        # pdor_msg_list = self._client.send_and_wait(PutDataObjects(data_objects=do_dict))
 
-    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: T.Union[DataspaceURI, str, None] = None):
-        from etptypes.energistics.etp.v12.datatypes.object.resource import \
-            Resource
-        time = self.timestamp
-        duri = self.get_dataspace_or_default_uri(dataspace)
-        uris = [DataObjectURI.from_obj(duri, obj) for obj in objs]
-        dobjs = [DataObject(
-            format="xml",
-            data=utils_xml.resqml_to_xml(obj),
-            resource=Resource(
-                uri=uri.raw_uri,
-                name=obj.citation.title if obj.citation else obj.__class__.__name__,
-                lastChanged=time,
-                storeCreated=time,
-                storeLastWrite=time,
-                activeStatus="Inactive",  # type: ignore
-                sourceCount=None,
-                targetCount=None
-            )
-        ) for uri, obj in zip(uris, objs)]
-
-        response = await self.put_data_objects(*dobjs)
-        return uris
-
+        # res = {}
+        # for pdor in pdor_msg_list:
+        #     if isinstance(pdor.body, PutDataObjectsResponse):
+        #         res.update(pdor.body.success)
+        #     else:
+        #         logging.error("Error: %s", pdor.body)
+        # return res
+    
+        # response = await self.put_data_objects(*dobjs,dataspace=dataspace)
+        # return uris
+    
+    # async def put_data_objects(self, *objs: DataObject, dataspace: str = ""):
+    #     assert len(dataspace) >
+    #     response = await self._client.put_data_object_obj([i for i in objs], dataspace_name= dataspace)
+    #     return response.success
+    
     async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], pruneContainedObjects=False):
         from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import \
             DeleteDataObjects
@@ -880,18 +801,19 @@ class ETPClient(ETPConnection):
     # array
     #
 
-    async def get_array_metadata(self, *uids: DataArrayIdentifier):
+    async def get_array_metadata(self, *uids: DataArrayIdentifier, timeout = None):
         from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata import \
             GetDataArrayMetadata
         from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata_response import \
             GetDataArrayMetadataResponse
 
         response = await self.send(
-            GetDataArrayMetadata(dataArrays={i.path_in_resource: i for i in uids})
+            GetDataArrayMetadata(dataArrays={i.path_in_resource: i for i in uids}, timeout=timeout)
         )
-        assert isinstance(response, GetDataArrayMetadataResponse)
+        #assert isinstance(response, GetDataArrayMetadataResponse)
 
         if len(response.array_metadata) != len(uids):
+            
             raise ETPError(f'Not all uids found ({uids})', 11)
 
         # return in same order as arguments
@@ -932,7 +854,6 @@ class ETPClient(ETPConnection):
             PutDataArrays(
                 dataArrays={uid.path_in_resource: PutDataArraysType(uid=uid, array=utils_arrays.to_data_array(data))})
         )
-        assert isinstance(response, PutDataArraysResponse), "Expected PutDataArraysResponse"
         assert len(response.success) == 1, "expected one success from put_array"
         return response.success
 
@@ -993,8 +914,6 @@ class ETPClient(ETPConnection):
         response = await self.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
-        assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
-
         assert len(response.success) == 1, "expected one success"
         return response.success
 
@@ -1014,7 +933,6 @@ class ETPClient(ETPConnection):
 
         all_ranges = [range(s // block_size + 1) for s in shape]
         indexes = np.array(np.meshgrid(*all_ranges)).T.reshape(-1, len(shape))
-
         for ijk in indexes:
             starts = ijk * block_size
             if offset != 0:
@@ -1026,7 +944,6 @@ class ETPClient(ETPConnection):
             if any(counts == 0):
                 continue
             yield starts, counts
-
     async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset: int = 0, total_count: T.Union[int, None] = None):
 
         metadata = (await self.get_array_metadata(uid))[0]
@@ -1049,12 +966,13 @@ class ETPClient(ETPConnection):
             slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
             return
-
-        r = await asyncio.gather(*[
+        ds = DataspaceURI.name_from_uri(uid.uri)
+        #self._client.start_transaction(dataspace=ds, readonly=True)
+        await asyncio.gather(*[
             populate(starts, counts)
             for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
         ])
-
+        #self._client.commit_transaction()
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
@@ -1071,12 +989,7 @@ class ETPClient(ETPConnection):
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
-        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
-            PutUninitializedDataArrayType
-        from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
-            PutUninitializedDataArrays
-        from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays_response import \
-            PutUninitializedDataArraysResponse
+
 
         payload = PutUninitializedDataArrayType(
             uid=uid,
@@ -1091,9 +1004,9 @@ class ETPClient(ETPConnection):
         response = await self.send(
             PutUninitializedDataArrays(dataArrays={uid.path_in_resource: payload})
         )
-        assert isinstance(response, PutUninitializedDataArraysResponse), "Expected PutUninitializedDataArraysResponse"
         assert len(response.success) == 1, "expected one success"
         return response.success
+    
 
 
 # define an asynchronous context manager
@@ -1123,25 +1036,49 @@ class connect:
         if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
 
-        ws = await websockets.connect(
-            self.server_url,
-            subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            extra_headers=headers,
-            max_size=MAXPAYLOADSIZE,
-            ping_timeout=self.timeout,
-            open_timeout=None,
+        # ws = await websockets.connect(
+        #     self.server_url,
+        #     subprotocols=[PYETPClient.SUB_PROTOCOL],  # type: ignore
+        #     extra_headers=headers,
+        #     max_size=MAXPAYLOADSIZE,
+        #     ping_timeout=self.timeout,
+        #     open_timeout=None,
+        # )
+
+        #self.client = PYETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
+
+        etpconfig = ETPConfig()
+        etpconfig.PORT = str(SETTINGS.port)
+        etpconfig.URL = SETTINGS.etp_url
+        if "Authorization" in headers:
+            etpconfig.ACCESS_TOKEN = headers["Authorization"]
+
+        etpclient = ETPClient(
+            url=etpconfig.URL,
+            spec=ETPConnection(connection_type=ConnectionType.CLIENT),
+            access_token=etpconfig.ACCESS_TOKEN,
+            headers=etpconfig.ADDITIONAL_HEADERS,
+            verify=False,
         )
+        etpclient.start()
 
-        self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
-
-        try:
-            await self.client.request_session()
-        except Exception as e:
-            # aexit not called if raised in aenter - so manual cleanup here needed
-            await self.client.close("Failed to request session")
-            raise e
-
+        start_time = perf_counter()
+        while not etpclient.is_connected() and perf_counter() - start_time < 5:
+            sleep(0.25)
+        if not etpclient.is_connected():
+            logging.info("The ETP session could not be established in 5 seconds.")
+        else:
+            logging.info("Now connected to ETP Server")
+        self.client = PYETPClient(etpclient, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         return self.client
+        # try:
+        #     await self.client.request_session()
+        # except Exception as e:
+        #     # aexit not called if raised in aenter - so manual cleanup here needed
+        #     await self.client.close("Failed to request session")
+        #     raise e
+
+        # return self.client
 
     # exit the async context manager
     async def __aexit__(self, exc_type, exc: Exception, tb: TracebackType):

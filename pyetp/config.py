@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import AnyUrl, BaseSettings, Field, RedisDsn, SecretStr
 
 from pyetp.uri import DataspaceURI
-
+from py_etp_client.etpconfig import ETPConfig
 
 class WebSocketUrl(AnyUrl):
     allowed_schemes = {'wss', 'ws'}
@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     application_version: str = Field(default='0.0.1')
 
     dataspace: str = Field(default='demo/pss-data-gateway')
+    port: int = 443
     etp_url: WebSocketUrl = Field(default='wss://host.com')
     etp_timeout: float = Field(default=60., description="Timeout in seconds")
     data_partition: Optional[str] = None
@@ -32,3 +33,4 @@ class Settings(BaseSettings):
 
 
 SETTINGS = Settings()
+

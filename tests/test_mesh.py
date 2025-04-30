@@ -4,14 +4,14 @@ import resqpy.model as rq
 import resqpy.property as rqp
 import resqpy.unstructured as rug
 
-from pyetp.client import MAXPAYLOADSIZE, ETPClient, ETPError
+from pyetp.client import MAXPAYLOADSIZE, PYETPClient, ETPError
 from pyetp.uri import DataspaceURI
 from pyetp.resqml_objects import ContinuousProperty, DiscreteProperty
 
 
 @pytest.mark.parametrize('input_mesh_file', ['./data/model_hexa_0.epc','./data/model_hexa_ts_0_new.epc'])
 @pytest.mark.asyncio
-async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str):
+async def test_mesh(eclient: PYETPClient, duri: DataspaceURI, input_mesh_file: str):
     model = rq.Model(input_mesh_file)
     assert model is not None
 

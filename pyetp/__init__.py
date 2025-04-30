@@ -1,4 +1,4 @@
 
 from . import client, types
-from .client import ETPClient, ETPError, connect
+from .client import PYETPClient, ETPError, connect
 from .uri import DataObjectURI, DataspaceURI

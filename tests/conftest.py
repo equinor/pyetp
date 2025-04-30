@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 
 from pyetp.client import  connect
-from pyetp.client import  ETPClient
+from pyetp.client import  PYETPClient
 from pyetp.config import SETTINGS
 from pyetp.uri import  DataspaceURI
 
@@ -32,20 +32,20 @@ async def eclient():
 
 
 @pytest_asyncio.fixture
-async def default_duri(eclient: ETPClient):
-    await eclient.put_dataspaces_no_raise(SETTINGS.duri)
+async def default_duri(eclient: PYETPClient):
+    await eclient.put_dataspaces_no_raise(SETTINGS.dataspace)
     yield SETTINGS.duri
-    await eclient.delete_dataspaces(SETTINGS.duri)
+    await eclient.delete_dataspaces(SETTINGS.dataspace)
 
 
 
 @pytest_asyncio.fixture
-async def duri(eclient: ETPClient):
+async def duri(eclient: PYETPClient):
     try:
         uri = DataspaceURI.from_name('test/test')
-        resp = await eclient.put_dataspaces_no_raise(uri)
+        resp = await eclient.put_dataspaces_no_raise('test/test')
         # assert len(resp) == 1, "created one dataspace"
         yield uri
     finally:
-        resp = await eclient.delete_dataspaces(uri)
+        resp = await eclient.delete_dataspaces('test/test')
         assert len(resp) == 1, "should cleanup our test dataspace"
