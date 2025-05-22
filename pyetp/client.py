@@ -3,57 +3,40 @@ import datetime
 import logging
 import sys
 import typing as T
-import uuid
-from collections import defaultdict
-from contextlib import asynccontextmanager
 from types import TracebackType
 import time
 
 import numpy as np
-from etpproto.connection import (CommunicationProtocol, ConnectionType,
-                                 ETPConnection)
-from etpproto.messages import Message, MessageFlags
+from etpproto.connection import ConnectionType, ETPConnection
 from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
 from py_etp_client.requests import _create_data_object
-import pyetp.resqml_objects as ro
+import energyml.resqml.v2_0_1.resqmlv2 as ro
+from energyml.eml.v2_3.commonv2 import AbstractObject
+#import pyetp.resqml_objects as ro
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils import short_id
+
 from py_etp_client.etpconfig import ETPConfig
 from py_etp_client.etpclient import ETPClient
 from etptypes.energistics.etp.v12.protocol.store.put_data_objects import \
     PutDataObjects
-from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import \
-    PutDataObjectsResponse
 from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
     PutUninitializedDataArrayType
 from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
     PutUninitializedDataArrays
+
 from time import sleep, perf_counter
+from asyncio import timeout
 try:
     # for py >3.11, we can raise grouped exceptions
     from builtins import ExceptionGroup  # type: ignore
 except ImportError:
     def ExceptionGroup(msg, errors):
         return errors[0]
-
-try:
-    from asyncio import timeout
-except ImportError:
-    import async_timeout
-
-    @asynccontextmanager
-    async def timeout(delay: T.Optional[float]) -> T.Any:
-        try:
-            async with async_timeout.timeout(delay):
-                yield None
-        except asyncio.CancelledError as e:
-            raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -110,10 +93,13 @@ class PYETPClient:
     #     return await self._recv(correlation_id)
 
     async def send(self, body, timeout: int = None):
-        if isinstance(time,type(None)):
+        if self.is_connected is False:
+            self._client.start()
+        if isinstance(timeout,type(None)):
             timeout = self.timeout
         r = self._client.send_and_wait(body, timeout)
         if hasattr(r[0].body, "error"):
+            print(r[0])
             e = next(iter(r[0].body.errors.values()))
             raise ETPError(e.message, e.code)
         # test
@@ -259,7 +245,7 @@ class PYETPClient:
     # data objects
     #
 
-    async def get_resqml_objects(self, *uris: T.Union[DataObjectURI, str]) -> T.List[ro.AbstractObject]:
+    async def get_resqml_objects(self, *uris: T.Union[DataObjectURI, str]) -> T.List[AbstractObject]:
         uris_parsed = []
         for i in uris:
             if isinstance(i,DataObjectURI):
@@ -269,7 +255,7 @@ class PYETPClient:
         data_objects = await self._client.get_data_object(uris_parsed)
         return utils_xml.parse_resqml_objects(data_objects)
     
-    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: str):
+    async def put_resqml_objects(self, *objs: AbstractObject, dataspace: str):
         if isinstance(dataspace, DataspaceURI):
             dataspace = dataspace.raw_uri
         dataspace = DataspaceURI.name_from_uri(dataspace)
@@ -346,7 +332,7 @@ class PYETPClient:
     # xtgeo
     #
     @staticmethod
-    def check_inside(x: float, y: float, patch: ro.Grid2dPatch):
+    def check_inside(x: float, y: float, patch: ro.Grid2DPatch):
         xori = patch.geometry.points.supporting_geometry.origin.coordinate1
         yori = patch.geometry.points.supporting_geometry.origin.coordinate2
         xmax = xori + (patch.geometry.points.supporting_geometry.offset[0].spacing.value*patch.geometry.points.supporting_geometry.offset[0].spacing.count)
@@ -362,7 +348,7 @@ class PYETPClient:
         return True
 
     @staticmethod
-    def find_closest_index(x, y, patch: ro.Grid2dPatch):
+    def find_closest_index(x, y, patch: ro.Grid2DPatch):
         x_ind = (x-patch.geometry.points.supporting_geometry.origin.coordinate1)/patch.geometry.points.supporting_geometry.offset[0].spacing.value
         y_ind = (y-patch.geometry.points.supporting_geometry.origin.coordinate2)/patch.geometry.points.supporting_geometry.offset[1].spacing.value
         return round(x_ind), round(y_ind)
@@ -462,9 +448,20 @@ class PYETPClient:
     async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: T.Union[DataspaceURI, str, None] = None):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
-
+        
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
-        epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
+
+        self.start_transaction('psscloud/Demo', False)
+        epc_uri, = await self.put_resqml_objects(epc, dataspace=dataspace)
+        
+        crs_uri, = await self.put_resqml_objects(crs, dataspace=dataspace)
+        self.commit_transaction()
+        print(crs_uri)
+        gri_uri, = await self.put_resqml_objects(gri, dataspace=dataspace)
+        
+        #epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
+        #self.commit_transaction()
+        self.start_transaction('psscloud/Demo', False)
         response = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -472,7 +469,7 @@ class PYETPClient:
             ),
             surface.values.filled(np.nan).astype(np.float32)
         )
-
+        self.commit_transaction()
         return epc_uri, crs_uri, gri_uri
 
     #
@@ -744,7 +741,7 @@ class PYETPClient:
             )
         return points
 
-    async def get_epc_property_surface_slice_node(self, epc_uri: T.Union[DataObjectURI, str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int):
+    async def get_epc_property_surface_slice_node(self, epc_uri: T.Union[DataObjectURI, str], cprop0: AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int):
         # indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
         indexing_array = np.arange(node_index, points.shape[0], n_node_per_pos, dtype=np.int32)
         results = points[indexing_array, :]
@@ -756,7 +753,7 @@ class PYETPClient:
         results[:, 2] = arr
         return results
 
-    async def get_epc_property_surface_slice_cell(self, epc_uri: T.Union[DataObjectURI, str], cprop0: ro.AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int, get_cell_pos=True):
+    async def get_epc_property_surface_slice_cell(self, epc_uri: T.Union[DataObjectURI, str], cprop0: AbstractObject, points: np.ndarray, node_index: int, n_node_per_pos: int, get_cell_pos=True):
         m, = await self.get_array_metadata(DataArrayIdentifier(
                     uri=str(epc_uri), pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,))
         n_cells = m.dimensions[0]
@@ -818,13 +815,32 @@ class PYETPClient:
 
         # return in same order as arguments
         return [response.array_metadata[i.path_in_resource] for i in uids]
-
+        
+    def start_transaction(self, dataspace: str, readOnly = True) -> str:
+        if isinstance(self._client.active_transaction, type(None)):
+            self._client.start_transaction(dataspace=dataspace, readonly=readOnly)
+            if isinstance(self._client.active_transaction, type(None)):
+                raise Exception("Failed to start transaction")
+            return self._client.active_transaction
+        else:
+            raise Exception(f"Existing transaction {self._client.active_transaction}")
+    def rollback_transaction(self):
+        r = self._client.rollback_transaction()
+        if r is False:
+            raise Exception(f"Failed to rollback transaction {self._client.active_transaction}")
+        return r
+    
+    def commit_transaction(self):
+        r = self._client.commit_transaction()
+        if r is False:
+            raise Exception(f"Failed to commit transaction {self._client.active_transaction}")
+        return r
+    
     async def get_array(self, uid: DataArrayIdentifier):
         from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays import \
             GetDataArrays
         from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays_response import \
             GetDataArraysResponse
-
         # Check if we can upload the full array in one go.
         meta, = await self.get_array_metadata(uid)
         if utils_arrays.get_nbytes(meta) > self.max_array_size:
@@ -845,7 +861,11 @@ class PYETPClient:
             PutDataArrays
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays_response import \
             PutDataArraysResponse
-
+        # child_transaction = False
+        # if isinstance(self._client.active_transaction, type(None)):
+        #     ds = DataspaceURI.name_from_uri(uid.uri)
+        #     self._client.start_transaction(dataspace=ds, readonly=False)
+        #     child_transaction = True
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
             return await self._put_array_chuncked(uid, data)
@@ -854,6 +874,8 @@ class PYETPClient:
             PutDataArrays(
                 dataArrays={uid.path_in_resource: PutDataArraysType(uid=uid, array=utils_arrays.to_data_array(data))})
         )
+        # if child_transaction:
+        #     self._client.commit_transaction()
         assert len(response.success) == 1, "expected one success from put_array"
         return response.success
 
@@ -883,22 +905,18 @@ class PYETPClient:
         arrays = list(response.data_subarrays.values())
         return utils_arrays.to_numpy(arrays[0])
 
-    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]], put_uninitialized=False):
+    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]]):
         from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
             PutDataSubarraysType
         from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
             PutDataSubarrays
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
-            PutDataSubarraysResponse
+
 
         # starts [start_X, starts_Y]
         # counts [count_X, count_Y]
         starts = np.array(starts).astype(np.int64) # len = 2 [x_start_index, y_start_index]
         counts = np.array(counts).astype(np.int64) # len = 2
         ends = starts + counts # len = 2
-        if put_uninitialized:
-            transport_array_type = utils_arrays.get_transport(data.dtype)
-            await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
         dataarray = utils_arrays.to_data_array(data[slices])
@@ -914,6 +932,7 @@ class PYETPClient:
         response = await self.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
+        print("ok subarray")
         assert len(response.success) == 1, "expected one success"
         return response.success
 
@@ -966,17 +985,14 @@ class PYETPClient:
             slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
             return
-        ds = DataspaceURI.name_from_uri(uid.uri)
-        #self._client.start_transaction(dataspace=ds, readonly=True)
         await asyncio.gather(*[
             populate(starts, counts)
             for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
         ])
-        #self._client.commit_transaction()
+
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
-
         transport_array_type = utils_arrays.get_transport(data.dtype)
         await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
         params = []
@@ -985,7 +1001,6 @@ class PYETPClient:
             params.append([starts, counts])
             coro.append(self.put_subarray(uid, data, starts, counts))
         r = await asyncio.gather(*coro)
-
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
@@ -1004,6 +1019,7 @@ class PYETPClient:
         response = await self.send(
             PutUninitializedDataArrays(dataArrays={uid.path_in_resource: payload})
         )
+        print(response)
         assert len(response.success) == 1, "expected one success"
         return response.success
     
@@ -1029,10 +1045,11 @@ class connect:
     async def __aenter__(self):
 
         headers = {}
+        auth = None
         if isinstance(self.authorization, str):
-            headers["Authorization"] = self.authorization
+            auth = self.authorization
         elif isinstance(self.authorization, SecretStr):
-            headers["Authorization"] = self.authorization.get_secret_value()
+            auth = self.authorization.get_secret_value()
         if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
 
@@ -1050,8 +1067,9 @@ class connect:
         etpconfig = ETPConfig()
         etpconfig.PORT = str(SETTINGS.port)
         etpconfig.URL = SETTINGS.etp_url
-        if "Authorization" in headers:
-            etpconfig.ACCESS_TOKEN = headers["Authorization"]
+        etpconfig.ADDITIONAL_HEADERS = headers
+        if isinstance(auth, str):
+            etpconfig.ACCESS_TOKEN = auth
 
         etpclient = ETPClient(
             url=etpconfig.URL,
@@ -1069,6 +1087,7 @@ class connect:
             logging.info("The ETP session could not be established in 5 seconds.")
         else:
             logging.info("Now connected to ETP Server")
+
         self.client = PYETPClient(etpclient, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
         return self.client
         # try:

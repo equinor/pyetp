@@ -10,11 +10,12 @@ from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime
 
-import pyetp.resqml_objects as ro
+import energyml.resqml.v2_0_1.resqmlv2 as ro
+from energyml.eml.v2_3.commonv2 import AbstractObject
+
 from pyetp.config import SETTINGS
 from pyetp.types import DataObject
-from energyml.resqml.v2_0_1.resqmlv2 import LocalDepth3DCrs, PlaneAngleMeasure, PlaneAngleUom, AxisOrder2D, LengthUom, AbstractVerticalCrs, Grid2DRepresentation, Grid2DPatch, PointGeometry, LocalPropertyKind, DataObjectReference, Point3DZvalueArray, Point3DLatticeArray, Point3D, Point3DOffset, DoubleConstantArray, DoubleHdf5Array, Hdf5Dataset, ResqmlUom, TimeIndex, PropertyKind, StandardPropertyKind, ResqmlPropertyKind, PatchOfValues, IntegerHdf5Array, ContinuousProperty, Facet, PropertyKindFacet, DiscreteProperty, Timestamp, TimeSeries, UnstructuredGridGeometry
-from energyml.eml.v2_0.commonv2 import ProjectedCrsEpsgCode, EpcExternalPartReference, Citation, ThermalInsulanceUom
+from energyml.eml.v2_0.commonv2 import ProjectedCrsEpsgCode, VerticalCrsEpsgCode, EpcExternalPartReference, Citation, ThermalInsulanceUom
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -22,10 +23,10 @@ if T.TYPE_CHECKING:
     from xtgeo import RegularSurface
 
 
-schema_version = "2.0"
+schema_version = "2.0.1"
 
 
-def get_data_object_type(obj: ro.AbstractObject):
+def get_data_object_type(obj: AbstractObject):
     return obj.__class__.__name__
 
 
@@ -47,7 +48,7 @@ def parse_resqml_objects(data_objects: T.List[DataObject]):
     ]
 
 
-def resqml_to_xml(obj: ro.AbstractObject):
+def resqml_to_xml(obj: AbstractObject):
     serializer = XmlSerializer(config=SerializerConfig())
     return str.encode(serializer.render(obj))
 
@@ -69,13 +70,13 @@ def create_common_citation(title: str):
 
 
 def create_common_crs(title: str, projected_epsg: int, rotation: float = 0.0):
-    return LocalDepth3DCrs(citation=create_common_citation(f"CRS for {title}"), schema_version=schema_version, uuid=str(uuid4()), xoffset=0.0,
-                           yoffset=0.0, zoffset=0.0, areal_rotation=PlaneAngleMeasure(value=0, uom=PlaneAngleUom.DEGA),
-                           projected_axis_order=AxisOrder2D.EASTING_NORTHING,
-                           projected_uom=LengthUom.M,
-                           vertical_uom=LengthUom.M,
+    return ro.LocalDepth3DCrs(citation=create_common_citation(f"CRS for {title}"), schema_version=schema_version, uuid=str(uuid4()), xoffset=0.0,
+                           yoffset=0.0, zoffset=0.0, areal_rotation=ro.PlaneAngleMeasure(value=0, uom=ro.PlaneAngleUom.DEGA),
+                           projected_axis_order=ro.AxisOrder2D.EASTING_NORTHING,
+                           projected_uom=ro.LengthUom.M,
+                           vertical_uom=ro.LengthUom.M,
                            zincreasing_downward=True,
-                           vertical_crs=AbstractVerticalCrs(),
+                           vertical_crs=VerticalCrsEpsgCode(projected_epsg),
                            projected_crs=ProjectedCrsEpsgCode(projected_epsg))
     # return ro.LocalDepth3dCrs(
     #     citation=create_common_citation(f"CRS for {title}"),
@@ -105,7 +106,7 @@ def create_common_crs(title: str, projected_epsg: int, rotation: float = 0.0):
     # )
 
 
-def create_epc(schema_version="2.0"):
+def create_epc():
     return EpcExternalPartReference(citation=create_common_citation("Hdf Proxy"), schema_version=schema_version, uuid=str(uuid4()), mime_type="application/x-hdf5")
     # return ro.EpcExternalPartReference(
     #     citation=create_common_citation("Hdf Proxy"),
@@ -137,10 +138,12 @@ def instantiate_resqml_grid(name: str, rotation: float, x0: float, y0: float, dx
 
     epc = create_epc()
     crs = create_common_crs(name, epsg, rotation)
-    gri = Grid2DRepresentation(citation=create_common_citation(name),
+    print(f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}")
+    print(crs.uuid)
+    gri = ro.Grid2DRepresentation(citation=create_common_citation(name),
                                uuid=(grid_uuid := str(uuid4())),
                                schema_version=schema_version,
-                               grid2d_patch=Grid2DPatch(
+                               grid2d_patch=ro.Grid2DPatch(
                                    # TODO: Perhaps we can use this for tiling?
                                    patch_index=0,
         # NumPy-arrays are C-ordered, meaning that the last index is
@@ -150,50 +153,51 @@ def instantiate_resqml_grid(name: str, rotation: float, x0: float, y0: float, dx
         # changing axis (as surf.values.shape == (surf.ncol, surf.nrow))
         fastest_axis_count=ny,
         slowest_axis_count=nx,
-        geometry=PointGeometry(
-            local_crs=DataObjectReference(
+
+        geometry=ro.PointGeometry(
+            local_crs=ro.DataObjectReference(
                 content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}",
                 title=crs.citation.title,
                 uuid=crs.uuid
             ),
-            points=Point3DZvalueArray(
-                supporting_geometry=Point3DLatticeArray(
-                    origin=Point3D(
+            points=ro.Point3DZvalueArray(
+                supporting_geometry=ro.Point3DLatticeArray(
+                    origin=ro.Point3D(
                         coordinate1=x0,
                         coordinate2=y0,
                         coordinate3=0.0
                     ),
                     offset=[
                         # x offset
-                        Point3DOffset(
-                            offset=Point3D(
+                        ro.Point3DOffset(
+                            offset=ro.Point3D(
                                 coordinate1=1.0,
                                 coordinate2=0.0,
                                 coordinate3=0.0
                             ),
-                            spacing=DoubleConstantArray(
+                            spacing=ro.DoubleConstantArray(
                                 value=dx,
                                 count=nx-1
                             )
                         ),
                         # y offset
-                        Point3DOffset(
-                            offset=Point3D(
+                        ro.Point3DOffset(
+                            offset=ro.Point3D(
                                 coordinate1=0.0,
                                 coordinate2=1.0,
                                 coordinate3=0.0
                             ),
-                            spacing=DoubleConstantArray(
+                            spacing=ro.DoubleConstantArray(
                                 value=dy,
                                 count=ny-1
                             )
                         )
                     ]
                 ),
-                zvalues=DoubleHdf5Array(
-                    values=Hdf5Dataset(
+                zvalues=ro.DoubleHdf5Array(
+                    values=ro.Hdf5Dataset(
                         path_in_hdf_file=f"/RESQML/{grid_uuid}/zvalues",
-                        hdf_proxy=DataObjectReference(
+                        hdf_proxy=ro.DataObjectReference(
                             content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
                             title=epc.citation.title,
                             uuid=epc.uuid
@@ -290,46 +294,46 @@ def instantiate_resqml_grid(name: str, rotation: float, x0: float, y0: float, dx
 
 def uom_for_prop_title(pt: str):
     if (pt == "Age"):
-        return ResqmlUom.A_1
+        return ro.ResqmlUom.A_1
         # return ro.ResqmlUom.A_1
     if (pt == "Temperature"):
-        return ResqmlUom.DEG_C
+        return ro.ResqmlUom.DEG_C
         # return ro.ResqmlUom.DEG_C
     if (pt == "LayerID"):
-        return ResqmlUom.EUC
+        return ro.ResqmlUom.EUC
         # return ro.ResqmlUom.EUC
     if (pt == "Porosity_initial"):
-        return ResqmlUom.M3_M3
+        return ro.ResqmlUom.M3_M3
         # return ro.ResqmlUom.M3_M3
     if (pt == "Porosity_decay"):
-        return ResqmlUom.VALUE_1_M
+        return ro.ResqmlUom.VALUE_1_M
         # return ro.ResqmlUom.VALUE_1_M
     if (pt == "Density_solid"):
-        return ResqmlUom.KG_M3
+        return ro.ResqmlUom.KG_M3
         # return ro.ResqmlUom.KG_M3
     if (pt == "insulance_thermal"):
         return ThermalInsulanceUom.DELTA_K_M2_W
         # return ro.ThermalInsulanceUom.DELTA_K_M2_W
     if (pt == "Radiogenic_heat_production"):
         # return ro.ResqmlUom.U_W_M3
-        ResqmlUom.U_W_M3
+        return ro.ResqmlUom.U_W_M3
     if (pt == 'dynamic nodes') or (pt == 'points'):
         # return ro.ResqmlUom.M
-        ResqmlUom.M
+        return ro.ResqmlUom.M
     if (pt == 'thermal_conductivity'):
         # return ro.ResqmlUom.W_M_K
-        return ResqmlUom.W_M_K
+        return ro.ResqmlUom.W_M_K
     if (pt == 'Vitrinite reflectance' or pt == '%Ro'):
         # return ro.ResqmlUom.VALUE
-        return ResqmlUom.VALUE
+        return ro.ResqmlUom.VALUE
     if ("Expelled" in pt):
         # return ro.ResqmlUom.KG_M3
-        return ResqmlUom.KG_M3
+        return ro.ResqmlUom.KG_M3
     if ("Transformation" in pt):
         # return ro.ResqmlUom.VALUE
-        return ResqmlUom.VALUE
+        return ro.ResqmlUom.VALUE
     # return ro.ResqmlUom.EUC
-    return ResqmlUom.EUC
+    return ro.ResqmlUom.EUC
 
 
 def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, min_val=0.0, max_val=1.0,
@@ -346,9 +350,9 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         #         uuid=timeseries.uuid,
         #     )
         # )
-        timeindex_ref = TimeIndex(
+        timeindex_ref = ro.TimeIndex(
             index=time_index,
-            time_series=DataObjectReference(
+            time_series=ro.DataObjectReference(
                 content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(timeseries)}",
                 title=timeseries.citation.title,
                 uuid=timeseries.uuid,
@@ -371,14 +375,14 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         #     ),
         #     uuid=str(pk_uuid),
         # )
-        propertykind0 = PropertyKind(schema_version=schema_version,
+        propertykind0 = ro.PropertyKind(schema_version=schema_version,
                                      citation=create_common_citation(
                                          f"{prop_title}"),
                                      naming_system="urn:resqml:bp.com:resqpy",
                                      is_abstract=False,
                                      representative_uom=r_uom,
-                                     parent_property_kind=StandardPropertyKind(
-                                         kind=ResqmlPropertyKind.CONTINUOUS if continuous else ResqmlPropertyKind.DISCRETE
+                                     parent_property_kind=ro.StandardPropertyKind(
+                                         kind=ro.ResqmlPropertyKind.CONTINUOUS if continuous else ro.ResqmlPropertyKind.DISCRETE
                                      ),
                                      uuid=str(pk_uuid))
     else:
@@ -410,19 +414,19 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
     #     )
     # )
 
-    pov = PatchOfValues(
-        values=DoubleHdf5Array(
-            values=Hdf5Dataset(
+    pov = ro.PatchOfValues(
+        values=ro.DoubleHdf5Array(
+            values=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                hdf_proxy=DataObjectReference(
+                hdf_proxy=ro.DataObjectReference(
                     content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
                     title=epc.citation.title,
                     uuid=str(epc.uuid),
                 )
             )
         ) if continuous else
-        IntegerHdf5Array(
-            values=Hdf5Dataset(
+        ro.IntegerHdf5Array(
+            values=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
                 hdf_proxy=ro.DataObjectReference(
                     content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
@@ -463,20 +467,20 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         #     patch_of_values=[pov],
         #     time_index=timeindex_ref,
         # )
-        cprop0 = ContinuousProperty(
+        cprop0 = ro.ContinuousProperty(
             schema_version=schema_version,
             citation=create_common_citation(f"{prop_title}"),
             uuid=str(prop_uuid),
             uom=r_uom,
             count=1,
             indexable_element=indexable_element,
-            supporting_representation=DataObjectReference(
+            supporting_representation=ro.DataObjectReference(
                 content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
                 title=uns.citation.title,
                 uuid=uns.uuid,
             ),
-            property_kind=propertykind0 if isinstance(pre_existing_propertykind, type(None)) is False else LocalPropertyKind(
-                local_property_kind=DataObjectReference(
+            property_kind=propertykind0 if isinstance(pre_existing_propertykind, type(None)) is False else ro.LocalPropertyKind(
+                local_property_kind=ro.DataObjectReference(
                     content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
                     title=propertykind0.citation.title,
                     uuid=propertykind0.uuid,
@@ -484,8 +488,8 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
             ),
             minimum_value=[min_val],
             maximum_value=[max_val],
-            facet=[PropertyKindFacet(
-                facet=Facet.WHAT,
+            facet=[ro.PropertyKindFacet(
+                facet=ro.Facet.WHAT,
                 value=prop_title
             )],
             patch_of_values=[pov],
@@ -520,19 +524,19 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         #     patch_of_values=[pov],
         #     time_index=timeindex_ref,
         # )
-        cprop0 = DiscreteProperty(
+        cprop0 = ro.DiscreteProperty(
             schema_version=schema_version,
             citation=create_common_citation(f"{prop_title}"),
             uuid=str(prop_uuid),
             count=1,
             indexable_element=indexable_element,
-            supporting_representation=DataObjectReference(
+            supporting_representation=ro.DataObjectReference(
                 content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
                 title=uns.citation.title,
                 uuid=uns.uuid,
             ),
-            property_kind=propertykind0 if isinstance(pre_existing_propertykind, type(None)) is False else LocalPropertyKind(
-                local_property_kind=DataObjectReference(
+            property_kind=propertykind0 if isinstance(pre_existing_propertykind, type(None)) is False else ro.LocalPropertyKind(
+                local_property_kind=ro.DataObjectReference(
                     content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
                     title=propertykind0.citation.title,
                     uuid=propertykind0.uuid,
@@ -540,8 +544,8 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
             ),
             minimum_value=[int(min_val)],
             maximum_value=[int(max_val)],
-            facet=[PropertyKindFacet(
-                facet=Facet.WHAT,
+            facet=[ro.PropertyKindFacet(
+                facet=ro.Facet.WHAT,
                 value=prop_title,  # prop.facet(),
             )],
             patch_of_values=[pov],
@@ -553,7 +557,7 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
 # (rddms_mesh_data_initial, rddms_upload_data_timestep)
 def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):
     import numpy as np
-    ro_timestamps: list[Timestamp] = []
+    ro_timestamps: list[ro.Timestamp] = []
     for i in geotimes:
         # ro_timestamps.append(
         #     ro.Timestamp(
@@ -563,7 +567,7 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):
         #     )
         # )
         ro_timestamps.append(
-            Timestamp(
+            ro.Timestamp(
                 date_time=XmlDateTime.from_string(
                     "0001-01-01T00:00:00.00+00:00"),
                 year_offset=int(i),
@@ -578,7 +582,7 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):
     #     uuid=str(gts_uuid),
     #     time=ro_timestamps,
     # )
-    timeseries = TimeSeries(
+    timeseries = ro.TimeSeries(
         citation=create_common_citation(str(gts_citation_title)),
         schema_version=schema_version,
         uuid=str(gts_uuid),

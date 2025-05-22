@@ -5,7 +5,7 @@ from etpproto.uri import DataObjectURI as _DataObjectURI
 from etpproto.uri import DataspaceUri as _DataspaceURI
 from pydantic import BaseConfig
 
-import pyetp.resqml_objects as ro
+import energyml.resqml.v2_2.resqmlv2 as ro
 
 
 class _Mixin:
