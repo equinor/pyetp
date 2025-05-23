@@ -21,7 +21,7 @@ if T.TYPE_CHECKING:
     from xtgeo import RegularSurface
 
 
-schema_version = "2.0"
+schema_version = "2.0.1"
 
 
 def get_data_object_type(obj: ro.AbstractObject):

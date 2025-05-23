@@ -14,6 +14,9 @@ import websockets
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
+from etptypes.energistics.etp.v12.protocol.transaction.start_transaction import StartTransaction
+from etptypes.energistics.etp.v12.protocol.transaction.commit_transaction import CommitTransaction
+from etptypes.energistics.etp.v12.protocol.transaction.rollback_transaction import RollbackTransaction
 from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
@@ -216,15 +219,15 @@ class ETPClient(ETPConnection):
 
     async def request_session(self):
         # Handshake protocol
-
+        etp_version = Version(major=1, minor=2, revision=0, patch=0)
         msg = await self.send(
             RequestSession(
                 applicationName=SETTINGS.application_name,
                 applicationVersion=SETTINGS.application_version,
                 clientInstanceId=uuid.uuid4(),  # type: ignore
                 requestedProtocols=[
-                    SupportedProtocol(protocol=p.value, protocolVersion=Version(major=1, minor=2), role='store')
-                    for p in [CommunicationProtocol.DISCOVERY, CommunicationProtocol.STORE, CommunicationProtocol.DATA_ARRAY, CommunicationProtocol.DATASPACE]
+                    SupportedProtocol(protocol=p.value, protocolVersion=etp_version, role='store')
+                    for p in CommunicationProtocol
                 ],
                 supportedDataObjects=[SupportedDataObject(qualifiedType="resqml20.*"), SupportedDataObject(qualifiedType="eml20.*")],
                 currentDateTime=self.timestamp,
@@ -537,11 +540,22 @@ class ETPClient(ETPConnection):
             rotation=rotation,
             masked=True
         )
-
+    async def start_transaction(self, dataspace: T.Union[DataspaceURI, str, None], readOnly :bool= True) -> uuid.UUID:
+        trans_id = await self.send(StartTransaction(readOnly=False, dataspaceUris=[dataspace.raw_uri]))
+        return uuid.UUID(bytes=trans_id.transaction_uuid)
+    
+    async def commit_transaction(self, transaction_id: uuid.UUID):
+        trans_id = await self.send(CommitTransaction(transaction_uuid=transaction_id))
+        return trans_id
+    
+    async def rollback_transaction(self, transaction_id: uuid.UUID):
+        return await self.send(RollbackTransaction(transactionUuid=transaction_id))
+    
     async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: T.Union[DataspaceURI, str, None] = None):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
-
+        
+        
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
         epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
         response = await self.put_array(
@@ -994,7 +1008,6 @@ class ETPClient(ETPConnection):
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
-
         assert len(response.success) == 1, "expected one success"
         return response.success
 
