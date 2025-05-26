@@ -20,7 +20,64 @@ from etptypes.energistics.etp.v12.protocol.transaction.rollback_transaction impo
 from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
-
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
+    PutDataSubarraysType
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
+    PutDataSubarrays
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
+    PutDataSubarraysResponse
+from etptypes.energistics.etp.v12.datatypes.data_array_types.get_data_subarrays_type import \
+    GetDataSubarraysType
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays import \
+    GetDataSubarrays
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays_response import \
+    GetDataSubarraysResponse
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_arrays_type import \
+    PutDataArraysType
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays import \
+    PutDataArrays
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays_response import \
+    PutDataArraysResponse
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays import \
+    GetDataArrays
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays_response import \
+    GetDataArraysResponse
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata import \
+    GetDataArrayMetadata
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata_response import \
+    GetDataArrayMetadataResponse
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
+    PutUninitializedDataArrayType
+from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
+    PutUninitializedDataArrays
+from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays_response import \
+    PutUninitializedDataArraysResponse
+from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import \
+    DeleteDataObjects
+from etptypes.energistics.etp.v12.protocol.store.delete_data_objects_response import \
+    DeleteDataObjectsResponse
+from etptypes.energistics.etp.v12.datatypes.object.resource import \
+    Resource
+from etptypes.energistics.etp.v12.protocol.store.put_data_objects import \
+    PutDataObjects
+from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import \
+    PutDataObjectsResponse
+from etptypes.energistics.etp.v12.protocol.store.get_data_objects import \
+    GetDataObjects
+from etptypes.energistics.etp.v12.protocol.store.get_data_objects_response import \
+    GetDataObjectsResponse
+from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
+    DeleteDataspaces
+from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
+    DeleteDataspacesResponse
+from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
+    PutDataspaces
+from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
+    PutDataspacesResponse
+from etptypes.energistics.etp.v12.protocol.core.authorize import \
+    Authorize
+from etptypes.energistics.etp.v12.protocol.core.authorize_response import \
+    AuthorizeResponse
 import pyetp.resqml_objects as ro
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
@@ -98,7 +155,7 @@ class ETPClient(ETPConnection):
         self._default_duri = default_dataspace_uri
         self.ws = ws
 
-        self.timeout = timeout
+        self.timeout = 20#timeout
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
         self.__recvtask = asyncio.create_task(self.__recv__())
 
@@ -124,7 +181,7 @@ class ETPClient(ETPConnection):
         # create future recv event
         self._recv_events[msg.header.message_id] = asyncio.Event()
 
-        async for msg_part in msg.encode_message_generator(self.max_size, self):
+        for msg_part in msg.encode_message_generator(self.max_size, self):
             await self.ws.send(msg_part)
 
         return msg.header.message_id
@@ -249,10 +306,7 @@ class ETPClient(ETPConnection):
 
     async def authorize(self, authorization: str, supplemental_authorization: T.Mapping[str, str] = {}):
 
-        from etptypes.energistics.etp.v12.protocol.core.authorize import \
-            Authorize
-        from etptypes.energistics.etp.v12.protocol.core.authorize_response import \
-            AuthorizeResponse
+
 
         msg = await self.send(
             Authorize(
@@ -302,10 +356,7 @@ class ETPClient(ETPConnection):
     #
 
     async def put_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
-        from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
-            PutDataspaces
-        from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
-            PutDataspacesResponse
+
 
         _uris = list(map(DataspaceURI.from_any, uris))
 
@@ -329,10 +380,7 @@ class ETPClient(ETPConnection):
             pass
 
     async def delete_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
-        from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
-            DeleteDataspaces
-        from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
-            DeleteDataspacesResponse
+
 
         _uris = list(map(str, uris))
 
@@ -346,10 +394,7 @@ class ETPClient(ETPConnection):
 
     async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
 
-        from etptypes.energistics.etp.v12.protocol.store.get_data_objects import \
-            GetDataObjects
-        from etptypes.energistics.etp.v12.protocol.store.get_data_objects_response import \
-            GetDataObjectsResponse
+
 
         _uris = list(map(str, uris))
 
@@ -363,10 +408,7 @@ class ETPClient(ETPConnection):
 
     async def put_data_objects(self, *objs: DataObject):
 
-        from etptypes.energistics.etp.v12.protocol.store.put_data_objects import \
-            PutDataObjects
-        from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import \
-            PutDataObjectsResponse
+
 
         response = await self.send(
             PutDataObjects(dataObjects={f"{p.resource.name}_{short_id()}": p for p in objs})
@@ -382,8 +424,7 @@ class ETPClient(ETPConnection):
         return utils_xml.parse_resqml_objects(data_objects)
 
     async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: T.Union[DataspaceURI, str, None] = None):
-        from etptypes.energistics.etp.v12.datatypes.object.resource import \
-            Resource
+
         time = self.timestamp
         duri = self.get_dataspace_or_default_uri(dataspace)
         uris = [DataObjectURI.from_obj(duri, obj) for obj in objs]
@@ -406,10 +447,7 @@ class ETPClient(ETPConnection):
         return uris
 
     async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], pruneContainedObjects=False):
-        from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import \
-            DeleteDataObjects
-        from etptypes.energistics.etp.v12.protocol.store.delete_data_objects_response import \
-            DeleteDataObjectsResponse
+
 
         _uris = list(map(str, uris))
 
@@ -895,10 +933,7 @@ class ETPClient(ETPConnection):
     #
 
     async def get_array_metadata(self, *uids: DataArrayIdentifier):
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata import \
-            GetDataArrayMetadata
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata_response import \
-            GetDataArrayMetadataResponse
+
 
         response = await self.send(
             GetDataArrayMetadata(dataArrays={i.path_in_resource: i for i in uids})
@@ -912,10 +947,7 @@ class ETPClient(ETPConnection):
         return [response.array_metadata[i.path_in_resource] for i in uids]
 
     async def get_array(self, uid: DataArrayIdentifier):
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays import \
-            GetDataArrays
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays_response import \
-            GetDataArraysResponse
+
 
         # Check if we can upload the full array in one go.
         meta, = await self.get_array_metadata(uid)
@@ -931,12 +963,7 @@ class ETPClient(ETPConnection):
         return utils_arrays.to_numpy(arrays[0])
 
     async def put_array(self, uid: DataArrayIdentifier, data: np.ndarray):
-        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_arrays_type import \
-            PutDataArraysType
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays import \
-            PutDataArrays
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays_response import \
-            PutDataArraysResponse
+
 
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
@@ -954,12 +981,7 @@ class ETPClient(ETPConnection):
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
 
-        from etptypes.energistics.etp.v12.datatypes.data_array_types.get_data_subarrays_type import \
-            GetDataSubarraysType
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays import \
-            GetDataSubarrays
-        from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays_response import \
-            GetDataSubarraysResponse
+
 
         logger.debug(f"get_subarray {starts=:} {counts=:}")
 
@@ -976,22 +998,15 @@ class ETPClient(ETPConnection):
         arrays = list(response.data_subarrays.values())
         return utils_arrays.to_numpy(arrays[0])
 
-    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]], put_uninitialized=False):
-        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
-            PutDataSubarraysType
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
-            PutDataSubarrays
-        from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
-            PutDataSubarraysResponse
+    async def put_subarray(self, uid: DataArrayIdentifier, data: np.ndarray, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]]):
+
 
         # starts [start_X, starts_Y]
         # counts [count_X, count_Y]
         starts = np.array(starts).astype(np.int64) # len = 2 [x_start_index, y_start_index]
         counts = np.array(counts).astype(np.int64) # len = 2
         ends = starts + counts # len = 2
-        if put_uninitialized:
-            transport_array_type = utils_arrays.get_transport(data.dtype)
-            await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
+
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
         dataarray = utils_arrays.to_data_array(data[slices])
@@ -1007,6 +1022,7 @@ class ETPClient(ETPConnection):
         response = await self.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
+        print("ok")
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
         assert len(response.success) == 1, "expected one success"
         return response.success
@@ -1078,18 +1094,14 @@ class ETPClient(ETPConnection):
         coro = []
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
             params.append([starts, counts])
-            coro.append(self.put_subarray(uid, data, starts, counts))
-        r = await asyncio.gather(*coro)
+            await self.put_subarray(uid, data, starts, counts)
+            #coro.append(self.put_subarray(uid, data, starts, counts))
+        #r = await asyncio.gather(*coro)
 
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):
-        from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
-            PutUninitializedDataArrayType
-        from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
-            PutUninitializedDataArrays
-        from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays_response import \
-            PutUninitializedDataArraysResponse
+
 
         payload = PutUninitializedDataArrayType(
             uid=uid,
