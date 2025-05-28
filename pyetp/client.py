@@ -1001,6 +1001,7 @@ class ETPClient(ETPConnection):
             buffer[slices] = array
             return
         coro = [populate(starts, counts) for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)]
+        logger.debug(f"Concurrent request: {self.max_concurrent_requests}")
         for i in batched(coro, self.max_concurrent_requests):
             await asyncio.gather(*i)    
         # r = await asyncio.gather(*[
@@ -1020,6 +1021,7 @@ class ETPClient(ETPConnection):
             params.append([starts, counts])
             #await self.put_subarray(uid, data, starts, counts)
             coro.append(self.put_subarray(uid, data, starts, counts))
+        logger.debug(f"Concurrent request: {self.max_concurrent_requests}")
         for i in batched(coro, self.max_concurrent_requests):
             await asyncio.gather(*i)    
         #r = await asyncio.gather(*coro)

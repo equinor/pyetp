@@ -28,6 +28,7 @@ async def eclient():
         pytest.skip(reason="websocket for test server not open", allow_module_level=True)
 
     async with connect() as client:
+        client.max_concurrent_requests=20
         yield client
 
 
