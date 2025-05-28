@@ -5,85 +5,27 @@ import sys
 import typing as T
 import uuid
 from collections import defaultdict
-from contextlib import asynccontextmanager
 from types import TracebackType
 import time
-
 import numpy as np
 import websockets
 from etpproto.connection import (CommunicationProtocol, ConnectionType,
                                  ETPConnection)
 from etpproto.messages import Message, MessageFlags
-from etptypes.energistics.etp.v12.protocol.transaction.start_transaction import StartTransaction
-from etptypes.energistics.etp.v12.protocol.transaction.commit_transaction import CommitTransaction
-from etptypes.energistics.etp.v12.protocol.transaction.rollback_transaction import RollbackTransaction
 from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
-from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
-    PutDataSubarraysType
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
-    PutDataSubarrays
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
-    PutDataSubarraysResponse
-from etptypes.energistics.etp.v12.datatypes.data_array_types.get_data_subarrays_type import \
-    GetDataSubarraysType
-from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays import \
-    GetDataSubarrays
-from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays_response import \
-    GetDataSubarraysResponse
-from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_arrays_type import \
-    PutDataArraysType
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays import \
-    PutDataArrays
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays_response import \
-    PutDataArraysResponse
-from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays import \
-    GetDataArrays
-from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays_response import \
-    GetDataArraysResponse
-from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata import \
-    GetDataArrayMetadata
-from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata_response import \
-    GetDataArrayMetadataResponse
-from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import \
-    PutUninitializedDataArrayType
-from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import \
-    PutUninitializedDataArrays
-from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays_response import \
-    PutUninitializedDataArraysResponse
-from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import \
-    DeleteDataObjects
-from etptypes.energistics.etp.v12.protocol.store.delete_data_objects_response import \
-    DeleteDataObjectsResponse
-from etptypes.energistics.etp.v12.datatypes.object.resource import \
-    Resource
-from etptypes.energistics.etp.v12.protocol.store.put_data_objects import \
-    PutDataObjects
-from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import \
-    PutDataObjectsResponse
-from etptypes.energistics.etp.v12.protocol.store.get_data_objects import \
-    GetDataObjects
-from etptypes.energistics.etp.v12.protocol.store.get_data_objects_response import \
-    GetDataObjectsResponse
-from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import \
-    DeleteDataspaces
-from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import \
-    DeleteDataspacesResponse
-from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import \
-    PutDataspaces
-from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import \
-    PutDataspacesResponse
-from etptypes.energistics.etp.v12.protocol.core.authorize import \
-    Authorize
-from etptypes.energistics.etp.v12.protocol.core.authorize_response import \
-    AuthorizeResponse
+
+
 import pyetp.resqml_objects as ro
+#import energyml.resqml.v2_0_1.resqmlv2 as ro
+#import energyml.eml.v2_0.commonv2 as roc
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils import short_id
+from pyetp.utils import short_id, batched
+from asyncio import timeout
 
 try:
     # for py >3.11, we can raise grouped exceptions
@@ -92,25 +34,22 @@ except ImportError:
     def ExceptionGroup(msg, errors):
         return errors[0]
 
-try:
-    from asyncio import timeout
-except ImportError:
-    import async_timeout
+# try:
+#     from asyncio import timeout
+# except ImportError:
+#     import async_timeout
 
-    @asynccontextmanager
-    async def timeout(delay: T.Optional[float]) -> T.Any:
-        try:
-            async with async_timeout.timeout(delay):
-                yield None
-        except asyncio.CancelledError as e:
-            raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
+#     @asynccontextmanager
+#     async def timeout(delay: T.Optional[float]) -> T.Any:
+#         try:
+#             async with async_timeout.timeout(delay):
+#                 yield None
+#         except asyncio.CancelledError as e:
+#             raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-MAXPAYLOADSIZE = 10_000_000  # 10MB
 
 
 class ETPError(Exception):
@@ -148,16 +87,16 @@ class ETPClient(ETPConnection):
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.WebSocketClientProtocol, default_dataspace_uri: T.Union[DataspaceURI, None], timeout=10.):
+    def __init__(self, ws: websockets.WebSocketClientProtocol, timeout=10.):
         super().__init__(connection_type=ConnectionType.CLIENT)
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
-        self._default_duri = default_dataspace_uri
         self.ws = ws
 
-        self.timeout = 20#timeout
-        self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = MAXPAYLOADSIZE
+        self.timeout = timeout
+        self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = SETTINGS.MaxWebSocketMessagePayloadSize
         self.__recvtask = asyncio.create_task(self.__recv__())
+        self.max_concurrent_requests = 1
 
     #
     # client
@@ -290,7 +229,8 @@ class ETPClient(ETPConnection):
                 currentDateTime=self.timestamp,
                 earliestRetainedChangeTime=0,
                 endpointCapabilities=dict(
-                    MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size)
+                    MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size),
+                    MaxWebSocketFramePayloadSize=DataValue(item=10000)
                 )
             )
         )
@@ -332,33 +272,28 @@ class ETPClient(ETPConnection):
     def timestamp(self):
         return int(datetime.datetime.now(datetime.timezone.utc).timestamp())
 
-    @property
-    def default_dataspace_uri(self):
-        return self._default_duri
 
-    @default_dataspace_uri.setter
-    def default_dataspace_uri(self, v: T.Union[DataspaceURI, str, None]):
-        self._default_duri = None if v is None else DataspaceURI.from_any(v)
-
-    def get_dataspace_or_default_uri(self, ds: T.Union[DataspaceURI, str, None]) -> DataspaceURI:
-        """Returns default dataspace or user spefied one"""
-
-        if ds is not None:
-            return DataspaceURI.from_any(ds)
-
-        if self._default_duri is None:
-            raise ValueError("Could not get dataspace from userinput or default")
-
-        return self._default_duri
-
+    def dataspace_uri(self, ds: str) -> DataspaceURI:
+        return DataspaceURI.from_name(ds)
+    
+    def list_objects(self, dataspace_uri: DataspaceURI, depth: int = 1) -> list:
+        return self.send(GetResources(
+                scope=ContextScopeKind.TARGETS_OR_SELF,
+                context=ContextInfo(
+                    uri=dataspace_uri.raw_uri,
+                    depth=depth,
+                    dataObjectTypes=[],
+                    navigableEdges=RelationshipKind.PRIMARY,)
+                )
+            )
     #
     # dataspace
     #
 
-    async def put_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
+    async def put_dataspaces(self, *dataspace_uris: DataspaceURI):
 
 
-        _uris = list(map(DataspaceURI.from_any, uris))
+        _uris = list(map(DataspaceURI.from_any, dataspace_uris))
 
         time = self.timestamp
         response = await self.send(
@@ -369,20 +304,20 @@ class ETPClient(ETPConnection):
         )
         assert isinstance(response, PutDataspacesResponse), "Expected PutDataspacesResponse"
 
-        assert len(response.success) == len(uris), f"expected {len(uris)} success's"
+        assert len(response.success) == len(dataspace_uris), f"expected {len(dataspace_uris)} success's"
 
         return response.success
 
-    async def put_dataspaces_no_raise(self, *uris: T.Union[DataspaceURI, str]):
+    async def put_dataspaces_no_raise(self, *dataspace_uris: DataspaceURI):
         try:
-            return await self.put_dataspaces(*uris)
+            return await self.put_dataspaces(*dataspace_uris)
         except ETPError:
             pass
 
-    async def delete_dataspaces(self, *uris: T.Union[DataspaceURI, str]):
+    async def delete_dataspaces(self, *dataspace_uris: DataspaceURI):
 
 
-        _uris = list(map(str, uris))
+        _uris = list(map(str, dataspace_uris))
 
         response = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
         assert isinstance(response, DeleteDataspacesResponse), "Expected DeleteDataspacesResponse"
@@ -393,8 +328,6 @@ class ETPClient(ETPConnection):
     #
 
     async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
-
-
 
         _uris = list(map(str, uris))
 
@@ -423,11 +356,10 @@ class ETPClient(ETPConnection):
         data_objects = await self.get_data_objects(*uris)
         return utils_xml.parse_resqml_objects(data_objects)
 
-    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace: T.Union[DataspaceURI, str, None] = None):
+    async def put_resqml_objects(self, *objs: ro.AbstractObject, dataspace_uri: DataspaceURI):
 
         time = self.timestamp
-        duri = self.get_dataspace_or_default_uri(dataspace)
-        uris = [DataObjectURI.from_obj(duri, obj) for obj in objs]
+        uris = [DataObjectURI.from_obj(dataspace_uri, obj) for obj in objs]
         dobjs = [DataObject(
             format="xml",
             data=utils_xml.resqml_to_xml(obj),
@@ -461,7 +393,6 @@ class ETPClient(ETPConnection):
         assert isinstance(response, DeleteDataObjectsResponse), "Expected DeleteDataObjectsResponse"
 
         return response.deleted_uris
-
     #
     # xtgeo
     #
@@ -487,7 +418,7 @@ class ETPClient(ETPConnection):
         y_ind = (y-patch.geometry.points.supporting_geometry.origin.coordinate2)/patch.geometry.points.supporting_geometry.offset[1].spacing.value
         return round(x_ind), round(y_ind)
 
-    async def get_surface_value_x_y(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], x: T.Union[int, float], y: T.Union[int, float], method: T.Literal["bilinear", "nearest"]):
+    async def get_surface_value_x_y(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str],crs_uri: T.Union[DataObjectURI, str], x: T.Union[int, float], y: T.Union[int, float], method: T.Literal["bilinear", "nearest"]):
         gri, = await self.get_resqml_objects(gri_uri) # parallelized using subarray
         xori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate1
         yori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate2
@@ -503,7 +434,7 @@ class ETPClient(ETPConnection):
                     uri=str(epc_uri), pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
                 )
         if max_x_index_in_gri <= 10 or max_y_index_in_gri <= 10:
-            surf = await self.get_xtgeo_surface(epc_uri, gri_uri)
+            surf = await self.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
             return surf.get_value_from_xy((x, y), sampling=method)
 
         x_ind, y_ind = self.find_closest_index(x, y, gri.grid2d_patch)
@@ -540,21 +471,12 @@ class ETPClient(ETPConnection):
         )
         return regridded.get_value_from_xy((x, y))
 
-    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], crs_uri: T.Union[DataObjectURI, str, None] = None):
-        if crs_uri is None:
-            logger.debug("NO crs")
-            gri, = await self.get_resqml_objects(gri_uri)
-            crs_uuid = gri.grid2d_patch.geometry.local_crs.uuid
-            dataspace_uri = self.get_dataspace_or_default_uri(epc_uri)
-            crs_eml = f"{dataspace_uri}/resqml20.LocalDepth3dCrs({crs_uuid})"
-            crs, = await self.get_resqml_objects(crs_eml)
-            logger.debug("got crs")
-        else:
-            gri, crs, = await self.get_resqml_objects(gri_uri, crs_uri)
+    async def get_xtgeo_surface(self, epc_uri: T.Union[DataObjectURI, str], gri_uri: T.Union[DataObjectURI, str], crs_uri: T.Union[DataObjectURI, str]):
+        gri, crs, = await self.get_resqml_objects(gri_uri, crs_uri)
         rotation = crs.areal_rotation.value
         # some checks
 
-        assert isinstance(gri, ro.Grid2dRepresentation), "obj must be Grid2dRepresentation"
+        assert isinstance(gri, ro.Grid2dRepresentation), "obj must be Grid2DRepresentation"
         sgeo = gri.grid2d_patch.geometry.points.supporting_geometry  # type: ignore
         if sys.version_info[1] != 10:
             assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray), "Points must be Point3dZValueArray"
@@ -578,8 +500,8 @@ class ETPClient(ETPConnection):
             rotation=rotation,
             masked=True
         )
-    async def start_transaction(self, dataspace: T.Union[DataspaceURI, str, None], readOnly :bool= True) -> uuid.UUID:
-        trans_id = await self.send(StartTransaction(readOnly=False, dataspaceUris=[dataspace.raw_uri]))
+    async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly :bool= True) -> uuid.UUID:
+        trans_id = await self.send(StartTransaction(readOnly=readOnly, dataspaceUris=[dataspace_uri.raw_uri]))
         return uuid.UUID(bytes=trans_id.transaction_uuid)
     
     async def commit_transaction(self, transaction_id: uuid.UUID):
@@ -589,13 +511,13 @@ class ETPClient(ETPConnection):
     async def rollback_transaction(self, transaction_id: uuid.UUID):
         return await self.send(RollbackTransaction(transactionUuid=transaction_id))
     
-    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code=23031, dataspace: T.Union[DataspaceURI, str, None] = None):
+    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code: int, dataspace_uri: DataspaceURI):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
         
         
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
-        epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace=dataspace)
+        epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace_uri=dataspace_uri)
         response = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -604,7 +526,7 @@ class ETPClient(ETPConnection):
             surface.values.filled(np.nan).astype(np.float32)
         )
 
-        return epc_uri, crs_uri, gri_uri
+        return epc_uri, gri_uri, crs_uri
 
     #
     # resqpy meshes
@@ -614,7 +536,7 @@ class ETPClient(ETPConnection):
         uns, = await self.get_resqml_objects(uns_uri)
 
         # some checks
-        assert isinstance(uns, ro.UnstructuredGridRepresentation), "obj must be Grid2dRepresentation"
+        assert isinstance(uns, ro.UnstructuredGridRepresentation), "obj must be UnstructuredGridRepresentation"
         assert isinstance(uns.geometry, ro.UnstructuredGridGeometry), "geometry must be UnstructuredGridGeometry"
         if sys.version_info[1] != 10:
             assert isinstance(uns.geometry.points, ro.Point3dHdf5Array), "points must be Point3dHdf5Array"
@@ -758,14 +680,15 @@ class ETPClient(ETPConnection):
     async def put_rddms_property(self, epc_uri: T.Union[DataObjectURI , str], 
             cprop0: T.Union[ro.ContinuousProperty, ro.DiscreteProperty], 
             propertykind0: ro.PropertyKind, 
-            array_ref: np.ndarray, dataspace: T.Union[DataspaceURI , str , None] ):
+            array_ref: np.ndarray, 
+            dataspace_uri: DataspaceURI ):
 
         assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(cprop0, ro.DiscreteProperty), "prop must be a Property"
         assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
         st = time.time()
-        propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace=dataspace))
-        cprop_uri = await self.put_resqml_objects(cprop0, dataspace=dataspace)
+        propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace_uri=dataspace_uri))
+        cprop_uri = await self.put_resqml_objects(cprop0, dataspace_uri=dataspace_uri)
         delay = time.time() - st
         logger.debug(f"pyetp: put_rddms_property: put objects took {delay} s")
         
@@ -783,13 +706,13 @@ class ETPClient(ETPConnection):
 
     async def put_epc_mesh(
         self, epc_filename: str, title_in: str, property_titles: T.List[str], projected_epsg: int, 
-        dataspace: T.Union[DataspaceURI , str , None]
+        dataspace_uri: DataspaceURI
     ):
         uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
-        epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace=dataspace)
+        epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace_uri=dataspace_uri)
         timeseries_uri = ""
         if timeseries is not None:
-            timeseries_uris = await self.put_resqml_objects(timeseries, dataspace=dataspace)
+            timeseries_uris = await self.put_resqml_objects(timeseries, dataspace_uri=dataspace_uri)
             timeseries_uri = list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
         
         #
@@ -860,7 +783,7 @@ class ETPClient(ETPConnection):
 
             cprop_uris = []
             for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
-                cprop_uri, propkind_uri = await self.put_rddms_property(epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace)
+                cprop_uri, propkind_uri = await self.put_rddms_property(epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace_uri)
                 cprop_uris.extend(cprop_uri)
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
 
@@ -1022,7 +945,6 @@ class ETPClient(ETPConnection):
         response = await self.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
-        print("ok")
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
         assert len(response.success) == 1, "expected one success"
         return response.success
@@ -1078,11 +1000,13 @@ class ETPClient(ETPConnection):
             slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
             return
-
-        r = await asyncio.gather(*[
-            populate(starts, counts)
-            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
-        ])
+        coro = [populate(starts, counts) for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)]
+        for i in batched(coro, self.max_concurrent_requests):
+            await asyncio.gather(*i)    
+        # r = await asyncio.gather(*[
+        #     populate(starts, counts)
+        #     for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
+        # ])
 
         return buffer
 
@@ -1094,8 +1018,10 @@ class ETPClient(ETPConnection):
         coro = []
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
             params.append([starts, counts])
-            await self.put_subarray(uid, data, starts, counts)
-            #coro.append(self.put_subarray(uid, data, starts, counts))
+            #await self.put_subarray(uid, data, starts, counts)
+            coro.append(self.put_subarray(uid, data, starts, counts))
+        for i in batched(coro, self.max_concurrent_requests):
+            await asyncio.gather(*i)    
         #r = await asyncio.gather(*coro)
 
         return {uid.uri: ''}
@@ -1129,7 +1055,6 @@ class connect:
         self.authorization = authorization
         self.data_partition = SETTINGS.data_partition
         self.timeout = SETTINGS.etp_timeout
-        self.default_dataspace_uri = DataspaceURI.from_name(SETTINGS.dataspace)
 
     # ... = await connect(...)
 
@@ -1152,12 +1077,12 @@ class connect:
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
             extra_headers=headers,
-            max_size=MAXPAYLOADSIZE,
+            max_size=SETTINGS.MaxWebSocketMessagePayloadSize,
             ping_timeout=self.timeout,
             open_timeout=None,
         )
 
-        self.client = ETPClient(ws, default_dataspace_uri=self.default_dataspace_uri, timeout=self.timeout)
+        self.client = ETPClient(ws, timeout=self.timeout)
 
         try:
             await self.client.request_session()

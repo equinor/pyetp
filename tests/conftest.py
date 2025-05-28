@@ -8,8 +8,8 @@ from pyetp.uri import  DataspaceURI
 
 SETTINGS.application_name = "geomin_testing"
 SETTINGS.etp_url = "ws://localhost:9100"
-
-SETTINGS.dataspace = "testing_space"
+SETTINGS.etp_timeout=30
+dataspace = "testing_space"
 
 
 async def get_app_token(rc=None):
@@ -33,16 +33,17 @@ async def eclient():
 
 @pytest_asyncio.fixture
 async def default_duri(eclient: ETPClient):
-    await eclient.put_dataspaces_no_raise(SETTINGS.duri)
-    yield SETTINGS.duri
-    await eclient.delete_dataspaces(SETTINGS.duri)
+    ds_uri=eclient.dataspace_uri(dataspace)
+    await eclient.put_dataspaces_no_raise(ds_uri)
+    yield ds_uri
+    await eclient.delete_dataspaces(ds_uri)
 
 
 
 @pytest_asyncio.fixture
 async def duri(eclient: ETPClient):
     try:
-        uri = DataspaceURI.from_name('test/test')
+        uri = eclient.dataspace_uri('test/test')
         resp = await eclient.put_dataspaces_no_raise(uri)
         # assert len(resp) == 1, "created one dataspace"
         yield uri

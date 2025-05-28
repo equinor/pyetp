@@ -4,10 +4,10 @@ import resqpy.model as rq
 import resqpy.property as rqp
 import resqpy.unstructured as rug
 
-from pyetp.client import MAXPAYLOADSIZE, ETPClient, ETPError
+from pyetp.client import ETPClient
 from pyetp.uri import DataspaceURI
 from pyetp.resqml_objects import ContinuousProperty, DiscreteProperty
-
+#from energyml.resqml.v2_0_1.resqmlv2 import ContinuousProperty, DiscreteProperty
 
 @pytest.mark.parametrize('input_mesh_file', ['./data/model_hexa_0.epc','./data/model_hexa_ts_0_new.epc'])
 @pytest.mark.asyncio
@@ -35,8 +35,9 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
     node_uuids = model.uuids(title = 'points')         
     special_prop_titles = list(set([rqp.Property(model, uuid=u).title for u in node_uuids]))
     prop_titles = prop_titles + special_prop_titles
-
+    tran_id = await eclient.start_transaction(duri, False)
     rddms_uris, prop_uris = await eclient.put_epc_mesh(input_mesh_file, hexa.title, prop_titles, 23031, duri)
+    await eclient.commit_transaction(tran_id)
     uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed = await eclient.get_epc_mesh(rddms_uris[0], rddms_uris[2])
 
     mesh_has_timeseries = len(rddms_uris)>3 and len(str(rddms_uris[3]))>0
@@ -56,8 +57,6 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
         for prop_uri in value[1]:        
             prop0, values = await eclient.get_epc_mesh_property(rddms_uris[0], prop_uri)
             assert prop0.supporting_representation.uuid == str(uns.uuid), "property support must match the mesh"
-            # if len(found_indices)==0:
-                # print(f"prop {prop0.citation.title}, evaluating {len(value[1])} time indices")
             time_index = prop0.time_index.index if prop0.time_index else -1
             assert(time_index not in found_indices), f"Duplicate time index {time_index}"        
             if mesh_has_timeseries:

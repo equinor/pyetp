@@ -1,8 +1,6 @@
 from typing import Optional
 
-from pydantic import AnyUrl, BaseSettings, Field, RedisDsn, SecretStr
-
-from pyetp.uri import DataspaceURI
+from pydantic import AnyUrl, BaseSettings, Field
 
 
 class WebSocketUrl(AnyUrl):
@@ -18,17 +16,14 @@ class Settings(BaseSettings):
             'redis_password': {'env': ['redis_password', 'redispass']}
         }
 
-    application_name: str = Field(default='etpClient')
-    application_version: str = Field(default='0.0.1')
+    application_name: str = Field(default='pyetp')
+    application_version: str = Field(default='0.0.33')
 
-    dataspace: str = Field(default='demo/pss-data-gateway')
+    #dataspace: str = Field(default='demo/pss-data-gateway')
     etp_url: WebSocketUrl = Field(default='wss://host.com')
-    etp_timeout: float = Field(default=60., description="Timeout in seconds")
+    etp_timeout: float = Field(default=15., description="Timeout in seconds")
     data_partition: Optional[str] = None
-
-    @property
-    def duri(self):
-        return DataspaceURI.from_name(self.dataspace)
+    MaxWebSocketMessagePayloadSize: int = Field(default=100000)
 
 
 SETTINGS = Settings()
