@@ -4,12 +4,11 @@ from uuid import UUID
 from etpproto.uri import DataObjectURI as _DataObjectURI
 from etpproto.uri import DataspaceUri as _DataspaceURI
 from pydantic import BaseConfig
-
-import pyetp.resqml_objects as ro
+from pyetp.resqml_objects import AbstractObject
+#from energyml.eml.v2_0.commonv2 import AbstractObject
 
 
 class _Mixin:
-    # print full url as default
     raw_uri: str
 
     def __str__(self):
@@ -66,7 +65,7 @@ class DataObjectURI(_DataObjectURI, _Mixin):
         return cls(f"{duri}/{domain_and_version}.{obj_type}({uuid})")
 
     @classmethod
-    def from_obj(cls, dataspace: Union[DataspaceURI , str], obj: ro.AbstractObject):
+    def from_obj(cls, dataspace: Union[DataspaceURI , str], obj: AbstractObject):
 
         objname = obj.__class__.__name__
         if getattr(obj, 'Meta', None):

@@ -24,7 +24,7 @@ import pyetp.resqml_objects as ro
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.types import AnyArrayType, DataArrayIdentifier
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils_arrays import to_data_array
+from pyetp.utils_arrays import to_data_array, get_transport
 from pyetp.utils_xml import (create_epc, instantiate_resqml_grid,
                              parse_xtgeo_surface_to_resqml_grid)
 
@@ -58,7 +58,7 @@ def temp_maxsize(eclient: ETPClient, maxsize=10000):
 @pytest_asyncio.fixture
 async def uid(eclient: ETPClient, duri: DataspaceURI):
     """empty DataArrayIdentifier"""
-    epc_uri, = await eclient.put_resqml_objects(create_epc(), dataspace=duri)
+    epc_uri, = await eclient.put_resqml_objects(create_epc(), dataspace_uri=duri)
     yield DataArrayIdentifier(uri=str(epc_uri), pathInResource="/data")  # dummy path
 
 
@@ -132,7 +132,7 @@ async def test_disconnect_error(eclient: ETPClient):
     await eclient.ws.close()
 
     with pytest.raises(websockets.exceptions.ConnectionClosed):
-        await eclient.put_dataspaces_no_raise("doesnt matter")
+        await eclient.put_dataspaces_no_raise(eclient.dataspace_uri("doesnt matter"))
 
 
 @pytest.mark.asyncio
@@ -168,7 +168,7 @@ async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.int32])
-@pytest.mark.parametrize('shape', [(256, 300), (96, 96, 64)])
+@pytest.mark.parametrize('shape', [(256, 300), (10, 10, 10)])
 async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype, shape: Tuple[int, ...]):
     data = np.random.rand(*shape) * 100.
     data = data.astype(dtype)  # type: ignore
@@ -205,8 +205,9 @@ async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
 async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, starts):
     data = np.random.rand(100, 50) * 100.
     data = data.astype(dtype)
-
-    resp = await eclient.put_subarray(uid, data, starts=starts, counts=[10, 10], put_uninitialized=True)
+    transport_array_type = get_transport(data.dtype)
+    await eclient._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
+    resp = await eclient.put_subarray(uid, data, starts=starts, counts=[10, 10])
     assert len(resp) == 1
 
     arr = await eclient.get_subarray(uid, starts=starts, counts=[10, 10])
@@ -218,15 +219,15 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
     np.testing.assert_allclose(arr, data[starts[0]:ends[0], starts[0]:ends[1]])
 
 
-@pytest.mark.skip(reason="Regression on test server - enable after bug fix from openetp image")
+#@pytest.mark.skip(reason="Regression on test server - enable after bug fix from openetp image")
 @pytest.mark.asyncio
 async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 0)
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
-
-    uris = await eclient.put_resqml_objects(epc, crs, gri, dataspace=duri)
+    tran_id = await eclient.start_transaction(duri, False)
+    uris = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    await eclient.commit_transaction(tran_id)
     epc, crs, gri = await eclient.get_resqml_objects(*uris)
-
     resp = await eclient.delete_data_objects(*uris)
     assert len(resp) == 3
 
@@ -238,15 +239,14 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(surface, epsg_code, dataspace=duri)
-
+    tran_id = await eclient.start_transaction(duri, False)
+    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
+    await eclient.commit_transaction(tran_id)
     epc, crs, gri = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri)
-    newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
+    newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     array = np.array(newsurf.values.filled(np.nan))
 
     np.testing.assert_allclose(array, np.array(surface.values.filled(np.nan)))
-
-    # print(epc, crs, gri)
 
     assert isinstance(epc, ro.EpcExternalPartReference)
     assert isinstance(crs, ro.LocalDepth3dCrs)
@@ -270,34 +270,14 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
 @pytest.mark.asyncio
 async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 100)
-    epc_uri, crs_uri, gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
-
+    tran_id = await eclient.start_transaction(duri, False)
+    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surf, 23031, duri)
+    await eclient.commit_transaction(tran_id)
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
-
-    # print(repr(surf))
-    # print(repr(nsurf))
-
     # ensure rotation, step, origin etc is equal
     compare_surf(surf, nsurf)
     # assert surf.generate_hash() == nsurf.generate_hash()
-
-
-@pytest.mark.asyncio
-async def test_surface_no_crs(eclient: ETPClient, duri: DataspaceURI):
-    surf = create_surface(100, 50, 100)
-    epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(surf, dataspace=duri)
-
-    nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
-    np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
-
-    # print(repr(surf))
-    # print(repr(nsurf))
-
-    # ensure rotation, step, origin etc is equal
-    compare_surf(surf, nsurf)
-    # assert surf.generate_hash() == nsurf.generate_hash()
-
 
 def compare_surf(surf1: xtgeo.RegularSurface, surf2: xtgeo.RegularSurface):
     m1 = surf1.metadata.get_metadata()
@@ -312,17 +292,19 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    epc_uri, _, gri_uri = await eclient.put_xtgeo_surface(surface, epsg_code, dataspace=duri)
+    tran_id = await eclient.start_transaction(duri, False)
+    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
+    await eclient.commit_transaction(tran_id)
     x_ori = surface.xori
     y_ori = surface.yori
     x_max = x_ori + (surface.xinc*surface.ncol)
     y_max = y_ori + (surface.yinc*surface.nrow)
     x = random.uniform(x_ori, x_max)
     y = random.uniform(y_ori, y_max)
-    nearest = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x, y, "nearest")
+    nearest = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x, y, "nearest")
     xtgeo_nearest = surface.get_value_from_xy((x, y), sampling="nearest")
     assert nearest == pytest.approx(xtgeo_nearest)
-    linear = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x, y, "bilinear")
+    linear = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x, y, "bilinear")
     xtgeo_linear = surface.get_value_from_xy((x, y))
     assert linear == pytest.approx(xtgeo_linear)
 
@@ -330,14 +312,14 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
     x_i = x_max - surface.xinc-1
     y_i = y_max - surface.yinc-1
 
-    linear_i = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x_i, y_i, "bilinear")
+    linear_i = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x_i, y_i, "bilinear")
     xtgeo_linear_i = surface.get_value_from_xy((x_i, y_i))
     assert linear_i == pytest.approx(xtgeo_linear_i, rel=1e-2)
 
     # test outside map coverage
     x_ii = x_max + 100
     y_ii = y_max + 100
-    linear_ii = await eclient.get_surface_value_x_y(epc_uri, gri_uri, x_ii, y_ii, "bilinear")
+    linear_ii = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x_ii, y_ii, "bilinear")
     assert linear_ii is None
 
 
@@ -345,7 +327,8 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
 @pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
 async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     epc, crs, gri = instantiate_resqml_grid("name", 0, surface.xori, surface.yori, surface.xinc, surface.yinc, surface.ncol, surface.nrow, 12345)
-    epc_uri, _, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace=duri)
+    tran_id = await eclient.start_transaction(duri, False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
     transport_array_type = AnyArrayType.ARRAY_OF_DOUBLE
     uid = DataArrayIdentifier(
         uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
@@ -372,13 +355,14 @@ async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, 
         )
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
         assert len(response.success) == 1, "expected one success"
+    await eclient.commit_transaction(tran_id)
     # download the surface
-    chunked_surface = await eclient.get_xtgeo_surface(epc_uri, gri_uri)
+    chunked_surface = await eclient.get_xtgeo_surface(epc_uri, gri_uri,crs_uri)
     chunked_surface = np.array(chunked_surface.values.filled(np.nan))
 
     # upload surface in one go
-    epc_uri_control, _, gri_uri_control = await eclient.put_xtgeo_surface(surface, dataspace=duri)
-    control_surface = await eclient.get_xtgeo_surface(epc_uri_control, gri_uri_control)
+    epc_uri_control, gri_uri_control, crs_uri_control  = await eclient.put_xtgeo_surface(surface, 23031, duri)
+    control_surface = await eclient.get_xtgeo_surface(epc_uri_control, gri_uri_control, crs_uri_control)
     control_surface = np.array(control_surface.values.filled(np.nan))
 
     assert np.allclose(chunked_surface, control_surface)

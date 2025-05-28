@@ -2,15 +2,21 @@ import datetime
 import logging
 import typing as T
 from uuid import uuid4
-
+import numpy as np
 import lxml.etree as ET
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime
+import resqpy.model as rq
+import resqpy.time_series as rts
+import resqpy.unstructured as rug
 
+import resqpy.property as rqp
 import pyetp.resqml_objects as ro
+#import energyml.resqml.v2_0_1.resqmlv2 as ro
+#import energyml.eml.v2_0.commonv2 as roc
 from pyetp.config import SETTINGS
 from pyetp.types import DataObject
 
@@ -21,8 +27,7 @@ if T.TYPE_CHECKING:
     from xtgeo import RegularSurface
 
 
-schema_version = "2.0"
-
+schema_version = "2.0.1"
 
 def get_data_object_type(obj: ro.AbstractObject):
     return obj.__class__.__name__
@@ -83,8 +88,8 @@ def create_common_crs(title: str, projected_epsg, rotation: float = 0.0):
         projected_uom=ro.LengthUom.M,
         vertical_uom=ro.LengthUom.M,
         zincreasing_downward=True,
-        vertical_crs=ro.VerticalUnknownCrs(
-            unknown="unknown",
+        vertical_crs=ro.VerticalCrsEpsgCode(
+            epsg_code=projected_epsg
         ),
         projected_crs=ro.ProjectedCrsEpsgCode(
             epsg_code=projected_epsg,
@@ -139,7 +144,7 @@ def instantiate_resqml_grid(name: str, rotation: float, x0: float, y0: float, dx
             fastest_axis_count=ny,
             slowest_axis_count=nx,
             geometry=ro.PointGeometry(
-                local_crs=ro.DataObjectReference(
+                local_crs= ro.DataObjectReference(
                     # NOTE: See Energistics Identifier Specification 4.0
                     # (it is downloaded alongside the RESQML v2.0.1
                     # standard) section 4.1 for an explanation on the
@@ -147,7 +152,8 @@ def instantiate_resqml_grid(name: str, rotation: float, x0: float, y0: float, dx
                     content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}",
                     title=crs.citation.title,
                     uuid=crs.uuid,
-                ),
+                )
+                ,
                 points=ro.Point3dZValueArray(
                     supporting_geometry=ro.Point3dLatticeArray(
                         origin=ro.Point3d(
@@ -237,7 +243,7 @@ def uom_for_prop_title(pt: str):
         return ro.ResqmlUom.VALUE
     return ro.ResqmlUom.EUC
 
-def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, min_val=0.0, max_val=1.0, 
+def create_resqml_property(prop_title:str, continuous: bool, indexable_element: ro.IndexableElements, uns: ro.UnstructuredGridRepresentation, epc: ro.EpcExternalPartReference, min_val=0.0, max_val=1.0, 
                            timeseries=None, time_index=-1, pre_existing_propertykind = None):
     timeindex_ref = None
     use_timeseries = timeseries is not None
@@ -253,7 +259,6 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         )
 
     r_uom = ro.ResqmlUom( value= uom_for_prop_title(prop_title) )
-    # r_uom = ro.ResqmlUom( uom )
 
     if (pre_existing_propertykind is None):
         pk_uuid = uuid4()
@@ -357,8 +362,8 @@ def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, 
         )
     return cprop0, propertykind0
 
-def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_data_initial, rddms_upload_data_timestep)
-    import numpy as np
+def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg: int):  #(rddms_mesh_data_initial, rddms_upload_data_timestep)
+    
     ro_timestamps = []
     for i in geotimes:
         ro_timestamps.append(
@@ -432,7 +437,7 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_dat
         node_count=node_count,
         face_count=face_count,
         cell_shape=cellshape,
-        points=ro.Point3dHdf5Array(
+        points=ro.Point3DHdf5Array(
             coordinates=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/points",
                 hdf_proxy=ro.DataObjectReference(
@@ -514,10 +519,8 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg):  #(rddms_mesh_dat
     return uns, crs, epc, timeseries
 
 
-def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
-    import resqpy.model as rq
-    import resqpy.time_series as rts
-    import resqpy.unstructured as rug
+def convert_epc_mesh_to_resqml_mesh(epc_filename: str, title_in: str, projected_epsg: int):
+
 
     title = title_in or "hexamesh"
 
@@ -661,9 +664,8 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg):
     return uns, crs, epc, timeseries, hexa
 
 
-def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns, epc, timeseries=None, time_indices: list[int] = []):
-    import resqpy.model as rq
-    import resqpy.property as rqp
+def convert_epc_mesh_property_to_resqml_mesh(epc_filename, hexa, prop_title, uns:ro.UnstructuredGridRepresentation, epc:ro.EpcExternalPartReference, timeseries=None, time_indices: list[int] = []):
+
 
     model = rq.Model(epc_filename)
     assert model is not None
