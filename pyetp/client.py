@@ -25,7 +25,7 @@ from pyetp.config import SETTINGS
 from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils import short_id, batched
-from asyncio import timeout
+#from asyncio import timeout
 
 try:
     # for py >3.11, we can raise grouped exceptions
@@ -34,18 +34,18 @@ except ImportError:
     def ExceptionGroup(msg, errors):
         return errors[0]
 
-# try:
-#     from asyncio import timeout
-# except ImportError:
-#     import async_timeout
-
-#     @asynccontextmanager
-#     async def timeout(delay: T.Optional[float]) -> T.Any:
-#         try:
-#             async with async_timeout.timeout(delay):
-#                 yield None
-#         except asyncio.CancelledError as e:
-#             raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
+try:
+    from asyncio import timeout
+except ImportError:
+    import async_timeout
+    from contextlib import asynccontextmanager
+    @asynccontextmanager
+    async def timeout(delay: T.Optional[float]) -> T.Any:
+        try:
+            async with async_timeout.timeout(delay):
+                yield None
+        except asyncio.CancelledError as e:
+            raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
 
 
 logger = logging.getLogger(__name__)
@@ -502,11 +502,15 @@ class ETPClient(ETPConnection):
         )
     async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly :bool= True) -> uuid.UUID:
         trans_id = await self.send(StartTransaction(readOnly=readOnly, dataspaceUris=[dataspace_uri.raw_uri]))
+        if trans_id.successful is False:
+            raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
         return uuid.UUID(bytes=trans_id.transaction_uuid)
     
     async def commit_transaction(self, transaction_id: uuid.UUID):
-        trans_id = await self.send(CommitTransaction(transaction_uuid=transaction_id))
-        return trans_id
+        r = await self.send(CommitTransaction(transaction_uuid=transaction_id))
+        if r.successful is False:
+            raise Exception(r.failure_reason)
+        return r
     
     async def rollback_transaction(self, transaction_id: uuid.UUID):
         return await self.send(RollbackTransaction(transactionUuid=transaction_id))

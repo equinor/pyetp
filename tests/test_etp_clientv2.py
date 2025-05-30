@@ -224,9 +224,7 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
 async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 0)
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
-    tran_id = await eclient.start_transaction(duri, False)
     uris = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
-    await eclient.commit_transaction(tran_id)
     epc, crs, gri = await eclient.get_resqml_objects(*uris)
     resp = await eclient.delete_data_objects(*uris)
     assert len(resp) == 3
