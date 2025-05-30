@@ -38,7 +38,7 @@ try:
     from asyncio import timeout
 except ImportError:
     import async_timeout
-
+    from contextlib import asynccontextmanager
     @asynccontextmanager
     async def timeout(delay: T.Optional[float]) -> T.Any:
         try:
