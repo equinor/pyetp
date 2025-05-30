@@ -949,7 +949,6 @@ class ETPClient(ETPConnection):
         response = await self.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
-        print("ok")
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
         assert len(response.success) == 1, "expected one success"
         return response.success
