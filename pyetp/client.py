@@ -502,7 +502,7 @@ class ETPClient(ETPConnection):
         )
     async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly :bool= True) -> uuid.UUID:
         trans_id = await self.send(StartTransaction(readOnly=readOnly, dataspaceUris=[dataspace_uri.raw_uri]))
-        if r.successful is False:
+        if trans_id.successful is False:
             raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
         return uuid.UUID(bytes=trans_id.transaction_uuid)
     
