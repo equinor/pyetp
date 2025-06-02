@@ -291,10 +291,10 @@ class ETPClient(ETPConnection):
     #
 
     async def put_dataspaces(self, *dataspace_uris: DataspaceURI):
-
-
         _uris = list(map(DataspaceURI.from_any, dataspace_uris))
-
+        for i in _uris:
+            if i.raw_uri.count("/") > 1:
+                raise Exception(f"Max one / in dataspace name")
         time = self.timestamp
         response = await self.send(
             PutDataspaces(dataspaces={
