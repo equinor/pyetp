@@ -437,7 +437,7 @@ def create_resqml_mesh(rmdi, rmdts, geotimes, projected_epsg: int):  #(rddms_mes
         node_count=node_count,
         face_count=face_count,
         cell_shape=cellshape,
-        points=ro.Point3DHdf5Array(
+        points=ro.Point3dHdf5Array(
             coordinates=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/points",
                 hdf_proxy=ro.DataObjectReference(
