@@ -274,6 +274,8 @@ class ETPClient(ETPConnection):
 
 
     def dataspace_uri(self, ds: str) -> DataspaceURI:
+        if ds.count("/") > 1:
+            raise Exception(f"Max one / in dataspace name")
         return DataspaceURI.from_name(ds)
     
     def list_objects(self, dataspace_uri: DataspaceURI, depth: int = 1) -> list:
@@ -291,10 +293,10 @@ class ETPClient(ETPConnection):
     #
 
     async def put_dataspaces(self, *dataspace_uris: DataspaceURI):
-
-
         _uris = list(map(DataspaceURI.from_any, dataspace_uris))
-
+        for i in _uris:
+            if i.raw_uri.count("/") > 4: # includes the 3 eml
+                raise Exception(f"Max one / in dataspace name")
         time = self.timestamp
         response = await self.send(
             PutDataspaces(dataspaces={
