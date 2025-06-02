@@ -96,7 +96,7 @@ class ETPClient(ETPConnection):
         self.timeout = timeout
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = SETTINGS.MaxWebSocketMessagePayloadSize
         self.__recvtask = asyncio.create_task(self.__recv__())
-        self.max_concurrent_requests = 1
+        self.max_concurrent_requests = SETTINGS.max_concurrent_requests
 
     #
     # client
@@ -229,8 +229,7 @@ class ETPClient(ETPConnection):
                 currentDateTime=self.timestamp,
                 earliestRetainedChangeTime=0,
                 endpointCapabilities=dict(
-                    MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size),
-                    MaxWebSocketFramePayloadSize=DataValue(item=10000)
+                    MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size)
                 )
             )
         )
@@ -262,7 +261,8 @@ class ETPClient(ETPConnection):
 
     @property
     def max_size(self):
-        return self.client_info.getCapability("MaxWebSocketMessagePayloadSize")
+        return SETTINGS.MaxWebSocketMessagePayloadSize
+        #return self.client_info.getCapability("MaxWebSocketMessagePayloadSize")
 
     @property
     def max_array_size(self):
@@ -969,7 +969,6 @@ class ETPClient(ETPConnection):
 
         all_ranges = [range(s // block_size + 1) for s in shape]
         indexes = np.array(np.meshgrid(*all_ranges)).T.reshape(-1, len(shape))
-
         for ijk in indexes:
             starts = ijk * block_size
             if offset != 0:
@@ -992,7 +991,6 @@ class ETPClient(ETPConnection):
             buffer_shape = np.array([total_count], dtype=np.int64)
         else:
             buffer_shape = np.array(metadata.dimensions, dtype=np.int64)
-
         dtype = utils_arrays.get_dtype(metadata.transport_array_type)
         buffer = np.zeros(buffer_shape, dtype=dtype)
         params = []
@@ -1016,7 +1014,6 @@ class ETPClient(ETPConnection):
         return buffer
 
     async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
-
         transport_array_type = utils_arrays.get_transport(data.dtype)
         await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
         params = []
