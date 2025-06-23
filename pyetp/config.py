@@ -23,8 +23,7 @@ class Settings(BaseSettings):
     etp_url: WebSocketUrl = Field(default='wss://host.com')
     etp_timeout: float = Field(default=15., description="Timeout in seconds")
     data_partition: Optional[str] = None
-    MaxWebSocketMessagePayloadSize: int = Field(default=30000)
-    max_concurrent_requests: int = Field(default = 5)
+    MaxWebSocketMessagePayloadSize: int = Field(default=500000000)
 
 
 SETTINGS = Settings()

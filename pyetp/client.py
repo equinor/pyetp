@@ -96,7 +96,6 @@ class ETPClient(ETPConnection):
         self.timeout = timeout
         self.client_info.endpoint_capabilities['MaxWebSocketMessagePayloadSize'] = SETTINGS.MaxWebSocketMessagePayloadSize
         self.__recvtask = asyncio.create_task(self.__recv__())
-        self.max_concurrent_requests = SETTINGS.max_concurrent_requests
 
     #
     # client
@@ -502,34 +501,36 @@ class ETPClient(ETPConnection):
             rotation=rotation,
             masked=True
         )
-    async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly :bool= True) -> uuid.UUID:
+    async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly :bool= True) -> Uuid:
         trans_id = await self.send(StartTransaction(readOnly=readOnly, dataspaceUris=[dataspace_uri.raw_uri]))
         if trans_id.successful is False:
             raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
-        return uuid.UUID(bytes=trans_id.transaction_uuid)
+        return Uuid(trans_id.transaction_uuid) #uuid.UUID(bytes=trans_id.transaction_uuid)
     
-    async def commit_transaction(self, transaction_id: uuid.UUID):
-        r = await self.send(CommitTransaction(transaction_uuid=transaction_id))
+    async def commit_transaction(self, transaction_id: Uuid):
+        r = await self.send(CommitTransaction(transactionUuid=transaction_id))
         if r.successful is False:
             raise Exception(r.failure_reason)
         return r
     
-    async def rollback_transaction(self, transaction_id: uuid.UUID):
+    async def rollback_transaction(self, transaction_id: Uuid):
         return await self.send(RollbackTransaction(transactionUuid=transaction_id))
     
     async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code: int, dataspace_uri: DataspaceURI):
         """Returns (epc_uri, crs_uri, gri_uri)"""
         assert surface.values is not None, "cannot upload empty surface"
         
-        
+        t_id = await self.start_transaction(dataspace_uri, False)
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(surface, epsg_code)
         epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace_uri=dataspace_uri)
-        response = await self.put_array(
+
+        await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file  # type: ignore
             ),
-            surface.values.filled(np.nan).astype(np.float32)
+            surface.values.filled(np.nan).astype(np.float32),
+            t_id
         )
 
         return epc_uri, gri_uri, crs_uri
@@ -693,6 +694,7 @@ class ETPClient(ETPConnection):
         assert len(cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
         st = time.time()
+        t_id = await self.start_transaction(dataspace_uri, False)
         propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace_uri=dataspace_uri))
         cprop_uri = await self.put_resqml_objects(cprop0, dataspace_uri=dataspace_uri)
         delay = time.time() - st
@@ -705,6 +707,7 @@ class ETPClient(ETPConnection):
                 pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
             ),
             array_ref,  # type: ignore
+            t_id
         )
         delay = time.time() - st
         logger.debug(f"pyetp: put_rddms_property: put array ({array_ref.shape}) took {delay} s")
@@ -715,6 +718,7 @@ class ETPClient(ETPConnection):
         dataspace_uri: DataspaceURI
     ):
         uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(epc_filename, title_in, projected_epsg)
+        t_id = await self.start_transaction(dataspace_uri, False)
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace_uri=dataspace_uri)
         timeseries_uri = ""
         if timeseries is not None:
@@ -771,7 +775,7 @@ class ETPClient(ETPConnection):
             ),
             hexa.cell_face_is_right_handed  # type: ignore
         )
-
+        await self.commit_transaction(t_id)
         #
         # mesh properties: one Property, one array of values, and an optional PropertyKind per property
         #
@@ -891,20 +895,24 @@ class ETPClient(ETPConnection):
         arrays = list(response.data_arrays.values())
         return utils_arrays.to_numpy(arrays[0])
 
-    async def put_array(self, uid: DataArrayIdentifier, data: np.ndarray):
+    async def put_array(self, uid: DataArrayIdentifier, data: np.ndarray, transaction_id: Uuid | None = None):
 
 
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
-            return await self._put_array_chuncked(uid, data)
-
+            return await self._put_array_chuncked(uid, data, transaction_id)
+        
         response = await self.send(
             PutDataArrays(
                 dataArrays={uid.path_in_resource: PutDataArraysType(uid=uid, array=utils_arrays.to_data_array(data))})
         )
+
         assert isinstance(response, PutDataArraysResponse), "Expected PutDataArraysResponse"
         assert len(response.success) == 1, "expected one success from put_array"
+        if isinstance(transaction_id, Uuid):
+            await self.commit_transaction(transaction_id)
         return response.success
+
 
     async def get_subarray(self, uid: DataArrayIdentifier, starts: T.Union[np.ndarray, T.List[int]], counts: T.Union[np.ndarray, T.List[int]]):
         starts = np.array(starts).astype(np.int64)
@@ -1004,31 +1012,33 @@ class ETPClient(ETPConnection):
             slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts-offset, ends-offset)))
             buffer[slices] = array
             return
-        coro = [populate(starts, counts) for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)]
-        logger.debug(f"Concurrent request: {self.max_concurrent_requests}")
-        for i in batched(coro, self.max_concurrent_requests):
-            await asyncio.gather(*i)    
-        # r = await asyncio.gather(*[
-        #     populate(starts, counts)
-        #     for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
-        # ])
+        # coro = [populate(starts, counts) for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)]
+        # logger.debug(f"Concurrent request: {self.max_concurrent_requests}")
+        # for i in batched(coro, self.max_concurrent_requests):
+        #     await asyncio.gather(*i)    
+        r = await asyncio.gather(*[
+            populate(starts, counts)
+            for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
+        ])
 
         return buffer
 
-    async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray):
+    async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray, transaction_id: Uuid | None = None):
         transport_array_type = utils_arrays.get_transport(data.dtype)
-        await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
-        params = []
-        coro = []
-        for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
-            params.append([starts, counts])
-            #await self.put_subarray(uid, data, starts, counts)
-            coro.append(self.put_subarray(uid, data, starts, counts))
-        logger.debug(f"Concurrent request: {self.max_concurrent_requests}")
-        for i in batched(coro, self.max_concurrent_requests):
-            await asyncio.gather(*i)    
-        #r = await asyncio.gather(*coro)
 
+        await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
+        if isinstance(transaction_id, Uuid):
+            await self.commit_transaction(transaction_id)
+
+        ds_uri = DataspaceURI.from_any(uid.uri)
+        t_id = None
+        if isinstance(transaction_id, Uuid):
+            t_id = await self.start_transaction(ds_uri, False)
+        for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
+            await self.put_subarray(uid, data, starts, counts)
+        if isinstance(t_id, Uuid):
+            await self.commit_transaction(t_id)
+        
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):

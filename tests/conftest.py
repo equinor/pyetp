@@ -28,7 +28,6 @@ async def eclient():
         pytest.skip(reason="websocket for test server not open", allow_module_level=True)
 
     async with connect() as client:
-        client.max_concurrent_requests=20
         yield client
 
 
@@ -43,8 +42,8 @@ async def default_duri(eclient: ETPClient):
 
 @pytest_asyncio.fixture
 async def duri(eclient: ETPClient):
+    uri = eclient.dataspace_uri('test/test')
     try:
-        uri = eclient.dataspace_uri('test/test')
         resp = await eclient.put_dataspaces_no_raise(uri)
         # assert len(resp) == 1, "created one dataspace"
         yield uri

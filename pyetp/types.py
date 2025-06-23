@@ -25,6 +25,7 @@ from etptypes.energistics.etp.v12.datatypes.object.data_object import \
 from etptypes.energistics.etp.v12.datatypes.object.dataspace import Dataspace
 from etptypes.energistics.etp.v12.datatypes.server_capabilities import \
     ServerCapabilities
+from etptypes.energistics.etp.v12.datatypes.uuid import Uuid
 from etptypes.energistics.etp.v12.datatypes.supported_data_object import \
     SupportedDataObject
 from etptypes.energistics.etp.v12.datatypes.supported_protocol import \

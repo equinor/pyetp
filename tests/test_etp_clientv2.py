@@ -237,9 +237,7 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    tran_id = await eclient.start_transaction(duri, False)
     epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
-    await eclient.commit_transaction(tran_id)
     epc, crs, gri = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri)
     newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     array = np.array(newsurf.values.filled(np.nan))
@@ -268,9 +266,7 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
 @pytest.mark.asyncio
 async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 100)
-    tran_id = await eclient.start_transaction(duri, False)
     epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surf, 23031, duri)
-    await eclient.commit_transaction(tran_id)
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
     # ensure rotation, step, origin etc is equal
@@ -290,9 +286,7 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    tran_id = await eclient.start_transaction(duri, False)
     epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
-    await eclient.commit_transaction(tran_id)
     x_ori = surface.xori
     y_ori = surface.yori
     x_max = x_ori + (surface.xinc*surface.ncol)
@@ -325,7 +319,6 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
 @pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
 async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     epc, crs, gri = instantiate_resqml_grid("name", 0, surface.xori, surface.yori, surface.xinc, surface.yinc, surface.ncol, surface.nrow, 12345)
-    tran_id = await eclient.start_transaction(duri, False)
     epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
     transport_array_type = AnyArrayType.ARRAY_OF_DOUBLE
     uid = DataArrayIdentifier(
@@ -353,7 +346,6 @@ async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, 
         )
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
         assert len(response.success) == 1, "expected one success"
-    await eclient.commit_transaction(tran_id)
     # download the surface
     chunked_surface = await eclient.get_xtgeo_surface(epc_uri, gri_uri,crs_uri)
     chunked_surface = np.array(chunked_surface.values.filled(np.nan))

@@ -35,9 +35,7 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
     node_uuids = model.uuids(title = 'points')         
     special_prop_titles = list(set([rqp.Property(model, uuid=u).title for u in node_uuids]))
     prop_titles = prop_titles + special_prop_titles
-    tran_id = await eclient.start_transaction(duri, False)
     rddms_uris, prop_uris = await eclient.put_epc_mesh(input_mesh_file, hexa.title, prop_titles, 23031, duri)
-    await eclient.commit_transaction(tran_id)
     uns, points, nodes_per_face, nodes_per_face_cl, faces_per_cell, faces_per_cell_cl, cell_face_is_right_handed = await eclient.get_epc_mesh(rddms_uris[0], rddms_uris[2])
 
     mesh_has_timeseries = len(rddms_uris)>3 and len(str(rddms_uris[3]))>0

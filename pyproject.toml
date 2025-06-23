@@ -32,6 +32,7 @@ pytest = "^7.4.4"
 pytest-asyncio = "^0.23.4"
 fakeredis = "^2.21.0"
 pytest-cov = "^4.1.0"
+ipykernel = "^6.29.5"
 
 [tool.pytest.ini_options]
 addopts = "-ra -v --color=yes"
