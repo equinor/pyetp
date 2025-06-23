@@ -3189,4 +3189,4 @@ tests = ["coverage (>=4.1)", "mypy", "pylint", "pytest", "pytest-cov", "pytest-m
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.13"
-content-hash = "8b3589d17728bb12a502b2e73a7201c70da3cf54b9adffe65d36624cbd8f321a"
+content-hash = "d1eaba934b1c010fe283b5cfd7791720178051c283e46ba2a5b595076cae02bc"
