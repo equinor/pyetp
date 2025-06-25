@@ -897,11 +897,15 @@ class ETPClient(ETPConnection):
 
     async def put_array(self, uid: DataArrayIdentifier, data: np.ndarray, transaction_id: Uuid | None = None):
 
-
+        await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype))
+        if isinstance(transaction_id, Uuid):
+            await self.commit_transaction(transaction_id)
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
-            return await self._put_array_chuncked(uid, data, transaction_id)
+            return await self._put_array_chuncked(uid, data, isinstance(transaction_id, Uuid))
         
+
+
         response = await self.send(
             PutDataArrays(
                 dataArrays={uid.path_in_resource: PutDataArraysType(uid=uid, array=utils_arrays.to_data_array(data))})
@@ -909,8 +913,7 @@ class ETPClient(ETPConnection):
 
         assert isinstance(response, PutDataArraysResponse), "Expected PutDataArraysResponse"
         assert len(response.success) == 1, "expected one success from put_array"
-        if isinstance(transaction_id, Uuid):
-            await self.commit_transaction(transaction_id)
+
         return response.success
 
 
@@ -1023,22 +1026,15 @@ class ETPClient(ETPConnection):
 
         return buffer
 
-    async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray, transaction_id: Uuid | None = None):
-        transport_array_type = utils_arrays.get_transport(data.dtype)
-
-        await self._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
-        if isinstance(transaction_id, Uuid):
-            await self.commit_transaction(transaction_id)
-
-        ds_uri = DataspaceURI.from_any(uid.uri)
+    async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray, use_transaction: bool = False):
         t_id = None
-        if isinstance(transaction_id, Uuid):
-            t_id = await self.start_transaction(ds_uri, False)
+        if use_transaction:
+            t_id = await self.start_transaction(DataspaceURI.from_any(uid.uri), False)
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
             await self.put_subarray(uid, data, starts, counts)
         if isinstance(t_id, Uuid):
             await self.commit_transaction(t_id)
-        
+    
         return {uid.uri: ''}
 
     async def _put_uninitialized_data_array(self, uid: DataArrayIdentifier, shape: T.Tuple[int, ...], transport_array_type=AnyArrayType.ARRAY_OF_FLOAT, logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN):

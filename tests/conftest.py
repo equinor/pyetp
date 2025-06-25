@@ -9,7 +9,7 @@ from pyetp.uri import  DataspaceURI
 SETTINGS.application_name = "geomin_testing"
 SETTINGS.etp_url = "ws://localhost:9100"
 SETTINGS.etp_timeout=30
-dataspace = "testing_space"
+dataspace = 'test/test'
 
 
 async def get_app_token(rc=None):

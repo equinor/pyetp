@@ -20,6 +20,7 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import 
 from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
     PutDataSubarraysResponse
 
+from pyetp import utils_arrays
 import pyetp.resqml_objects as ro
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.types import AnyArrayType, DataArrayIdentifier
@@ -181,7 +182,6 @@ async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
         np.testing.assert_allclose(arr, data)
         assert arr.dtype == dtype
 
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.int32])
 async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
@@ -191,6 +191,7 @@ async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, 
 
     # for some reason writing data takes aloooong time
     eclient.timeout = 60
+    await eclient._put_uninitialized_data_array(uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype))
     with temp_maxsize(eclient):
         await eclient._put_array_chuncked(uid, data)
 
