@@ -8,6 +8,7 @@ from etptypes.energistics.etp.v12.datatypes.array_of_boolean import \
     ArrayOfBoolean
 from etptypes.energistics.etp.v12.datatypes.array_of_double import \
     ArrayOfDouble
+from etptypes.energistics.etp.v12.datatypes.array_of_string import ArrayOfString
 from etptypes.energistics.etp.v12.datatypes.array_of_float import ArrayOfFloat
 from etptypes.energistics.etp.v12.datatypes.array_of_int import ArrayOfInt
 from etptypes.energistics.etp.v12.datatypes.array_of_long import ArrayOfLong
