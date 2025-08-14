@@ -48,11 +48,6 @@ except ImportError:
         except asyncio.CancelledError as e:
             raise asyncio.TimeoutError(f'Timeout ({delay}s)') from e
 
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-
 class ETPError(Exception):
     def __init__(self, message: str, code: int):
         self.message = message
@@ -116,7 +111,7 @@ class ETPClient(ETPConnection):
             raise TypeError(f"{type(body)} not valid etp protocol")
 
         msg.header.message_id = self.consume_msg_id()
-        logger.debug(
+        logging.debug(
             f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
 
         # create future recv event
@@ -146,7 +141,7 @@ class ETPClient(ETPConnection):
                 "Server responded with ETPErrors:", ETPError.from_protos(errors))
 
         if len(bodies) > 1:
-            logger.warning(
+            logging.warning(
                 f"Recived {len(bodies)} messages, but only expected one")
 
         # ok
@@ -177,9 +172,9 @@ class ETPClient(ETPConnection):
             self.__recvtask.cancel("stopped")
 
             if len(self._recv_buffer):
-                logger.error(
+                logging.error(
                     f"Closed connection - but had stuff left in buffers ({len(self._recv_buffer)})")
-                # logger.warning(self._recv_buffer)  # may contain data so lets not flood logs
+                # logging.warning(self._recv_buffer)  # may contain data so lets not flood logs
 
     #
     #
@@ -199,7 +194,7 @@ class ETPClient(ETPConnection):
 
     async def __recv__(self):
 
-        logger.debug(f"starting recv loop")
+        logging.debug(f"starting recv loop")
 
         while (True):
             msg_data = await self.ws.recv()
@@ -208,10 +203,10 @@ class ETPClient(ETPConnection):
             )
 
             if msg is None:
-                logger.error(f"Could not parse {msg_data}")
+                logging.error(f"Could not parse {msg_data}")
                 continue
 
-            logger.debug(
+            logging.debug(
                 f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
             self._add_msg_to_buffer(msg)
 
@@ -362,7 +357,6 @@ class ETPClient(ETPConnection):
             PutDataObjects(
                 dataObjects={f"{p.resource.name}_{short_id()}": p for p in objs})
         )
-        # logger.info(f"objects {response=:}")
         assert isinstance(
             response, PutDataObjectsResponse), "Expected PutDataObjectsResponse"
         # assert len(response.success) == len(objs)  # might be 0 if objects exists
@@ -405,7 +399,6 @@ class ETPClient(ETPConnection):
                 pruneContainedObjects=pruneContainedObjects
             )
         )
-        # logger.info(f"delete objects {response=:}")
         assert isinstance(
             response, DeleteDataObjectsResponse), "Expected DeleteDataObjectsResponse"
 
@@ -453,7 +446,7 @@ class ETPClient(ETPConnection):
             1].spacing.count
         buffer = 4
         if not self.check_inside(x, y, gri.grid2d_patch):
-            logger.info(f"Points not inside {x}:{y} {gri}")
+            logging.info(f"Points not inside {x}:{y} {gri}")
             return
         uid = DataArrayIdentifier(
             uri=str(epc_uri), pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
@@ -750,7 +743,7 @@ class ETPClient(ETPConnection):
         propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace_uri=dataspace_uri))
         cprop_uri = await self.put_resqml_objects(cprop0, dataspace_uri=dataspace_uri)
         delay = time.time() - st
-        logger.debug(f"pyetp: put_rddms_property: put objects took {delay} s")
+        logging.debug(f"pyetp: put_rddms_property: put objects took {delay} s")
 
         st = time.time()
         response = await self.put_array(
@@ -763,7 +756,7 @@ class ETPClient(ETPConnection):
             t_id
         )
         delay = time.time() - st
-        logger.debug(
+        logging.debug(
             f"pyetp: put_rddms_property: put array ({array_ref.shape}) took {delay} s")
         return cprop_uri, propkind_uri
 
@@ -987,7 +980,7 @@ class ETPClient(ETPConnection):
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
 
-        logger.debug(f"get_subarray {starts=:} {counts=:}")
+        logging.debug(f"get_subarray {starts=:} {counts=:}")
 
         payload = GetDataSubarraysType(
             uid=uid,
@@ -1021,7 +1014,7 @@ class ETPClient(ETPConnection):
             counts=counts.tolist(),
         )
 
-        logger.debug(
+        logging.debug(
             f"put_subarray {data.shape=:} {starts=:} {counts=:} {dataarray.data.item.__class__.__name__}")
 
         response = await self.send(
@@ -1084,7 +1077,6 @@ class ETPClient(ETPConnection):
             buffer[slices] = array
             return
         # coro = [populate(starts, counts) for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)]
-        # logger.debug(f"Concurrent request: {self.max_concurrent_requests}")
         # for i in batched(coro, self.max_concurrent_requests):
         #     await asyncio.gather(*i)
         r = await asyncio.gather(*[
