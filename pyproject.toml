@@ -21,7 +21,7 @@ redis = "^5.0.1"
 async-lru = "^2.0.4"
 async-timeout = { version = "^5.0", python = "<3.11" }
 pyarrow = "^15.0.0" # added to fix pandas deprecated warning in xtgeo
-xtgeo = "^3.8.0"
+xtgeo = "^4.0.0"
 xsdata = "^24.3.1"
 etpproto = "^1.0.7"
 resqpy = "^5.1.10"
