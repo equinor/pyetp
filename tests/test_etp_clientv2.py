@@ -133,7 +133,7 @@ async def test_disconnect_error(eclient: ETPClient):
     await eclient.ws.close()
 
     with pytest.raises(websockets.exceptions.ConnectionClosed):
-        await eclient.put_dataspaces_no_raise(eclient.dataspace_uri("doesnt matter"))
+        await eclient.put_dataspaces_no_raise([""], [""], [""], [""], eclient.dataspace_uri("doesnt matter"))
 
 
 @pytest.mark.asyncio

@@ -304,14 +304,13 @@ class ETPClient(ETPConnection):
             if i.raw_uri.count("/") > 4:  # includes the 3 eml
                 raise Exception(f"Max one / in dataspace name")
         time = self.timestamp
-        
         response = await self.send(
             PutDataspaces(dataspaces={
-                d.raw_uri: Dataspace(uri=d.raw_uri, storeCreated=time, storeLastWrite=time, path=d.dataspace, customData={
-                    "legaltags": DataValue(item=ArrayOfString(values=legaltags)), # type: ignore
-                    "otherRelevantDataCountries": DataValue(item=ArrayOfString(values=otherRelevantDataCountries)), # type: ignore
-                    "owners": DataValue(item=ArrayOfString(values=owners)), # type: ignore
-                    "viewers": DataValue(item=ArrayOfString(values=viewers)) # type: ignore
+                d.raw_uri: Dataspace(uri=d.raw_uri, storeCreated=time, storeLastWrite=time, path=d.dataspace, custom_data={
+                    "legaltags": DataValue(item=ArrayOfString(values=legaltags)), 
+                    "otherRelevantDataCountries": DataValue(item=ArrayOfString(values=otherRelevantDataCountries)), 
+                    "owners": DataValue(item=ArrayOfString(values=owners)), 
+                    "viewers": DataValue(item=ArrayOfString(values=viewers)) 
                 })
                 for d in _uris
             })

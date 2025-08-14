@@ -34,7 +34,7 @@ async def eclient():
 @pytest_asyncio.fixture
 async def default_duri(eclient: ETPClient):
     ds_uri=eclient.dataspace_uri(dataspace)
-    await eclient.put_dataspaces_no_raise(ds_uri)
+    await eclient.put_dataspaces_no_raise([""], [""], [""], [""], ds_uri)
     yield ds_uri
     await eclient.delete_dataspaces(ds_uri)
 
@@ -44,7 +44,7 @@ async def default_duri(eclient: ETPClient):
 async def duri(eclient: ETPClient):
     uri = eclient.dataspace_uri('test/test')
     try:
-        resp = await eclient.put_dataspaces_no_raise(uri)
+        resp = await eclient.put_dataspaces_no_raise([""], [""], [""], [""], uri)
         # assert len(resp) == 1, "created one dataspace"
         yield uri
     finally:
