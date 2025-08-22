@@ -20,9 +20,6 @@ import pyetp.resqml_objects as ro
 from pyetp.config import SETTINGS
 from pyetp.types import DataObject
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 if T.TYPE_CHECKING:
     from xtgeo import RegularSurface
 
@@ -539,9 +536,9 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename: str, title_in: str, projected_
 
     ts_uuid = model.uuid(obj_type="TimeSeries")
     # ts_uuid_2 = model.uuid(obj_type='GeologicTimeSeries')
-    # logger.debug(f"TS UUIDs: {ts_uuid} {ts_uuid_2}")
+    # logging.debug(f"TS UUIDs: {ts_uuid} {ts_uuid_2}")
     gts = rts.GeologicTimeSeries(model, uuid=ts_uuid)
-    logger.debug(f"gts: {gts}")
+    logging.debug(f"gts: {gts}")
     timeseries = None
     if (ts_uuid is not None) and (gts is not None):
         ro_timestamps = []
@@ -552,7 +549,7 @@ def convert_epc_mesh_to_resqml_mesh(epc_filename: str, title_in: str, projected_
                     year_offset=int(i),
                 )
             )
-        logger.info(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
+        logging.info(f"Generating time series with {len(ro_timestamps)} indices, year offsets: {ro_timestamps[0].year_offset} -- {ro_timestamps[-1].year_offset}.")
         timeseries = ro.TimeSeries(
             citation=create_common_citation(str(gts.citation_title)),
             schema_version=schema_version,
