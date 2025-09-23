@@ -26,6 +26,15 @@ xsdata = "^24.3.1"
 etpproto = "^1.0.7"
 resqpy = "^5.1.10"
 
+[dependency-groups]
+dev = [
+    "pytest >= 7.4.4",
+    "pytest-asyncio >= 0.23.4",
+    "fakeredis >= 2.21.0",
+    "pytest-cov >= 4.1.0",
+    "ipykernel >= 6.29.5",
+]
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
 pytest-asyncio = "^0.23.4"
