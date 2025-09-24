@@ -159,23 +159,47 @@ class ETPClient(ETPConnection):
         return errors
 
     async def close(self, reason=''):
-        if self.ws.closed:
-            self.__recvtask.cancel("stopped")
-            # fast exit if already closed
-            return
-
         try:
             await self._send(CloseSession(reason=reason))
         finally:
-            await self.ws.close(reason=reason)
+            # Check if the receive task is done, and if not, stop it.
+            if not self.__recvtask.done():
+                self.__recvtask.cancel("stopped")
+
             self.is_connected = False
-            self.__recvtask.cancel("stopped")
 
-            if len(self._recv_buffer):
-                logging.error(
-                    f"Closed connection - but had stuff left in buffers ({len(self._recv_buffer)})")
-                # logging.warning(self._recv_buffer)  # may contain data so lets not flood logs
+        try:
+            # Raise any potential exceptions that might have occured in the
+            # receive task
+            await self.__recvtask
+        except asyncio.CancelledError:
+            # No errors except for a cancellation, which is to be expected.
+            pass
 
+        if len(self._recv_buffer) > 0:
+            logging.error(
+                f"Connection is closed, but there are {len(self._recv_buffer)} "
+                "messages left in the buffer"
+            )
+
+        # Check if there were any messages left in the websockets connection.
+        # Reading them will speed up the closing of the connection.
+        counter = 0
+        try:
+            async for msg in self.ws:
+                counter += 1
+        except websockets.ConnectionClosed:
+            # The websockets connection had already closed. Either successfully
+            # or with an error, but we ignore both cases.
+            pass
+
+        if counter > 0:
+            logger.error(
+                f"There were {counter} unread messages in the websockets connection "
+                "after the session was closed"
+            )
+
+        logger.debug("Client closed")
     #
     #
     #
@@ -1145,16 +1169,16 @@ class connect:
         if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
 
-        ws = await websockets.connect(
+        self.ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            extra_headers=headers,
+            additional_headers=headers,
             max_size=SETTINGS.MaxWebSocketMessagePayloadSize,
             ping_timeout=self.timeout,
             open_timeout=None,
         )
 
-        self.client = ETPClient(ws, timeout=self.timeout)
+        self.client = ETPClient(self.ws, timeout=self.timeout)
 
         try:
             await self.client.request_session()
@@ -1168,3 +1192,4 @@ class connect:
     # exit the async context manager
     async def __aexit__(self, exc_type, exc: Exception, tb: TracebackType):
         await self.client.close()
+        await self.ws.close()
