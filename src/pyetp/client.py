@@ -161,6 +161,11 @@ class ETPClient(ETPConnection):
     async def close(self, reason=''):
         try:
             await self._send(CloseSession(reason=reason))
+        except websockets.ConnectionClosed:
+            logging.error(
+                "Websockets connection is closed, unable to send a CloseSession-message"
+                " to the server"
+            )
         finally:
             # Check if the receive task is done, and if not, stop it.
             if not self.__recvtask.done():
@@ -194,12 +199,12 @@ class ETPClient(ETPConnection):
             pass
 
         if counter > 0:
-            logger.error(
+            logging.error(
                 f"There were {counter} unread messages in the websockets connection "
                 "after the session was closed"
             )
 
-        logger.debug("Client closed")
+        logging.debug("Client closed")
     #
     #
     #
