@@ -180,6 +180,12 @@ class ETPClient(ETPConnection):
         except asyncio.CancelledError:
             # No errors except for a cancellation, which is to be expected.
             pass
+        except websockets.ConnectionClosed as e:
+            # The receive task errored on a closed websockets connection.
+            logging.error(
+                "The receiver task errored on a closed websockets connection. The "
+                f"message was: {e.__class__.__name__}: {e}"
+            )
 
         if len(self._recv_buffer) > 0:
             logging.error(
