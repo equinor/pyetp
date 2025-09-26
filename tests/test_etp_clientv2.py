@@ -115,8 +115,10 @@ async def test_auth():
 
 
 @pytest.mark.asyncio
-async def test_datapaces(eclient: ETPClient, duri: DataspaceURI):
-    pass  # basicically just testing if eclient and temp dataspace fixtures
+async def test_dataspaces(eclient: ETPClient, duri: DataspaceURI):
+    response = await eclient.get_dataspaces()
+    assert len(response.dataspaces) == 1
+    assert str(duri) == response.dataspaces[0].uri
 
 
 @pytest.mark.asyncio

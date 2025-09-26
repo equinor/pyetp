@@ -328,6 +328,13 @@ class ETPClient(ETPConnection):
     # dataspace
     #
 
+    async def get_dataspaces(
+        self, store_last_write_filter: int=None
+    ) -> GetDataspacesResponse:
+        return await self.send(
+            GetDataspaces(store_last_write_filter=store_last_write_filter)
+        )
+
     async def put_dataspaces(self, legaltags: list[str], otherRelevantDataCountries: list[str], owners: list[str], viewers: list[str], *dataspace_uris: DataspaceURI):
         _uris = list(map(DataspaceURI.from_any, dataspace_uris))
         for i in _uris:
