@@ -41,3 +41,7 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "-ra -v --color=yes"
 testpaths = ["tests"]
+
+
+[tool.setuptools_scm]
+version_file = "src/pyetp/_version.py"

@@ -176,3 +176,6 @@ pytest-coverage.txt
 
 # vscode
 .vscode/*
+
+# Auto-generated version file
+_version.py
