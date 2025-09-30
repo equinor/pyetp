@@ -585,11 +585,25 @@ class ETPClient(ETPConnection):
     async def rollback_transaction(self, transaction_id: Uuid):
         return await self.send(RollbackTransaction(transactionUuid=transaction_id))
 
-    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code: int, dataspace_uri: DataspaceURI):
-        """Returns (epc_uri, crs_uri, gri_uri)"""
+    async def put_xtgeo_surface(
+        self,
+        surface: RegularSurface,
+        epsg_code: int,
+        dataspace_uri: DataspaceURI,
+        handle_transaction: bool = True,
+    ):
+        """Returns (epc_uri, crs_uri, gri_uri).
+
+        If `handle_transaction == True` we start a transaction, and commit it
+        after the data has been uploaded. Otherwise, we do not handle the
+        transactions at all and assume that the user will start and commit the
+        transaction themselves.
+        """
         assert surface.values is not None, "cannot upload empty surface"
 
-        t_id = await self.start_transaction(dataspace_uri, False)
+        if handle_transaction:
+            transaction_uuid = await self.start_transaction(dataspace_uri, read_only=False)
+
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(
             surface, epsg_code)
         epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace_uri=dataspace_uri)
@@ -601,8 +615,10 @@ class ETPClient(ETPConnection):
                 pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file  # type: ignore
             ),
             surface.values.filled(np.nan).astype(np.float32),
-            t_id
         )
+
+        if handle_transaction:
+            await self.commit_transaction(transaction_uuid=transaction_uuid)
 
         return epc_uri, gri_uri, crs_uri
 
