@@ -6,7 +6,10 @@ from contextlib import contextmanager
 from typing import Tuple
 from unittest.mock import AsyncMock
 
+from conftest import construct_2d_resqml_grid_from_array
+
 import numpy as np
+import numpy.typing as npt
 import pytest
 import pytest_asyncio
 import websockets
@@ -172,30 +175,49 @@ async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.int32])
 @pytest.mark.parametrize('shape', [(256, 300), (10, 10, 10)])
-async def test_get_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype, shape: Tuple[int, ...]):
-    data = np.random.rand(*shape) * 100.
-    data = data.astype(dtype)  # type: ignore
+async def test_get_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike, shape: Tuple[int, ...]):
+    data = (np.random.rand(*shape) * 100.).astype(dtype)
+    epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
 
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    uid = DataArrayIdentifier(
+        uri=str(epc_uri),
+        path_in_resource=(
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        ),
+    )
     resp = await eclient.put_array(uid, data)
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
     assert len(resp) == 1
 
     with temp_maxsize(eclient):
-        arr = await eclient._get_array_chuncked(uid)
+        arr = await eclient._get_array_chunked(uid)
         np.testing.assert_allclose(arr, data)
         assert arr.dtype == dtype
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.int32])
-async def test_put_array_chuncked(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
+async def test_put_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike):
 
-    data = np.random.rand(150, 86) * 100.
-    data = data.astype(dtype)
+    data = (np.random.rand(150, 86) * 100.).astype(dtype)
+    epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
 
-    # for some reason writing data takes aloooong time
-    eclient.timeout = 60
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    uid = DataArrayIdentifier(
+        uri=str(epc_uri),
+        path_in_resource=(
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        ),
+    )
+
     await eclient._put_uninitialized_data_array(uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype))
+
     with temp_maxsize(eclient):
-        await eclient._put_array_chuncked(uid, data)
+        await eclient._put_array_chunked(uid, data)
+
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
 
     arr = await eclient.get_array(uid)
     np.testing.assert_allclose(arr, data)

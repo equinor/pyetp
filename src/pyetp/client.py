@@ -759,7 +759,7 @@ class ETPClient(ETPConnection):
             end_indx = i[2]+i[3]
             filtered_points[i[3]:end_indx] = points[i[0]:i[1]]
             if utils_arrays.get_nbytes(meta) * i[2]/points.shape[0] > self.max_array_size:
-                all_values[i[3]:end_indx] = await self._get_array_chuncked(props_uid, i[0], i[2])
+                all_values[i[3]:end_indx] = await self._get_array_chunked(props_uid, i[0], i[2])
             else:
                 all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
             return
@@ -1002,7 +1002,7 @@ class ETPClient(ETPConnection):
         # Check if we can upload the full array in one go.
         meta, = await self.get_array_metadata(uid)
         if utils_arrays.get_nbytes(meta) > self.max_array_size:
-            return await self._get_array_chuncked(uid)
+            return await self._get_array_chunked(uid)
 
         response = await self.send(
             GetDataArrays(dataArrays={uid.path_in_resource: uid})
@@ -1020,7 +1020,7 @@ class ETPClient(ETPConnection):
             await self.commit_transaction(transaction_id)
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
-            return await self._put_array_chuncked(uid, data, isinstance(transaction_id, Uuid))
+            return await self._put_array_chunked(uid, data, isinstance(transaction_id, Uuid))
 
         response = await self.send(
             PutDataArrays(
@@ -1083,7 +1083,7 @@ class ETPClient(ETPConnection):
         return response.success
 
     #
-    # chuncked get array - ETP will not chunck response - so we need to do it manually
+    # chunked get array - ETP will not chunk response - so we need to do it manually
     #
 
     def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0):
@@ -1111,7 +1111,7 @@ class ETPClient(ETPConnection):
                 continue
             yield starts, counts
 
-    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset: int = 0, total_count: T.Union[int, None] = None):
+    async def _get_array_chunked(self, uid: DataArrayIdentifier, offset: int = 0, total_count: T.Union[int, None] = None):
 
         metadata = (await self.get_array_metadata(uid))[0]
         if len(metadata.dimensions) != 1 and offset != 0:
@@ -1143,7 +1143,7 @@ class ETPClient(ETPConnection):
 
         return buffer
 
-    async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray, use_transaction: bool = False):
+    async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray, use_transaction: bool = False):
         t_id = None
         if use_transaction:
             t_id = await self.start_transaction(DataspaceURI.from_any(uid.uri), False)
