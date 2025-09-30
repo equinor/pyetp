@@ -560,10 +560,9 @@ class ETPClient(ETPConnection):
 
         return RegularSurface(
             ncol=array.shape[0], nrow=array.shape[1],
-            # type: ignore
             xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,
             xori=sgeo.origin.coordinate1, yori=sgeo.origin.coordinate2,
-            values=array,  # type: ignore
+            values=array,
             rotation=rotation,
             masked=True
         )
