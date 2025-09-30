@@ -1143,14 +1143,9 @@ class ETPClient(ETPConnection):
 
         return buffer
 
-    async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray, use_transaction: bool = False):
-        t_id = None
-        if use_transaction:
-            t_id = await self.start_transaction(DataspaceURI.from_any(uid.uri), False)
+    async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray):
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
             await self.put_subarray(uid, data, starts, counts)
-        if isinstance(t_id, Uuid):
-            await self.commit_transaction(t_id)
 
         return {uid.uri: ''}
 
