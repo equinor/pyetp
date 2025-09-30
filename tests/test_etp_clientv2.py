@@ -152,7 +152,8 @@ async def test_disconnect_error(eclient: ETPClient):
 async def test_timeout_error(eclient: ETPClient, uid_not_exists: DataArrayIdentifier, monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(eclient, 'timeout', 0.1)
-    monkeypatch.setattr(asyncio.Event, 'set', lambda: None)  # will never signal set
+    # This ensures that the Event flag will never be set to True
+    monkeypatch.setattr(asyncio.Event, 'set', lambda self: False)
 
     with pytest.raises(asyncio.exceptions.TimeoutError):
         await eclient.get_array_metadata(uid_not_exists)
