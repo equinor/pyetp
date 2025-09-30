@@ -431,14 +431,14 @@ class ETPClient(ETPConnection):
         response = await self.put_data_objects(*dobjs)
         return uris
 
-    async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], pruneContainedObjects=False):
+    async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], prune_contained_objects=False):
 
         _uris = list(map(str, uris))
 
         response = await self.send(
             DeleteDataObjects(
                 uris=dict(zip(_uris, _uris)),
-                pruneContainedObjects=pruneContainedObjects
+                prune_contained_objects=prune_contained_objects
             )
         )
         assert isinstance(
@@ -568,16 +568,16 @@ class ETPClient(ETPConnection):
             masked=True
         )
 
-    async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly: bool = True) -> Uuid:
-        trans_id = await self.send(StartTransaction(readOnly=readOnly, dataspaceUris=[dataspace_uri.raw_uri]))
+    async def start_transaction(self, dataspace_uri: DataspaceURI, read_only: bool = True) -> Uuid:
+        trans_id = await self.send(StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]))
         if trans_id.successful is False:
             raise Exception(
                 f"Failed starting transaction {dataspace_uri.raw_uri}")
         # uuid.UUID(bytes=trans_id.transaction_uuid)
         return Uuid(trans_id.transaction_uuid)
 
-    async def commit_transaction(self, transaction_id: Uuid):
-        r = await self.send(CommitTransaction(transactionUuid=transaction_id))
+    async def commit_transaction(self, transaction_uuid: Uuid):
+        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
         if r.successful is False:
             raise Exception(r.failure_reason)
         return r
