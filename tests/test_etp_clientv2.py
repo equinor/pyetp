@@ -60,17 +60,29 @@ def temp_maxsize(eclient: ETPClient, maxsize=10000):
 
 
 @pytest_asyncio.fixture
-async def uid(eclient: ETPClient, duri: DataspaceURI):
-    """empty DataArrayIdentifier"""
-    epc_uri, = await eclient.put_resqml_objects(create_epc(), dataspace_uri=duri)
-    yield DataArrayIdentifier(uri=str(epc_uri), pathInResource="/data")  # dummy path
-
-
-@pytest_asyncio.fixture
-async def uid_with(eclient: ETPClient, uid: DataArrayIdentifier):
+async def uid_with_data(
+    eclient: ETPClient,
+    duri: DataspaceURI,
+    random_2d_resqml_grid: tuple[
+        ro.EpcExternalPartReference,
+        ro.LocalDepth3dCrs,
+        ro.Grid2dRepresentation,
+        npt.NDArray[np.float32],
+    ],
+):
     """DataArrayIdentifier with data already set"""
-    data = np.random.rand(100, 50) * 100.
-    await eclient.put_array(uid, data.astype(np.float32))
+    epc, crs, gri, data = random_2d_resqml_grid
+    assert data.dtype == np.float32
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    uid = DataArrayIdentifier(
+        uri=str(epc_uri),
+        path_in_resource=(
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        ),
+    )
+    await eclient.put_array(uid, data)
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
     yield (data, uid)
 
 
@@ -80,11 +92,6 @@ def uid_not_exists():
         uri="eml:///dataspace('never')/eml20.EpcExternalPartReference(5fe90ad4-6d34-4f73-a72d-992b26f8442e)",
         pathInResource='/RESQML/d04327a1-c75c-4961-9b9e-cedfe247511b/zvalues'
     )
-
-
-#
-#
-#
 
 
 @pytest.mark.asyncio
@@ -125,8 +132,8 @@ async def test_dataspaces(eclient: ETPClient, duri: DataspaceURI):
 
 
 @pytest.mark.asyncio
-async def test_arraymeta(eclient: ETPClient, uid_with: Tuple[np.ndarray, DataArrayIdentifier]):
-    data, uid = uid_with
+async def test_arraymeta(eclient: ETPClient, uid_with_data: Tuple[np.ndarray, DataArrayIdentifier]):
+    data, uid = uid_with_data
     msg = await eclient.get_array_metadata(uid)
     assert len(msg) == 1
     np.testing.assert_allclose(msg[0].dimensions, data.shape)  # type: ignore
