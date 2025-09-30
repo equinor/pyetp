@@ -796,7 +796,6 @@ class ETPClient(ETPConnection):
             cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
         st = time.time()
-        t_id = await self.start_transaction(dataspace_uri, False)
         propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace_uri=dataspace_uri))
         cprop_uri = await self.put_resqml_objects(cprop0, dataspace_uri=dataspace_uri)
         delay = time.time() - st
@@ -810,7 +809,6 @@ class ETPClient(ETPConnection):
                 pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
             ),
             array_ref,  # type: ignore
-            t_id
         )
         delay = time.time() - st
         logging.debug(
@@ -823,7 +821,9 @@ class ETPClient(ETPConnection):
     ):
         uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(
             epc_filename, title_in, projected_epsg)
-        t_id = await self.start_transaction(dataspace_uri, False)
+
+        transaction_uuid = await self.start_transaction(dataspace_uri=dataspace_uri, read_only=False)
+
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace_uri=dataspace_uri)
         timeseries_uri = ""
         if timeseries is not None:
@@ -887,7 +887,8 @@ class ETPClient(ETPConnection):
             ),
             hexa.cell_face_is_right_handed  # type: ignore
         )
-        await self.commit_transaction(t_id)
+
+
         #
         # mesh properties: one Property, one array of values, and an optional PropertyKind per property
         #
@@ -910,6 +911,9 @@ class ETPClient(ETPConnection):
                 cprop_uri, propkind_uri = await self.put_rddms_property(epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace_uri)
                 cprop_uris.extend(cprop_uri)
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
+
+
+        await self.commit_transaction(transaction_uuid=transaction_uuid)
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
 
