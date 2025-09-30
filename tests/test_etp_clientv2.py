@@ -167,16 +167,28 @@ async def test_arraymeta_not_found(eclient: ETPClient, uid_not_exists: DataArray
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32, np.int64, np.bool_])
-async def test_get_array(eclient: ETPClient, uid: DataArrayIdentifier, dtype):
-    data = np.random.rand(100, 50) * 100.
-    data = data.astype(dtype)
+async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
 
+    shape = (100, 50)
+    scaling = 100.0
+    data = (np.random.rand(*shape) * scaling).astype(dtype)
+    epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
+
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    uid = DataArrayIdentifier(
+        uri=str(epc_uri),
+        path_in_resource=(
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        ),
+    )
     resp = await eclient.put_array(uid, data)
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
     assert len(resp) == 1
 
     arr = await eclient.get_array(uid)
-    np.testing.assert_allclose(arr, data)
 
+    np.testing.assert_equal(arr, data)
     assert arr.dtype == dtype
 
 
@@ -235,12 +247,23 @@ async def test_put_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('dtype', [np.int32, np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_]
 @pytest.mark.parametrize('starts', [[0, 0], [20, 20]])  #
-async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, starts):
-    data = np.random.rand(100, 50) * 100.
-    data = data.astype(dtype)
+async def test_subarrays(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike, starts: list[int]):
+    data = (np.random.rand(100, 50) * 100.).astype(dtype)
+
+    epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
+
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    uid = DataArrayIdentifier(
+        uri=str(epc_uri),
+        path_in_resource=(
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        ),
+    )
     transport_array_type = get_transport(data.dtype)
     await eclient._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
     resp = await eclient.put_subarray(uid, data, starts=starts, counts=[10, 10])
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
     assert len(resp) == 1
 
     arr = await eclient.get_subarray(uid, starts=starts, counts=[10, 10])
@@ -252,22 +275,51 @@ async def test_subarrays(eclient: ETPClient, uid: DataArrayIdentifier, dtype, st
     np.testing.assert_allclose(arr, data[starts[0]:ends[0], starts[0]:ends[1]])
 
 
-#@pytest.mark.skip(reason="Regression on test server - enable after bug fix from openetp image")
 @pytest.mark.asyncio
 async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     surf = create_surface(100, 50, 0)
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
-    uris = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
-    epc, crs, gri = await eclient.get_resqml_objects(*uris)
-    resp = await eclient.delete_data_objects(*uris)
-    assert len(resp) == 3
+    data = surf.values.filled(np.nan).astype(np.float32)
 
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    uid = DataArrayIdentifier(
+        uri=str(epc_uri),
+        path_in_resource=(
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        ),
+    )
+    resp = await eclient.put_array(uid, data)
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
+
+    grr = await eclient.list_objects(duri)
+    uris = [r.uri for r in grr.resources]
+
+    assert len(uris) == 5
+    assert str(epc_uri) in uris
+    assert str(crs_uri) in uris
+    assert str(gri_uri) in uris
+    act_uri = next(filter(lambda u: "obj_Activity(" in u, uris))
+    ate_uri = next(filter(lambda u: "obj_ActivityTemplate" in u, uris))
+
+    epc_r, crs_r, gri_r, act_r, ate_r = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri, act_uri, ate_uri)
+
+    assert epc == epc_r
+    assert crs == crs_r
+    assert gri == gri_r
+
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    # We do not have to delete the ActivityTemplate. This is meant to be reused.
+    resp = await eclient.delete_data_objects(epc_uri, crs_uri, gri_uri, act_uri)
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
+
+    assert len(resp) == 4
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('surface', [create_surface(3, 4, 0), create_surface(100, 40, 0)])
 async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
-    # NOTE: xtgeo calls the first axis (axis 0) of the values-array
-    # columns, and the second axis by rows.
+    # NOTE: xtgeo calls the first axis (axis 0) of the values-array columns,
+    # and the second axis for rows.
 
     epsg_code = 23031
     epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
@@ -302,14 +354,7 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surf, 23031, duri)
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
-    # ensure rotation, step, origin etc is equal
-    compare_surf(surf, nsurf)
-    # assert surf.generate_hash() == nsurf.generate_hash()
-
-def compare_surf(surf1: xtgeo.RegularSurface, surf2: xtgeo.RegularSurface):
-    m1 = surf1.metadata.get_metadata()
-    m2 = surf2.metadata.get_metadata()
-    assert m1 == m2
+    assert surf.metadata.get_metadata() == nsurf.metadata.get_metadata()
 
 
 @pytest.mark.asyncio
@@ -352,6 +397,9 @@ async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSur
 @pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
 async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
     epc, crs, gri = instantiate_resqml_grid("name", 0, surface.xori, surface.yori, surface.xinc, surface.yinc, surface.ncol, surface.nrow, 12345)
+
+    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+
     epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
     transport_array_type = AnyArrayType.ARRAY_OF_DOUBLE
     uid = DataArrayIdentifier(
@@ -379,6 +427,9 @@ async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, 
         )
         assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
         assert len(response.success) == 1, "expected one success"
+
+    await eclient.commit_transaction(transaction_uuid=transaction_uuid)
+
     # download the surface
     chunked_surface = await eclient.get_xtgeo_surface(epc_uri, gri_uri,crs_uri)
     chunked_surface = np.array(chunked_surface.values.filled(np.nan))
