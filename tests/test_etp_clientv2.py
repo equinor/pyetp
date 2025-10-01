@@ -305,8 +305,17 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     epc_r, crs_r, gri_r, act_r, ate_r = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri, act_uri, ate_uri)
 
     assert epc == epc_r
-    assert crs == crs_r
-    assert gri == gri_r
+
+    import sys
+    # The equality check does not work for Python 3.10. We'll leave this check
+    # in here before limiting the project to Python 3.11 and up.
+    if sys.version_info.minor == 10 and sys.version_info.major == 3:
+        assert crs.vertical_crs.epsg_code == crs_r.vertical_crs.epsg_code
+        assert crs.projected_crs.epsg_code == crs_r.projected_crs.epsg_code
+        assert gri.uuid == gri_r.uuid
+    else:
+        assert crs == crs_r
+        assert gri == gri_r
 
     transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
     # We do not have to delete the ActivityTemplate. This is meant to be reused.
