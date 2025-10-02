@@ -8,15 +8,9 @@ on:
     paths-ignore:
       - '.devcontainer/**'
       - '.github/**'
-  workflow_dispatch:
-  workflow_call:
-    inputs:
-      event_type:
-        required: true
-        type: string
-      action_type:
-        required: true
-        type: string
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -27,7 +21,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         lfs: true
     
@@ -39,23 +33,19 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install testing deps
+    - name: Install dependencies
       run: |
-        pip install poetry
-        poetry config virtualenvs.create false --local
-        poetry install --with dev --no-interaction
+        python -m pip install --upgrade pip
+        pip install .
+        pip install --group dev
+
+    - name: Start and run local test server
         docker compose -f tests/compose.yml up --detach
 
-    - name: Test
+    - name: Run tests
       run: |
-        python -m pytest -v -x -s --color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/
+        py.test -v -x -s --color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/
         
-    # - name: Comment coverage
-    #   if: ${{ github.event_name == 'pull_request'}}
-    #   uses: coroo/pytest-coverage-commentator@v1.0.2
-    #   with:
-    #     pytest-coverage: pytest-coverage.txt
-
     - name: Upload coverage reports to Codecov
       if: ${{ github.event_name == 'push'}}
       uses: codecov/codecov-action@v4.0.1

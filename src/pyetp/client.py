@@ -84,7 +84,7 @@ class ETPClient(ETPConnection):
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.WebSocketClientProtocol, timeout=10.):
+    def __init__(self, ws: websockets.ClientConnection, timeout=10.):
         super().__init__(connection_type=ConnectionType.CLIENT)
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
@@ -159,23 +159,58 @@ class ETPClient(ETPConnection):
         return errors
 
     async def close(self, reason=''):
-        if self.ws.closed:
-            self.__recvtask.cancel("stopped")
-            # fast exit if already closed
-            return
-
         try:
             await self._send(CloseSession(reason=reason))
+        except websockets.ConnectionClosed:
+            logging.error(
+                "Websockets connection is closed, unable to send a CloseSession-message"
+                " to the server"
+            )
         finally:
-            await self.ws.close(reason=reason)
+            # Check if the receive task is done, and if not, stop it.
+            if not self.__recvtask.done():
+                self.__recvtask.cancel("stopped")
+
             self.is_connected = False
-            self.__recvtask.cancel("stopped")
 
-            if len(self._recv_buffer):
-                logging.error(
-                    f"Closed connection - but had stuff left in buffers ({len(self._recv_buffer)})")
-                # logging.warning(self._recv_buffer)  # may contain data so lets not flood logs
+        try:
+            # Raise any potential exceptions that might have occured in the
+            # receive task
+            await self.__recvtask
+        except asyncio.CancelledError:
+            # No errors except for a cancellation, which is to be expected.
+            pass
+        except websockets.ConnectionClosed as e:
+            # The receive task errored on a closed websockets connection.
+            logging.error(
+                "The receiver task errored on a closed websockets connection. The "
+                f"message was: {e.__class__.__name__}: {e}"
+            )
 
+        if len(self._recv_buffer) > 0:
+            logging.error(
+                f"Connection is closed, but there are {len(self._recv_buffer)} "
+                "messages left in the buffer"
+            )
+
+        # Check if there were any messages left in the websockets connection.
+        # Reading them will speed up the closing of the connection.
+        counter = 0
+        try:
+            async for msg in self.ws:
+                counter += 1
+        except websockets.ConnectionClosed:
+            # The websockets connection had already closed. Either successfully
+            # or with an error, but we ignore both cases.
+            pass
+
+        if counter > 0:
+            logging.error(
+                f"There were {counter} unread messages in the websockets connection "
+                "after the session was closed"
+            )
+
+        logging.debug("Client closed")
     #
     #
     #
@@ -293,6 +328,13 @@ class ETPClient(ETPConnection):
     # dataspace
     #
 
+    async def get_dataspaces(
+        self, store_last_write_filter: int=None
+    ) -> GetDataspacesResponse:
+        return await self.send(
+            GetDataspaces(store_last_write_filter=store_last_write_filter)
+        )
+
     async def put_dataspaces(self, legaltags: list[str], otherRelevantDataCountries: list[str], owners: list[str], viewers: list[str], *dataspace_uris: DataspaceURI):
         _uris = list(map(DataspaceURI.from_any, dataspace_uris))
         for i in _uris:
@@ -389,14 +431,14 @@ class ETPClient(ETPConnection):
         response = await self.put_data_objects(*dobjs)
         return uris
 
-    async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], pruneContainedObjects=False):
+    async def delete_data_objects(self, *uris: T.Union[DataObjectURI, str], prune_contained_objects=False):
 
         _uris = list(map(str, uris))
 
         response = await self.send(
             DeleteDataObjects(
                 uris=dict(zip(_uris, _uris)),
-                pruneContainedObjects=pruneContainedObjects
+                prune_contained_objects=prune_contained_objects
             )
         )
         assert isinstance(
@@ -518,24 +560,23 @@ class ETPClient(ETPConnection):
 
         return RegularSurface(
             ncol=array.shape[0], nrow=array.shape[1],
-            # type: ignore
             xinc=sgeo.offset[0].spacing.value, yinc=sgeo.offset[1].spacing.value,
             xori=sgeo.origin.coordinate1, yori=sgeo.origin.coordinate2,
-            values=array,  # type: ignore
+            values=array,
             rotation=rotation,
             masked=True
         )
 
-    async def start_transaction(self, dataspace_uri: DataspaceURI, readOnly: bool = True) -> Uuid:
-        trans_id = await self.send(StartTransaction(readOnly=readOnly, dataspaceUris=[dataspace_uri.raw_uri]))
+    async def start_transaction(self, dataspace_uri: DataspaceURI, read_only: bool = True) -> Uuid:
+        trans_id = await self.send(StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]))
         if trans_id.successful is False:
             raise Exception(
                 f"Failed starting transaction {dataspace_uri.raw_uri}")
         # uuid.UUID(bytes=trans_id.transaction_uuid)
         return Uuid(trans_id.transaction_uuid)
 
-    async def commit_transaction(self, transaction_id: Uuid):
-        r = await self.send(CommitTransaction(transactionUuid=transaction_id))
+    async def commit_transaction(self, transaction_uuid: Uuid):
+        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
         if r.successful is False:
             raise Exception(r.failure_reason)
         return r
@@ -543,11 +584,25 @@ class ETPClient(ETPConnection):
     async def rollback_transaction(self, transaction_id: Uuid):
         return await self.send(RollbackTransaction(transactionUuid=transaction_id))
 
-    async def put_xtgeo_surface(self, surface: RegularSurface, epsg_code: int, dataspace_uri: DataspaceURI):
-        """Returns (epc_uri, crs_uri, gri_uri)"""
+    async def put_xtgeo_surface(
+        self,
+        surface: RegularSurface,
+        epsg_code: int,
+        dataspace_uri: DataspaceURI,
+        handle_transaction: bool = True,
+    ):
+        """Returns (epc_uri, crs_uri, gri_uri).
+
+        If `handle_transaction == True` we start a transaction, and commit it
+        after the data has been uploaded. Otherwise, we do not handle the
+        transactions at all and assume that the user will start and commit the
+        transaction themselves.
+        """
         assert surface.values is not None, "cannot upload empty surface"
 
-        t_id = await self.start_transaction(dataspace_uri, False)
+        if handle_transaction:
+            transaction_uuid = await self.start_transaction(dataspace_uri, read_only=False)
+
         epc, crs, gri = utils_xml.parse_xtgeo_surface_to_resqml_grid(
             surface, epsg_code)
         epc_uri, crs_uri, gri_uri = await self.put_resqml_objects(epc, crs, gri, dataspace_uri=dataspace_uri)
@@ -559,8 +614,10 @@ class ETPClient(ETPConnection):
                 pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file  # type: ignore
             ),
             surface.values.filled(np.nan).astype(np.float32),
-            t_id
         )
+
+        if handle_transaction:
+            await self.commit_transaction(transaction_uuid=transaction_uuid)
 
         return epc_uri, gri_uri, crs_uri
 
@@ -702,7 +759,7 @@ class ETPClient(ETPConnection):
             end_indx = i[2]+i[3]
             filtered_points[i[3]:end_indx] = points[i[0]:i[1]]
             if utils_arrays.get_nbytes(meta) * i[2]/points.shape[0] > self.max_array_size:
-                all_values[i[3]:end_indx] = await self._get_array_chuncked(props_uid, i[0], i[2])
+                all_values[i[3]:end_indx] = await self._get_array_chunked(props_uid, i[0], i[2])
             else:
                 all_values[i[3]:end_indx] = await self.get_subarray(props_uid, [i[0]], [i[2]])
             return
@@ -739,7 +796,6 @@ class ETPClient(ETPConnection):
             cprop0.patch_of_values) == 1, "property obj must have exactly one patch of values"
 
         st = time.time()
-        t_id = await self.start_transaction(dataspace_uri, False)
         propkind_uri = [""] if (propertykind0 is None) else (await self.put_resqml_objects(propertykind0, dataspace_uri=dataspace_uri))
         cprop_uri = await self.put_resqml_objects(cprop0, dataspace_uri=dataspace_uri)
         delay = time.time() - st
@@ -753,7 +809,6 @@ class ETPClient(ETPConnection):
                 pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
             ),
             array_ref,  # type: ignore
-            t_id
         )
         delay = time.time() - st
         logging.debug(
@@ -766,7 +821,9 @@ class ETPClient(ETPConnection):
     ):
         uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(
             epc_filename, title_in, projected_epsg)
-        t_id = await self.start_transaction(dataspace_uri, False)
+
+        transaction_uuid = await self.start_transaction(dataspace_uri=dataspace_uri, read_only=False)
+
         epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(epc, crs, uns, dataspace_uri=dataspace_uri)
         timeseries_uri = ""
         if timeseries is not None:
@@ -830,7 +887,8 @@ class ETPClient(ETPConnection):
             ),
             hexa.cell_face_is_right_handed  # type: ignore
         )
-        await self.commit_transaction(t_id)
+
+
         #
         # mesh properties: one Property, one array of values, and an optional PropertyKind per property
         #
@@ -853,6 +911,9 @@ class ETPClient(ETPConnection):
                 cprop_uri, propkind_uri = await self.put_rddms_property(epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace_uri)
                 cprop_uris.extend(cprop_uri)
             prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
+
+
+        await self.commit_transaction(transaction_uuid=transaction_uuid)
 
         return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
 
@@ -945,7 +1006,7 @@ class ETPClient(ETPConnection):
         # Check if we can upload the full array in one go.
         meta, = await self.get_array_metadata(uid)
         if utils_arrays.get_nbytes(meta) > self.max_array_size:
-            return await self._get_array_chuncked(uid)
+            return await self._get_array_chunked(uid)
 
         response = await self.send(
             GetDataArrays(dataArrays={uid.path_in_resource: uid})
@@ -963,7 +1024,7 @@ class ETPClient(ETPConnection):
             await self.commit_transaction(transaction_id)
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
-            return await self._put_array_chuncked(uid, data, isinstance(transaction_id, Uuid))
+            return await self._put_array_chunked(uid, data, isinstance(transaction_id, Uuid))
 
         response = await self.send(
             PutDataArrays(
@@ -1026,7 +1087,7 @@ class ETPClient(ETPConnection):
         return response.success
 
     #
-    # chuncked get array - ETP will not chunck response - so we need to do it manually
+    # chunked get array - ETP will not chunk response - so we need to do it manually
     #
 
     def _get_chunk_sizes(self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0):
@@ -1054,7 +1115,7 @@ class ETPClient(ETPConnection):
                 continue
             yield starts, counts
 
-    async def _get_array_chuncked(self, uid: DataArrayIdentifier, offset: int = 0, total_count: T.Union[int, None] = None):
+    async def _get_array_chunked(self, uid: DataArrayIdentifier, offset: int = 0, total_count: T.Union[int, None] = None):
 
         metadata = (await self.get_array_metadata(uid))[0]
         if len(metadata.dimensions) != 1 and offset != 0:
@@ -1086,14 +1147,9 @@ class ETPClient(ETPConnection):
 
         return buffer
 
-    async def _put_array_chuncked(self, uid: DataArrayIdentifier, data: np.ndarray, use_transaction: bool = False):
-        t_id = None
-        if use_transaction:
-            t_id = await self.start_transaction(DataspaceURI.from_any(uid.uri), False)
+    async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray):
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
             await self.put_subarray(uid, data, starts, counts)
-        if isinstance(t_id, Uuid):
-            await self.commit_transaction(t_id)
 
         return {uid.uri: ''}
 
@@ -1145,16 +1201,16 @@ class connect:
         if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
 
-        ws = await websockets.connect(
+        self.ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            extra_headers=headers,
+            additional_headers=headers,
             max_size=SETTINGS.MaxWebSocketMessagePayloadSize,
             ping_timeout=self.timeout,
             open_timeout=None,
         )
 
-        self.client = ETPClient(ws, timeout=self.timeout)
+        self.client = ETPClient(self.ws, timeout=self.timeout)
 
         try:
             await self.client.request_session()
@@ -1168,3 +1224,4 @@ class connect:
     # exit the async context manager
     async def __aexit__(self, exc_type, exc: Exception, tb: TracebackType):
         await self.client.close()
+        await self.ws.close()
