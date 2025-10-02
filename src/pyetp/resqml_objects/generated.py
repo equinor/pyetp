@@ -1,10 +1,11 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Optional, Union, Any
-from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 import sys
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, List, Optional, Union
+
+from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 py310 = sys.version_info.minor >= 10 or sys.version_info.major > 3
 

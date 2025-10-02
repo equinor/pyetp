@@ -2,24 +2,25 @@ import datetime
 import logging
 import typing as T
 from uuid import uuid4
-import numpy as np
+
 import lxml.etree as ET
+import numpy as np
+import resqpy.model as rq
+import resqpy.property as rqp
+import resqpy.time_series as rts
+import resqpy.unstructured as rug
+from etptypes.energistics.etp.v12.datatypes.object.data_object import DataObject
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime
-import resqpy.model as rq
-import resqpy.time_series as rts
-import resqpy.unstructured as rug
 
-import resqpy.property as rqp
 import pyetp.resqml_objects as ro
 
 # import energyml.resqml.v2_0_1.resqmlv2 as ro
 # import energyml.eml.v2_0.commonv2 as roc
 from pyetp.config import SETTINGS
-from pyetp.types import DataObject
 
 if T.TYPE_CHECKING:
     from xtgeo import RegularSurface

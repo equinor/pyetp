@@ -5,8 +5,9 @@ import resqpy.property as rqp
 import resqpy.unstructured as rug
 
 from pyetp.client import ETPClient
-from pyetp.uri import DataspaceURI
 from pyetp.resqml_objects import ContinuousProperty, DiscreteProperty
+from pyetp.uri import DataspaceURI
+
 # from energyml.resqml.v2_0_1.resqmlv2 import ContinuousProperty, DiscreteProperty
 
 
@@ -70,7 +71,6 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
 
     for key, value in prop_uris.items():
         found_indices = set()
-        propkind_uri = value[0]
         for prop_uri in value[1]:
             prop0, values = await eclient.get_epc_mesh_property(rddms_uris[0], prop_uri)
             assert prop0.supporting_representation.uuid == str(uns.uuid), (
