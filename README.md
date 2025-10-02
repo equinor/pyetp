@@ -23,6 +23,21 @@ pip install --group dev
 ```
 
 
+## Linting and formatting
+We use ruff as a linter and formatter. To lint run:
+```bash
+ruff check
+```
+To run the formatter do:
+```bash
+ruff format
+```
+Or if you just want to check what could have been formatted:
+```bash
+ruff format --check
+```
+
+
 # RESQML versions
 The library is built and tested against RESQML v2.0.1. The spec can be
 downloaded
