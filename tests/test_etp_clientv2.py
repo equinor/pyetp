@@ -5,14 +5,14 @@ from contextlib import contextmanager
 from typing import Tuple
 from unittest.mock import AsyncMock
 
-from conftest import construct_2d_resqml_grid_from_array
-
 import numpy as np
 import numpy.typing as npt
 import pytest
 import pytest_asyncio
 import websockets
 import xtgeo
+from conftest import construct_2d_resqml_grid_from_array
+from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
     DataArrayIdentifier,
 )
@@ -26,14 +26,12 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
     PutDataSubarraysResponse,
 )
 
-from pyetp import utils_arrays
 import pyetp.resqml_objects as ro
+from pyetp import utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
-from pyetp.types import AnyArrayType, DataArrayIdentifier
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils_arrays import to_data_array, get_transport
+from pyetp.utils_arrays import get_transport, to_data_array
 from pyetp.utils_xml import (
-    create_epc,
     instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
 )

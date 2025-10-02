@@ -1,19 +1,15 @@
-import uuid
 import datetime
+import uuid
 
-import pytest
-import pytest_asyncio
 import numpy as np
 import numpy.typing as npt
-
+import pytest
+import pytest_asyncio
 from xsdata.models.datatype import XmlDateTime
 
-from pyetp.client import connect
-from pyetp.client import ETPClient
-from pyetp.config import SETTINGS
-from pyetp.uri import DataspaceURI
-
 import pyetp.resqml_objects as resqml_objects
+from pyetp.client import ETPClient, connect
+from pyetp.config import SETTINGS
 
 SETTINGS.application_name = "geomin_testing"
 SETTINGS.etp_url = "ws://localhost:9100"

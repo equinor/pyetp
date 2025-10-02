@@ -1,20 +1,21 @@
 import typing as T
 
 import numpy as np
-from scipy import interpolate
-from xtgeo import RegularSurface
-
-from pyetp.types import (
-    AnyArray,
-    AnyArrayType,
-    ArrayOfBoolean,
-    ArrayOfDouble,
-    ArrayOfFloat,
-    ArrayOfInt,
-    ArrayOfLong,
+from etptypes.energistics.etp.v12.datatypes.any_array import AnyArray
+from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
+from etptypes.energistics.etp.v12.datatypes.array_of_boolean import ArrayOfBoolean
+from etptypes.energistics.etp.v12.datatypes.array_of_double import ArrayOfDouble
+from etptypes.energistics.etp.v12.datatypes.array_of_float import ArrayOfFloat
+from etptypes.energistics.etp.v12.datatypes.array_of_int import ArrayOfInt
+from etptypes.energistics.etp.v12.datatypes.array_of_long import ArrayOfLong
+from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array import (
     DataArray,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import (
     DataArrayMetadata,
 )
+from scipy import interpolate
+from xtgeo import RegularSurface
 
 SUPPORED_ARRAY_TYPES = T.Union[
     ArrayOfFloat, ArrayOfBoolean, ArrayOfInt, ArrayOfLong, ArrayOfDouble

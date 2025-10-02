@@ -2,19 +2,145 @@ import asyncio
 import datetime
 import logging
 import sys
+import time
 import typing as T
 import uuid
 from collections import defaultdict
 from types import TracebackType
-import time
+
 import numpy as np
 import websockets
 from etpproto.connection import CommunicationProtocol, ConnectionType, ETPConnection
 from etpproto.messages import Message, MessageFlags
+from etptypes import ETPModel
+from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
+from etptypes.energistics.etp.v12.datatypes.any_logical_array_type import (
+    AnyLogicalArrayType,
+)
+from etptypes.energistics.etp.v12.datatypes.array_of_string import ArrayOfString
+from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
+    DataArrayIdentifier,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import (
+    DataArrayMetadata,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.get_data_subarrays_type import (
+    GetDataSubarraysType,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_arrays_type import (
+    PutDataArraysType,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import (
+    PutDataSubarraysType,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_uninitialized_data_array_type import (
+    PutUninitializedDataArrayType,
+)
+from etptypes.energistics.etp.v12.datatypes.data_value import DataValue
+from etptypes.energistics.etp.v12.datatypes.error_info import ErrorInfo
+from etptypes.energistics.etp.v12.datatypes.object.context_info import ContextInfo
+from etptypes.energistics.etp.v12.datatypes.object.context_scope_kind import (
+    ContextScopeKind,
+)
+from etptypes.energistics.etp.v12.datatypes.object.data_object import DataObject
+from etptypes.energistics.etp.v12.datatypes.object.dataspace import Dataspace
+from etptypes.energistics.etp.v12.datatypes.object.relationship_kind import (
+    RelationshipKind,
+)
+from etptypes.energistics.etp.v12.datatypes.object.resource import Resource
+from etptypes.energistics.etp.v12.datatypes.supported_data_object import (
+    SupportedDataObject,
+)
+from etptypes.energistics.etp.v12.datatypes.supported_protocol import SupportedProtocol
+from etptypes.energistics.etp.v12.datatypes.uuid import Uuid
+from etptypes.energistics.etp.v12.datatypes.version import Version
+from etptypes.energistics.etp.v12.protocol.core.authorize import Authorize
+from etptypes.energistics.etp.v12.protocol.core.authorize_response import (
+    AuthorizeResponse,
+)
+from etptypes.energistics.etp.v12.protocol.core.close_session import CloseSession
+from etptypes.energistics.etp.v12.protocol.core.open_session import OpenSession
+from etptypes.energistics.etp.v12.protocol.core.protocol_exception import (
+    ProtocolException,
+)
+from etptypes.energistics.etp.v12.protocol.core.request_session import RequestSession
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata import (
+    GetDataArrayMetadata,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_array_metadata_response import (
+    GetDataArrayMetadataResponse,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays import (
+    GetDataArrays,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_arrays_response import (
+    GetDataArraysResponse,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays import (
+    GetDataSubarrays,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.get_data_subarrays_response import (
+    GetDataSubarraysResponse,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays import (
+    PutDataArrays,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_arrays_response import (
+    PutDataArraysResponse,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import (
+    PutDataSubarrays,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import (
+    PutDataSubarraysResponse,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays import (
+    PutUninitializedDataArrays,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_uninitialized_data_arrays_response import (
+    PutUninitializedDataArraysResponse,
+)
+from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces import (
+    DeleteDataspaces,
+)
+from etptypes.energistics.etp.v12.protocol.dataspace.delete_dataspaces_response import (
+    DeleteDataspacesResponse,
+)
+from etptypes.energistics.etp.v12.protocol.dataspace.get_dataspaces import GetDataspaces
+from etptypes.energistics.etp.v12.protocol.dataspace.get_dataspaces_response import (
+    GetDataspacesResponse,
+)
+from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import PutDataspaces
+from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import (
+    PutDataspacesResponse,
+)
+from etptypes.energistics.etp.v12.protocol.discovery.get_resources import GetResources
+from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import (
+    DeleteDataObjects,
+)
+from etptypes.energistics.etp.v12.protocol.store.delete_data_objects_response import (
+    DeleteDataObjectsResponse,
+)
+from etptypes.energistics.etp.v12.protocol.store.get_data_objects import GetDataObjects
+from etptypes.energistics.etp.v12.protocol.store.get_data_objects_response import (
+    GetDataObjectsResponse,
+)
+from etptypes.energistics.etp.v12.protocol.store.put_data_objects import PutDataObjects
+from etptypes.energistics.etp.v12.protocol.store.put_data_objects_response import (
+    PutDataObjectsResponse,
+)
+from etptypes.energistics.etp.v12.protocol.transaction.commit_transaction import (
+    CommitTransaction,
+)
+from etptypes.energistics.etp.v12.protocol.transaction.rollback_transaction import (
+    RollbackTransaction,
+)
+from etptypes.energistics.etp.v12.protocol.transaction.start_transaction import (
+    StartTransaction,
+)
 from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
-
 
 import pyetp.resqml_objects as ro
 
@@ -22,9 +148,9 @@ import pyetp.resqml_objects as ro
 # import energyml.eml.v2_0.commonv2 as roc
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
-from pyetp.types import *
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils import short_id, batched
+from pyetp.utils import short_id
+
 # from asyncio import timeout
 
 try:
@@ -39,8 +165,9 @@ except ImportError:
 try:
     from asyncio import timeout
 except ImportError:
-    import async_timeout
     from contextlib import asynccontextmanager
+
+    import async_timeout
 
     @asynccontextmanager
     async def timeout(delay: T.Optional[float]) -> T.Any:
@@ -108,7 +235,7 @@ class ETPClient(ETPConnection):
 
     async def _send(self, body: ETPModel):
         msg = Message.get_object_message(body, message_flags=MessageFlags.FINALPART)
-        if msg == None:
+        if msg is None:
             raise TypeError(f"{type(body)} not valid etp protocol")
 
         msg.header.message_id = self.consume_msg_id()
@@ -231,7 +358,7 @@ class ETPClient(ETPConnection):
             self._recv_events[msg.header.correlation_id].set()
 
     async def __recv__(self):
-        logging.debug(f"starting recv loop")
+        logging.debug("starting recv loop")
 
         while True:
             msg_data = await self.ws.recv()
@@ -315,7 +442,7 @@ class ETPClient(ETPConnection):
 
     def dataspace_uri(self, ds: str) -> DataspaceURI:
         if ds.count("/") > 1:
-            raise Exception(f"Max one / in dataspace name")
+            raise Exception("Max one / in dataspace name")
         return DataspaceURI.from_name(ds)
 
     def list_objects(self, dataspace_uri: DataspaceURI, depth: int = 1) -> list:
@@ -353,7 +480,7 @@ class ETPClient(ETPConnection):
         _uris = list(map(DataspaceURI.from_any, dataspace_uris))
         for i in _uris:
             if i.raw_uri.count("/") > 4:  # includes the 3 eml
-                raise Exception(f"Max one / in dataspace name")
+                raise Exception("Max one / in dataspace name")
         time = self.timestamp
         response = await self.send(
             PutDataspaces(
@@ -469,7 +596,7 @@ class ETPClient(ETPConnection):
             for uri, obj in zip(uris, objs)
         ]
 
-        response = await self.put_data_objects(*dobjs)
+        _ = await self.put_data_objects(*dobjs)
         return uris
 
     async def delete_data_objects(
@@ -839,7 +966,7 @@ class ETPClient(ETPConnection):
             )
         )
         chk = self.check_bound(points, x, y)
-        if chk == False:
+        if not chk:
             return None
         unique_y = np.unique(points[:, 1])
         y_smaller_sorted = np.sort(unique_y[np.argwhere(unique_y < y).flatten()])
@@ -908,7 +1035,7 @@ class ETPClient(ETPConnection):
                 )
             return
 
-        r = await asyncio.gather(*[populate(i) for i in to_fetch])
+        _ = await asyncio.gather(*[populate(i) for i in to_fetch])
 
         if isinstance(cprop, ro.DiscreteProperty):
             method = "nearest"
@@ -957,7 +1084,7 @@ class ETPClient(ETPConnection):
         logging.debug(f"pyetp: put_rddms_property: put objects took {delay} s")
 
         st = time.time()
-        response = await self.put_array(
+        _ = await self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
@@ -1001,53 +1128,63 @@ class ETPClient(ETPConnection):
         #
         # mesh geometry (six arrays)
         #
-        response = await self.put_array(
+        put_jobs = []
+
+        p = self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.points.coordinates.path_in_hdf_file,
             ),
             hexa.points_cached,  # type: ignore
         )
+        put_jobs.append(p)
 
-        response = await self.put_array(
+        p = self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file,
             ),
             hexa.nodes_per_face.astype(np.int32),  # type: ignore
         )
+        put_jobs.append(p)
 
-        response = await self.put_array(
+        p = self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file,
             ),
             hexa.nodes_per_face_cl,  # type: ignore
         )
+        put_jobs.append(p)
 
-        response = await self.put_array(
+        p = self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file,
             ),
             hexa.faces_per_cell,  # type: ignore
         )
+        put_jobs.append(p)
 
-        response = await self.put_array(
+        p = self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file,
             ),
             hexa.faces_per_cell_cl,  # type: ignore
         )
+        put_jobs.append(p)
 
-        response = await self.put_array(
+        p = self.put_array(
             DataArrayIdentifier(
                 uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
                 pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file,
             ),
             hexa.cell_face_is_right_handed,  # type: ignore
         )
+        put_jobs.append(p)
+
+        _ = await asyncio.gather(*put_jobs)
 
         #
         # mesh properties: one Property, one array of values, and an optional PropertyKind per property
@@ -1343,7 +1480,8 @@ class ETPClient(ETPConnection):
         )
 
         logging.debug(
-            f"put_subarray {data.shape=:} {starts=:} {counts=:} {dataarray.data.item.__class__.__name__}"
+            f"put_subarray {data.shape=:} {starts=:} {counts=:} "
+            f"{dataarray.data.item.__class__.__name__}"
         )
 
         response = await self.send(
@@ -1414,10 +1552,7 @@ class ETPClient(ETPConnection):
             buffer[slices] = array
             return
 
-        # coro = [populate(starts, counts) for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)]
-        # for i in batched(coro, self.max_concurrent_requests):
-        #     await asyncio.gather(*i)
-        r = await asyncio.gather(
+        _ = await asyncio.gather(
             *[
                 populate(starts, counts)
                 for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)

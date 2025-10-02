@@ -4,7 +4,9 @@ from uuid import UUID
 from etpproto.uri import DataObjectURI as _DataObjectURI
 from etpproto.uri import DataspaceUri as _DataspaceURI
 from pydantic import BaseConfig
+
 from pyetp.resqml_objects import AbstractObject
+
 # from energyml.eml.v2_0.commonv2 import AbstractObject
 
 

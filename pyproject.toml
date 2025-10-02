@@ -43,9 +43,16 @@ dev = [
 addopts = "-ra -v --color=yes"
 testpaths = ["tests"]
 
-
 [tool.setuptools_scm]
 version_file = "src/pyetp/_version.py"
+
+[tool.ruff.lint]
+extend-select = [
+    "I", # isort
+]
+ignore = [
+    "E741", # Ignore ambigious variable name
+]
 
 [tool.ruff]
 exclude = ["*.ipynb", "venv", ".venv"]
