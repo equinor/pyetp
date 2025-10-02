@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from xsdata.models.datatype import XmlDateTime
 
-import pyetp.resqml_objects as resqml_objects
+import resqml_objects.v201 as resqml_objects
 from pyetp.client import ETPClient, connect
 from pyetp.config import SETTINGS
 
