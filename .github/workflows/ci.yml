@@ -40,6 +40,7 @@ jobs:
         pip install --group dev
 
     - name: Start and run local test server
+      run: |
         docker compose -f tests/compose.yml up --detach
 
     - name: Run tests
