@@ -142,7 +142,7 @@ from pydantic import SecretStr
 from scipy.interpolate import griddata
 from xtgeo import RegularSurface
 
-import pyetp.resqml_objects as ro
+import resqml_objects.v201 as ro
 
 # import energyml.resqml.v2_0_1.resqmlv2 as ro
 # import energyml.eml.v2_0.commonv2 as roc

@@ -26,7 +26,7 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
     PutDataSubarraysResponse,
 )
 
-import pyetp.resqml_objects as ro
+import resqml_objects.v201 as ro
 from pyetp import utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataObjectURI, DataspaceURI

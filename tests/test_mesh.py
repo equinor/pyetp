@@ -4,11 +4,9 @@ import resqpy.model as rq
 import resqpy.property as rqp
 import resqpy.unstructured as rug
 
+import resqml_objects.v201 as ro
 from pyetp.client import ETPClient
-from pyetp.resqml_objects import ContinuousProperty, DiscreteProperty
 from pyetp.uri import DataspaceURI
-
-# from energyml.resqml.v2_0_1.resqmlv2 import ContinuousProperty, DiscreteProperty
 
 
 @pytest.mark.parametrize(
@@ -86,10 +84,10 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
             prop = rqp.Property(model, uuid=prop_uuid)
 
             continuous = prop.is_continuous()
-            assert isinstance(prop0, ContinuousProperty) == continuous, (
+            assert isinstance(prop0, ro.ContinuousProperty) == continuous, (
                 "property types must match"
             )
-            assert isinstance(prop0, DiscreteProperty) == (not continuous), (
+            assert isinstance(prop0, ro.DiscreteProperty) == (not continuous), (
                 "property types must match"
             )
             np.testing.assert_allclose(

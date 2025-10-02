@@ -5,9 +5,7 @@ from etpproto.uri import DataObjectURI as _DataObjectURI
 from etpproto.uri import DataspaceUri as _DataspaceURI
 from pydantic import BaseConfig
 
-from pyetp.resqml_objects import AbstractObject
-
-# from energyml.eml.v2_0.commonv2 import AbstractObject
+import resqml_objects.v201 as ro
 
 
 class _Mixin:
@@ -78,7 +76,7 @@ class DataObjectURI(_DataObjectURI, _Mixin):
         return cls(f"{duri}/{domain_and_version}.{obj_type}({uuid})")
 
     @classmethod
-    def from_obj(cls, dataspace: Union[DataspaceURI, str], obj: AbstractObject):
+    def from_obj(cls, dataspace: Union[DataspaceURI, str], obj: ro.AbstractObject):
         objname = obj.__class__.__name__
         if getattr(obj, "Meta", None):
             namespace: str = getattr(obj.Meta, "namespace", None) or getattr(

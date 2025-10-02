@@ -1,4 +1,4 @@
-from pyetp.resqml_objects.generated import (
+from .generated import (
     URL,
     AbsorbedDoseMeasure,
     AbsorbedDoseUom,
