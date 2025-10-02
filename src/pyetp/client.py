@@ -143,13 +143,11 @@ from scipy.interpolate import griddata
 from xtgeo import RegularSurface
 
 import resqml_objects.v201 as ro
-
-# import energyml.resqml.v2_0_1.resqmlv2 as ro
-# import energyml.eml.v2_0.commonv2 as roc
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils import short_id
+from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 
 # from asyncio import timeout
 
@@ -571,7 +569,9 @@ class ETPClient(ETPConnection):
         self, *uris: T.Union[DataObjectURI, str]
     ) -> T.List[ro.AbstractObject]:
         data_objects = await self.get_data_objects(*uris)
-        return utils_xml.parse_resqml_objects(data_objects)
+        return [
+            parse_resqml_v201_object(data_object.data) for data_object in data_objects
+        ]
 
     async def put_resqml_objects(
         self, *objs: ro.AbstractObject, dataspace_uri: DataspaceURI
@@ -581,7 +581,7 @@ class ETPClient(ETPConnection):
         dobjs = [
             DataObject(
                 format="xml",
-                data=utils_xml.resqml_to_xml(obj),
+                data=serialize_resqml_v201_object(obj),
                 resource=Resource(
                     uri=uri.raw_uri,
                     name=obj.citation.title if obj.citation else obj.__class__.__name__,

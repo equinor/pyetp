@@ -3,23 +3,14 @@ import logging
 import typing as T
 from uuid import uuid4
 
-import lxml.etree as ET
 import numpy as np
 import resqpy.model as rq
 import resqpy.property as rqp
 import resqpy.time_series as rts
 import resqpy.unstructured as rug
-from etptypes.energistics.etp.v12.datatypes.object.data_object import DataObject
-from xsdata.formats.dataclass.context import XmlContext
-from xsdata.formats.dataclass.parsers import XmlParser
-from xsdata.formats.dataclass.serializers import XmlSerializer
-from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
-
-# import energyml.resqml.v2_0_1.resqmlv2 as ro
-# import energyml.eml.v2_0.commonv2 as roc
 from pyetp.config import SETTINGS
 
 if T.TYPE_CHECKING:
@@ -31,29 +22,6 @@ schema_version = "2.0.1"
 
 def get_data_object_type(obj: ro.AbstractObject):
     return obj.__class__.__name__
-
-
-def parse_resqml_objects(data_objects: T.List[DataObject]):
-    # This function creates a list of resqml-objects from the returned xml from
-    # the ETP-server. It dynamically finds the relevant resqml dataclass using
-    # the object name found in the xml. Its intention is to be used after
-    # calling the get_data_objects-protocol.
-
-    # Set up an XML-parser from xsdata.
-    parser = XmlParser(context=XmlContext())
-
-    return [
-        parser.from_bytes(
-            data_object.data,
-            getattr(ro, ET.QName(ET.fromstring(data_object.data).tag).localname),
-        )
-        for data_object in data_objects
-    ]
-
-
-def resqml_to_xml(obj: ro.AbstractObject):
-    serializer = XmlSerializer(config=SerializerConfig())
-    return str.encode(serializer.render(obj))
 
 
 def create_common_citation(title: str):
