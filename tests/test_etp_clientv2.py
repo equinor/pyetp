@@ -1,4 +1,3 @@
-
 import asyncio
 import random
 import sys
@@ -14,14 +13,18 @@ import pytest
 import pytest_asyncio
 import websockets
 import xtgeo
-from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import \
-    DataArrayIdentifier
-from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import \
-    PutDataSubarraysType
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import \
-    PutDataSubarrays
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import \
-    PutDataSubarraysResponse
+from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
+    DataArrayIdentifier,
+)
+from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import (
+    PutDataSubarraysType,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import (
+    PutDataSubarrays,
+)
+from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import (
+    PutDataSubarraysResponse,
+)
 
 from pyetp import utils_arrays
 import pyetp.resqml_objects as ro
@@ -29,8 +32,11 @@ from pyetp.client import ETPClient, ETPError, connect
 from pyetp.types import AnyArrayType, DataArrayIdentifier
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils_arrays import to_data_array, get_transport
-from pyetp.utils_xml import (create_epc, instantiate_resqml_grid,
-                             parse_xtgeo_surface_to_resqml_grid)
+from pyetp.utils_xml import (
+    create_epc,
+    instantiate_resqml_grid,
+    parse_xtgeo_surface_to_resqml_grid,
+)
 
 
 def create_surface(ncol: int, nrow: int, rotation: float):
@@ -49,14 +55,20 @@ def create_surface(ncol: int, nrow: int, rotation: float):
 
 @contextmanager
 def temp_maxsize(eclient: ETPClient, maxsize=10000):
-    _maxsize_before = eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"]
+    _maxsize_before = eclient.client_info.endpoint_capabilities[
+        "MaxWebSocketMessagePayloadSize"
+    ]
     try:
         # set maxsize
-        eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = maxsize
-        #assert eclient.max_size == maxsize
+        eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
+            maxsize
+        )
+        # assert eclient.max_size == maxsize
         yield eclient
     finally:
-        eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = _maxsize_before
+        eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
+            _maxsize_before
+        )
 
 
 @pytest_asyncio.fixture
@@ -73,8 +85,12 @@ async def uid_with_data(
     """DataArrayIdentifier with data already set"""
     epc, crs, gri, data = random_2d_resqml_grid
     assert data.dtype == np.float32
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -90,7 +106,7 @@ async def uid_with_data(
 def uid_not_exists():
     return DataArrayIdentifier(
         uri="eml:///dataspace('never')/eml20.EpcExternalPartReference(5fe90ad4-6d34-4f73-a72d-992b26f8442e)",
-        pathInResource='/RESQML/d04327a1-c75c-4961-9b9e-cedfe247511b/zvalues'
+        pathInResource="/RESQML/d04327a1-c75c-4961-9b9e-cedfe247511b/zvalues",
     )
 
 
@@ -102,13 +118,12 @@ async def test_open_close(monkeypatch: pytest.MonkeyPatch):
         assert client.is_connected, "should be connected"
         await client.close()  # close
 
-        monkeypatch.setattr(client, 'close', mock_close)
+        monkeypatch.setattr(client, "close", mock_close)
     mock_close.assert_called_once()  # ensure close is called on aexit
 
 
 @pytest.mark.asyncio
 async def test_manual_open_close():
-
     client = await connect()
     assert client.is_connected, "should be connected"
     await client.close()  # close
@@ -118,7 +133,6 @@ async def test_manual_open_close():
 
 @pytest.mark.asyncio
 async def test_auth():
-
     async with connect() as client:
         resp = await client.authorize("test")
         assert resp.success  # test server not protected, so any auth will do
@@ -132,7 +146,9 @@ async def test_dataspaces(eclient: ETPClient, duri: DataspaceURI):
 
 
 @pytest.mark.asyncio
-async def test_arraymeta(eclient: ETPClient, uid_with_data: Tuple[np.ndarray, DataArrayIdentifier]):
+async def test_arraymeta(
+    eclient: ETPClient, uid_with_data: Tuple[np.ndarray, DataArrayIdentifier]
+):
     data, uid = uid_with_data
     msg = await eclient.get_array_metadata(uid)
     assert len(msg) == 1
@@ -141,41 +157,52 @@ async def test_arraymeta(eclient: ETPClient, uid_with_data: Tuple[np.ndarray, Da
 
 @pytest.mark.asyncio
 async def test_disconnect_error(eclient: ETPClient):
-
     await eclient.ws.close()
 
     with pytest.raises(websockets.exceptions.ConnectionClosed):
-        await eclient.put_dataspaces_no_raise([""], [""], [""], [""], eclient.dataspace_uri("doesnt matter"))
+        await eclient.put_dataspaces_no_raise(
+            [""], [""], [""], [""], eclient.dataspace_uri("doesnt matter")
+        )
 
 
 @pytest.mark.asyncio
-async def test_timeout_error(eclient: ETPClient, uid_not_exists: DataArrayIdentifier, monkeypatch: pytest.MonkeyPatch):
-
-    monkeypatch.setattr(eclient, 'timeout', 0.1)
+async def test_timeout_error(
+    eclient: ETPClient,
+    uid_not_exists: DataArrayIdentifier,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(eclient, "timeout", 0.1)
     # This ensures that the Event flag will never be set to True
-    monkeypatch.setattr(asyncio.Event, 'set', lambda self: False)
+    monkeypatch.setattr(asyncio.Event, "set", lambda self: False)
 
     with pytest.raises(asyncio.exceptions.TimeoutError):
         await eclient.get_array_metadata(uid_not_exists)
 
 
 @pytest.mark.asyncio
-async def test_arraymeta_not_found(eclient: ETPClient, uid_not_exists: DataArrayIdentifier):
+async def test_arraymeta_not_found(
+    eclient: ETPClient, uid_not_exists: DataArrayIdentifier
+):
     with pytest.raises(ETPError, match="11"):
         await test_arraymeta(eclient, (np.zeros(1, dtype=np.float32), uid_not_exists))
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32, np.int64, np.bool_])
+@pytest.mark.parametrize(
+    "dtype", [np.float32, np.float64, np.int32, np.int64, np.bool_]
+)
 async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
-
     shape = (100, 50)
     scaling = 100.0
     data = (np.random.rand(*shape) * scaling).astype(dtype)
     epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -193,14 +220,20 @@ async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.float32, np.int32])
-@pytest.mark.parametrize('shape', [(256, 300), (10, 10, 10)])
-async def test_get_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike, shape: Tuple[int, ...]):
-    data = (np.random.rand(*shape) * 100.).astype(dtype)
+@pytest.mark.parametrize("dtype", [np.float32, np.int32])
+@pytest.mark.parametrize("shape", [(256, 300), (10, 10, 10)])
+async def test_get_array_chunked(
+    eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike, shape: Tuple[int, ...]
+):
+    data = (np.random.rand(*shape) * 100.0).astype(dtype)
     epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -216,15 +249,21 @@ async def test_get_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: 
         np.testing.assert_allclose(arr, data)
         assert arr.dtype == dtype
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.float32, np.int32])
-async def test_put_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike):
 
-    data = (np.random.rand(150, 86) * 100.).astype(dtype)
+@pytest.mark.asyncio
+@pytest.mark.parametrize("dtype", [np.float32, np.int32])
+async def test_put_array_chunked(
+    eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike
+):
+    data = (np.random.rand(150, 86) * 100.0).astype(dtype)
     epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -232,7 +271,9 @@ async def test_put_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: 
         ),
     )
 
-    await eclient._put_uninitialized_data_array(uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype))
+    await eclient._put_uninitialized_data_array(
+        uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype)
+    )
 
     with temp_maxsize(eclient):
         await eclient._put_array_chunked(uid, data)
@@ -245,15 +286,23 @@ async def test_put_array_chunked(eclient: ETPClient, duri: DataspaceURI, dtype: 
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('dtype', [np.int32, np.float32])  # [np.float32, np.float64, np.int32, np.int64, np.bool_]
-@pytest.mark.parametrize('starts', [[0, 0], [20, 20]])  #
-async def test_subarrays(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike, starts: list[int]):
-    data = (np.random.rand(100, 50) * 100.).astype(dtype)
+@pytest.mark.parametrize(
+    "dtype", [np.int32, np.float32]
+)  # [np.float32, np.float64, np.int32, np.int64, np.bool_]
+@pytest.mark.parametrize("starts", [[0, 0], [20, 20]])  #
+async def test_subarrays(
+    eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTypeLike, starts: list[int]
+):
+    data = (np.random.rand(100, 50) * 100.0).astype(dtype)
 
     epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -261,7 +310,9 @@ async def test_subarrays(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTyp
         ),
     )
     transport_array_type = get_transport(data.dtype)
-    await eclient._put_uninitialized_data_array(uid, data.shape, transport_array_type=transport_array_type)
+    await eclient._put_uninitialized_data_array(
+        uid, data.shape, transport_array_type=transport_array_type
+    )
     resp = await eclient.put_subarray(uid, data, starts=starts, counts=[10, 10])
     _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
     assert len(resp) == 1
@@ -272,7 +323,7 @@ async def test_subarrays(eclient: ETPClient, duri: DataspaceURI, dtype: npt.DTyp
     assert arr.dtype == dtype
 
     ends = np.array(starts) + 10
-    np.testing.assert_allclose(arr, data[starts[0]:ends[0], starts[0]:ends[1]])
+    np.testing.assert_allclose(arr, data[starts[0] : ends[0], starts[0] : ends[1]])
 
 
 @pytest.mark.asyncio
@@ -281,8 +332,12 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
     data = surf.values.filled(np.nan).astype(np.float32)
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -302,11 +357,14 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     act_uri = next(filter(lambda u: "obj_Activity(" in u, uris))
     ate_uri = next(filter(lambda u: "obj_ActivityTemplate" in u, uris))
 
-    epc_r, crs_r, gri_r, act_r, ate_r = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri, act_uri, ate_uri)
+    epc_r, crs_r, gri_r, act_r, ate_r = await eclient.get_resqml_objects(
+        epc_uri, crs_uri, gri_uri, act_uri, ate_uri
+    )
 
     assert epc == epc_r
 
     import sys
+
     # The equality check does not work for Python 3.10. We'll leave this check
     # in here before limiting the project to Python 3.11 and up.
     if sys.version_info.minor == 10 and sys.version_info.major == 3:
@@ -317,21 +375,30 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
         assert crs == crs_r
         assert gri == gri_r
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
     # We do not have to delete the ActivityTemplate. This is meant to be reused.
     resp = await eclient.delete_data_objects(epc_uri, crs_uri, gri_uri, act_uri)
     _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
 
     assert len(resp) == 4
 
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(3, 4, 0), create_surface(100, 40, 0)])
-async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+@pytest.mark.parametrize(
+    "surface", [create_surface(3, 4, 0), create_surface(100, 40, 0)]
+)
+async def test_rddms_roundtrip(
+    eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI
+):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array columns,
     # and the second axis for rows.
 
     epsg_code = 23031
-    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
+    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(
+        surface, epsg_code, duri
+    )
     epc, crs, gri = await eclient.get_resqml_objects(epc_uri, crs_uri, gri_uri)
     newsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     array = np.array(newsurf.values.filled(np.nan))
@@ -344,8 +411,18 @@ async def test_rddms_roundtrip(eclient: ETPClient, surface: xtgeo.RegularSurface
 
     assert crs.projected_crs.epsg_code == epsg_code
     assert surface.rotation == crs.areal_rotation.value
-    assert array.shape[0] == gri.grid2d_patch.slowest_axis_count == surface.values.shape[0] == surface.ncol
-    assert array.shape[1] == gri.grid2d_patch.fastest_axis_count == surface.values.shape[1] == surface.nrow
+    assert (
+        array.shape[0]
+        == gri.grid2d_patch.slowest_axis_count
+        == surface.values.shape[0]
+        == surface.ncol
+    )
+    assert (
+        array.shape[1]
+        == gri.grid2d_patch.fastest_axis_count
+        == surface.values.shape[1]
+        == surface.nrow
+    )
 
     supporting_geometry = gri.grid2d_patch.geometry.points.supporting_geometry
     if sys.version_info[1] != 10:
@@ -367,61 +444,97 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
-async def test_get_xy_from_surface(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
+@pytest.mark.parametrize(
+    "surface", [create_surface(100, 40, 0), create_surface(3, 3, 0)]
+)
+async def test_get_xy_from_surface(
+    eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI
+):
     # NOTE: xtgeo calls the first axis (axis 0) of the values-array
     # columns, and the second axis by rows.
 
     epsg_code = 23031
-    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(surface, epsg_code, duri)
+    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(
+        surface, epsg_code, duri
+    )
     x_ori = surface.xori
     y_ori = surface.yori
-    x_max = x_ori + (surface.xinc*surface.ncol)
-    y_max = y_ori + (surface.yinc*surface.nrow)
+    x_max = x_ori + (surface.xinc * surface.ncol)
+    y_max = y_ori + (surface.yinc * surface.nrow)
     x = random.uniform(x_ori, x_max)
     y = random.uniform(y_ori, y_max)
-    nearest = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x, y, "nearest")
+    nearest = await eclient.get_surface_value_x_y(
+        epc_uri, gri_uri, crs_uri, x, y, "nearest"
+    )
     xtgeo_nearest = surface.get_value_from_xy((x, y), sampling="nearest")
     assert nearest == pytest.approx(xtgeo_nearest)
-    linear = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x, y, "bilinear")
+    linear = await eclient.get_surface_value_x_y(
+        epc_uri, gri_uri, crs_uri, x, y, "bilinear"
+    )
     xtgeo_linear = surface.get_value_from_xy((x, y))
     assert linear == pytest.approx(xtgeo_linear)
 
     # # test x y index fencing
-    x_i = x_max - surface.xinc-1
-    y_i = y_max - surface.yinc-1
+    x_i = x_max - surface.xinc - 1
+    y_i = y_max - surface.yinc - 1
 
-    linear_i = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x_i, y_i, "bilinear")
+    linear_i = await eclient.get_surface_value_x_y(
+        epc_uri, gri_uri, crs_uri, x_i, y_i, "bilinear"
+    )
     xtgeo_linear_i = surface.get_value_from_xy((x_i, y_i))
     assert linear_i == pytest.approx(xtgeo_linear_i, rel=1e-2)
 
     # test outside map coverage
     x_ii = x_max + 100
     y_ii = y_max + 100
-    linear_ii = await eclient.get_surface_value_x_y(epc_uri, gri_uri,crs_uri, x_ii, y_ii, "bilinear")
+    linear_ii = await eclient.get_surface_value_x_y(
+        epc_uri, gri_uri, crs_uri, x_ii, y_ii, "bilinear"
+    )
     assert linear_ii is None
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('surface', [create_surface(100, 40, 0), create_surface(3, 3, 0)])
-async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI):
-    epc, crs, gri = instantiate_resqml_grid("name", 0, surface.xori, surface.yori, surface.xinc, surface.yinc, surface.ncol, surface.nrow, 12345)
+@pytest.mark.parametrize(
+    "surface", [create_surface(100, 40, 0), create_surface(3, 3, 0)]
+)
+async def test_sub_array_map(
+    eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI
+):
+    epc, crs, gri = instantiate_resqml_grid(
+        "name",
+        0,
+        surface.xori,
+        surface.yori,
+        surface.xinc,
+        surface.yinc,
+        surface.ncol,
+        surface.nrow,
+        12345,
+    )
 
-    transaction_uuid = await eclient.start_transaction(dataspace_uri=duri, read_only=False)
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
 
-    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(epc, crs, gri, dataspace_uri=duri)
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
     transport_array_type = AnyArrayType.ARRAY_OF_DOUBLE
     uid = DataArrayIdentifier(
         uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-        pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file  # type: ignore
+        pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore
     )
-    await eclient._put_uninitialized_data_array(uid, (surface.ncol, surface.nrow), transport_array_type=transport_array_type)
+    await eclient._put_uninitialized_data_array(
+        uid, (surface.ncol, surface.nrow), transport_array_type=transport_array_type
+    )
     # upload row by row
     v = surface.values.filled(np.nan)
     for i in range(surface.nrow):
         row = v[:, i]
 
-        starts = np.array([0, i], dtype=np.int64)  # len = 2 [x_start_index, y_start_index]
+        starts = np.array(
+            [0, i], dtype=np.int64
+        )  # len = 2 [x_start_index, y_start_index]
         counts = np.array((surface.ncol, 1), dtype=np.int64)  # len = 2
         values = row.reshape((surface.ncol, 1))
         dataarray = to_data_array(values)
@@ -434,18 +547,24 @@ async def test_sub_array_map(eclient: ETPClient, surface: xtgeo.RegularSurface, 
         response = await eclient.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
-        assert isinstance(response, PutDataSubarraysResponse), "Expected PutDataSubarraysResponse"
+        assert isinstance(response, PutDataSubarraysResponse), (
+            "Expected PutDataSubarraysResponse"
+        )
         assert len(response.success) == 1, "expected one success"
 
     await eclient.commit_transaction(transaction_uuid=transaction_uuid)
 
     # download the surface
-    chunked_surface = await eclient.get_xtgeo_surface(epc_uri, gri_uri,crs_uri)
+    chunked_surface = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     chunked_surface = np.array(chunked_surface.values.filled(np.nan))
 
     # upload surface in one go
-    epc_uri_control, gri_uri_control, crs_uri_control  = await eclient.put_xtgeo_surface(surface, 23031, duri)
-    control_surface = await eclient.get_xtgeo_surface(epc_uri_control, gri_uri_control, crs_uri_control)
+    epc_uri_control, gri_uri_control, crs_uri_control = await eclient.put_xtgeo_surface(
+        surface, 23031, duri
+    )
+    control_surface = await eclient.get_xtgeo_surface(
+        epc_uri_control, gri_uri_control, crs_uri_control
+    )
     control_surface = np.array(control_surface.values.filled(np.nan))
 
     assert np.allclose(chunked_surface, control_surface)

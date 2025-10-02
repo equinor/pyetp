@@ -8,22 +8,21 @@ import numpy.typing as npt
 
 from xsdata.models.datatype import XmlDateTime
 
-from pyetp.client import  connect
-from pyetp.client import  ETPClient
+from pyetp.client import connect
+from pyetp.client import ETPClient
 from pyetp.config import SETTINGS
-from pyetp.uri import  DataspaceURI
+from pyetp.uri import DataspaceURI
 
 import pyetp.resqml_objects as resqml_objects
 
 SETTINGS.application_name = "geomin_testing"
 SETTINGS.etp_url = "ws://localhost:9100"
-SETTINGS.etp_timeout=30
-dataspace = 'test/test'
+SETTINGS.etp_timeout = 30
+dataspace = "test/test"
 
 
 async def get_app_token(rc=None):
     return None
-
 
 
 @pytest_asyncio.fixture
@@ -31,10 +30,12 @@ async def eclient():
     import socket
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ws_open = sock.connect_ex(('127.0.0.1', 9100)) == 0
+    ws_open = sock.connect_ex(("127.0.0.1", 9100)) == 0
 
     if not ws_open:
-        pytest.skip(reason="websocket for test server not open", allow_module_level=True)
+        pytest.skip(
+            reason="websocket for test server not open", allow_module_level=True
+        )
 
     async with connect() as client:
         yield client
@@ -42,7 +43,7 @@ async def eclient():
 
 @pytest_asyncio.fixture
 async def duri(eclient: ETPClient):
-    uri = eclient.dataspace_uri('test/test')
+    uri = eclient.dataspace_uri("test/test")
     try:
         resp = await eclient.put_dataspaces_no_raise([""], [""], [""], [""], uri)
         # assert len(resp) == 1, "created one dataspace"
@@ -50,7 +51,6 @@ async def duri(eclient: ETPClient):
     finally:
         resp = await eclient.delete_dataspaces(uri)
         assert len(resp) == 1, "should cleanup our test dataspace"
-
 
 
 @pytest.fixture
@@ -66,6 +66,7 @@ def random_2d_resqml_grid() -> tuple[
 
     return construct_2d_resqml_grid_from_array(z_values)
 
+
 def construct_2d_resqml_grid_from_array(
     z_values: npt.NDArray[np.number],
 ) -> tuple[
@@ -74,8 +75,8 @@ def construct_2d_resqml_grid_from_array(
     resqml_objects.Grid2dRepresentation,
     npt.NDArray[np.float32],
 ]:
-    x0 =  2 * (np.random.random() - 0.5) * 1e6
-    y0 =  2 * (np.random.random() - 0.5) * 1e6
+    x0 = 2 * (np.random.random() - 0.5) * 1e6
+    y0 = 2 * (np.random.random() - 0.5) * 1e6
     dx = x0 / z_values.shape[0]
     dy = y0 / z_values.shape[1]
 
@@ -87,7 +88,6 @@ def construct_2d_resqml_grid_from_array(
     # Valid EPSG codes are between 1024 (inclusive) and 32767 (exclusive).
     vertical_epsg = np.random.randint(low=1024, high=32767)
     horizontal_epsg = np.random.randint(low=1024, high=32767)
-
 
     common_citation_fields = dict(
         creation=XmlDateTime.from_string(
@@ -107,7 +107,6 @@ def construct_2d_resqml_grid_from_array(
         uuid=str(uuid.uuid4()),
         mime_type="application/x-hdf5",
     )
-
 
     crs = resqml_objects.LocalDepth3dCrs(
         citation=resqml_objects.Citation(
@@ -134,7 +133,6 @@ def construct_2d_resqml_grid_from_array(
             epsg_code=horizontal_epsg,
         ),
     )
-
 
     gri = resqml_objects.Grid2dRepresentation(
         uuid=(grid_uuid := str(uuid.uuid4())),
