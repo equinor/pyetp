@@ -5,7 +5,9 @@ from typing import List, Optional, Union, Any
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 import sys
+
 py310 = sys.version_info.minor >= 10 or sys.version_info.major > 3
+
 
 class APIGammaRayUom(Enum):
     """
@@ -126,13 +128,13 @@ class AbsorbedDoseUom(Enum):
     URD = "urd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractProjectedCrs:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractVerticalCrs:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -649,7 +651,7 @@ class CapacitanceUom(Enum):
     U_F = "uF"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Citation:
     """
     An ISO 19115 EIP-derived set of metadata attached to all specializations of
@@ -811,7 +813,7 @@ class Citation:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CustomData:
     """WITSML - Custom or User Defined Element and Attributes Component Schema.
     Specify custom element, attributes, and types in the custom data area.
@@ -836,7 +838,7 @@ class CustomData:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DataObjectReference:
     """
     It only applies for Energistics data object.
@@ -4060,7 +4062,7 @@ class NormalizedPowerUom(Enum):
     D_B_W = "dB.W"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ObjectAlias:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -6243,7 +6245,7 @@ class VolumetricThermalExpansionUom(Enum):
     PPM_VOL_DELTA_F = "ppm[vol]/deltaF"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractContactRepresentationPart:
     """
     Parent class of the sealed and nonsealed contact elements.
@@ -6269,7 +6271,7 @@ class AbstractContactRepresentationPart:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractParameterKey:
     """Abstract class describing a key used to identify a parameter value.
 
@@ -6280,7 +6282,7 @@ class AbstractParameterKey:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractParametricLineArray:
     """Defines an array of parametric lines.
 
@@ -6293,7 +6295,7 @@ class AbstractParametricLineArray:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractPoint3dArray:
     """The abstract class of 3D points implemented in a single fashion for the
     schema.
@@ -6311,13 +6313,13 @@ class AbstractPoint3dArray:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractPropertyKind:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractValueArray:
     """Generic representation of an array of numeric, Boolean, and string values.
 
@@ -6586,7 +6588,7 @@ class Domain(Enum):
     MIXED = "mixed"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DoubleLookup:
     """
     (key,value) pairs for a lookup table.
@@ -7103,7 +7105,7 @@ class MdReference(Enum):
     KICKOFF_POINT = "kickoff point"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class NameValuePair:
     """
     Complementary optional metadata information, which may be added to any data-
@@ -7184,7 +7186,7 @@ class OrganizationKind(Enum):
     STRUCTURAL = "structural"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class OrientedMacroFace:
     """An element of a volume shell that is defined by a set of oriented faces
     belonging to boundable patches.
@@ -7243,7 +7245,7 @@ class ParameterKind(Enum):
     SUB_ACTIVITY = "subActivity"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Patch:
     """Set or range of one kind of topological element used to define part of a
     data-object; this concept exists for grid and structural data-objects.
@@ -7338,7 +7340,7 @@ class PillarShape(Enum):
     CURVED = "curved"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3d:
     """
     Defines a point using coordinates in 3D space.
@@ -9375,7 +9377,7 @@ class StreamlineFlux(Enum):
     OTHER = "other"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StringLookup:
     """
     Defines an element inside a string-to-integer lookup table.
@@ -9519,7 +9521,7 @@ class TimeSetKind(Enum):
     NOT_A_TIME_SET = "not a time set"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Timestamp:
     """
     Time.
@@ -9554,7 +9556,7 @@ class Timestamp:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractObject_Type:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
@@ -9573,7 +9575,7 @@ class AbstractObject_Type:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Boolean:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gco"
@@ -9585,7 +9587,7 @@ class Boolean:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CharacterString:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gco"
@@ -9598,11 +9600,10 @@ class CharacterString:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CodeListValue_Type:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
-
 
     code_list: str = field(
         metadata={
@@ -9633,7 +9634,7 @@ class CodeListValue_Type:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Date:
     class Meta:
         nillable = True
@@ -9646,7 +9647,7 @@ class Date:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DateTime:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gco"
@@ -9658,7 +9659,7 @@ class DateTime:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Real:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gco"
@@ -9670,7 +9671,7 @@ class Real:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class URL:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
@@ -9692,7 +9693,7 @@ class AggregationType(Enum):
     TABLE = "table"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CodeType:
     """Gml:CodeType is a generalized type to be used for a term, keyword or name.
 
@@ -9744,7 +9745,7 @@ class RelatedTimeType_relativePosition(Enum):
     ENDED_BY = "EndedBy"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SecondDefiningParameter_1:
     class Meta:
         name = "SecondDefiningParameter"
@@ -9773,7 +9774,7 @@ class SecondDefiningParameter_1:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class greenwichLongitude:
     """Gml:greenwichLongitude is the longitude of the prime meridian measured from
     the Greenwich meridian, positive eastward.
@@ -9792,7 +9793,7 @@ class greenwichLongitude:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class maximumValue:
     """The gml:minimumValue and gml:maximumValue properties allow the specification
     of minimum and maximum value normally allowed for this axis, in the unit of
@@ -9816,7 +9817,7 @@ class maximumValue:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class minimumValue:
     """The gml:minimumValue and gml:maximumValue properties allow the specification
     of minimum and maximum value normally allowed for this axis, in the unit of
@@ -9840,7 +9841,7 @@ class minimumValue:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class operationVersion:
     """Gml:operationVersion is the version of the coordinate transformation (i.e.,
     instantiation due to the stochastic nature of the parameters).
@@ -9860,7 +9861,7 @@ class operationVersion:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class realizationEpoch:
     """Gml:realizationEpoch is the time after which this datum definition is valid.
 
@@ -9877,7 +9878,7 @@ class realizationEpoch:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class remarks:
     class Meta:
         namespace = "http://www.opengis.net/gml/3.2"
@@ -9890,7 +9891,7 @@ class remarks:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class scope:
     """The gml:scope property provides a description of the usage, or limitations
     of usage, for which this CRS-related object is valid.
@@ -9909,7 +9910,7 @@ class scope:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class semiMajorAxis:
     """Gml:semiMajorAxis specifies the length of the semi-major axis of the
     ellipsoid, with its units.
@@ -9944,7 +9945,7 @@ class show_value(Enum):
     NONE = "none"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class APIGammaRayMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -9962,7 +9963,7 @@ class APIGammaRayMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class APIGravityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -9980,7 +9981,7 @@ class APIGravityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class APINeutronMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -9998,7 +9999,7 @@ class APINeutronMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbsorbedDoseMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10016,7 +10017,7 @@ class AbsorbedDoseMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractObject:
     """The intended abstract supertype of all schema roots that may be a member of
     a substitution group (whether contextual or data).
@@ -10093,7 +10094,7 @@ class AbstractObject:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ActivityOfRadioactivityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10111,7 +10112,7 @@ class ActivityOfRadioactivityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AmountOfSubstanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10129,7 +10130,7 @@ class AmountOfSubstanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AmountOfSubstancePerAmountOfSubstanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10147,7 +10148,7 @@ class AmountOfSubstancePerAmountOfSubstanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AmountOfSubstancePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10165,7 +10166,7 @@ class AmountOfSubstancePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AmountOfSubstancePerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10183,7 +10184,7 @@ class AmountOfSubstancePerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AmountOfSubstancePerTimePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10201,7 +10202,7 @@ class AmountOfSubstancePerTimePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AmountOfSubstancePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10219,7 +10220,7 @@ class AmountOfSubstancePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AnglePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10237,7 +10238,7 @@ class AnglePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AnglePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10255,7 +10256,7 @@ class AnglePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AngularAccelerationMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10273,7 +10274,7 @@ class AngularAccelerationMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AngularVelocityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10291,7 +10292,7 @@ class AngularVelocityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10309,7 +10310,7 @@ class AreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AreaPerAmountOfSubstanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10327,7 +10328,7 @@ class AreaPerAmountOfSubstanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AreaPerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10345,7 +10346,7 @@ class AreaPerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AreaPerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10363,7 +10364,7 @@ class AreaPerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AreaPerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10381,7 +10382,7 @@ class AreaPerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AreaPerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10399,7 +10400,7 @@ class AreaPerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AttenuationPerFrequencyIntervalMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10417,7 +10418,7 @@ class AttenuationPerFrequencyIntervalMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CapacitanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10435,7 +10436,7 @@ class CapacitanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DataTransferSpeedMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10453,7 +10454,7 @@ class DataTransferSpeedMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DiffusionCoefficientMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10471,7 +10472,7 @@ class DiffusionCoefficientMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DigitalStorageMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10489,7 +10490,7 @@ class DigitalStorageMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DimensionlessMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10507,7 +10508,7 @@ class DimensionlessMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DipoleMomentMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10525,7 +10526,7 @@ class DipoleMomentMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DoseEquivalentMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10543,7 +10544,7 @@ class DoseEquivalentMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DynamicViscosityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10561,7 +10562,7 @@ class DynamicViscosityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricChargeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10579,7 +10580,7 @@ class ElectricChargeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricChargePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10597,7 +10598,7 @@ class ElectricChargePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricChargePerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10615,7 +10616,7 @@ class ElectricChargePerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricChargePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10633,7 +10634,7 @@ class ElectricChargePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricConductanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10651,7 +10652,7 @@ class ElectricConductanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricConductivityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10669,7 +10670,7 @@ class ElectricConductivityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricCurrentDensityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10687,7 +10688,7 @@ class ElectricCurrentDensityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricCurrentMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10705,7 +10706,7 @@ class ElectricCurrentMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricFieldStrengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10723,7 +10724,7 @@ class ElectricFieldStrengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricPotentialDifferenceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10741,7 +10742,7 @@ class ElectricPotentialDifferenceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricResistanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10759,7 +10760,7 @@ class ElectricResistanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricResistancePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10777,7 +10778,7 @@ class ElectricResistancePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectricalResistivityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10795,7 +10796,7 @@ class ElectricalResistivityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElectromagneticMomentMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10813,7 +10814,7 @@ class ElectromagneticMomentMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyLengthPerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10831,7 +10832,7 @@ class EnergyLengthPerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyLengthPerTimeAreaTemperatureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10849,7 +10850,7 @@ class EnergyLengthPerTimeAreaTemperatureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10867,7 +10868,7 @@ class EnergyMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyPerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10885,7 +10886,7 @@ class EnergyPerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10903,7 +10904,7 @@ class EnergyPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyPerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10921,7 +10922,7 @@ class EnergyPerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyPerMassPerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10939,7 +10940,7 @@ class EnergyPerMassPerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EnergyPerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10957,7 +10958,7 @@ class EnergyPerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ForceAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10975,7 +10976,7 @@ class ForceAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ForceLengthPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -10993,7 +10994,7 @@ class ForceLengthPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ForceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11011,7 +11012,7 @@ class ForceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ForcePerForceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11029,7 +11030,7 @@ class ForcePerForceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ForcePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11047,7 +11048,7 @@ class ForcePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ForcePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11065,7 +11066,7 @@ class ForcePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FrequencyIntervalMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11083,7 +11084,7 @@ class FrequencyIntervalMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FrequencyMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11101,7 +11102,7 @@ class FrequencyMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Hdf5Dataset:
     """
     Parameters
@@ -11133,7 +11134,7 @@ class Hdf5Dataset:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class HeatCapacityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11151,7 +11152,7 @@ class HeatCapacityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class HeatFlowRateMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11169,7 +11170,7 @@ class HeatFlowRateMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class HeatTransferCoefficientMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11187,7 +11188,7 @@ class HeatTransferCoefficientMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IlluminanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11205,7 +11206,7 @@ class IlluminanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class InductanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11223,7 +11224,7 @@ class InductanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IsothermalCompressibilityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11241,7 +11242,7 @@ class IsothermalCompressibilityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class KinematicViscosityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11259,7 +11260,7 @@ class KinematicViscosityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11277,7 +11278,7 @@ class LengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11295,7 +11296,7 @@ class LengthPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthPerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11313,7 +11314,7 @@ class LengthPerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthPerPressureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11331,7 +11332,7 @@ class LengthPerPressureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthPerTemperatureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11349,7 +11350,7 @@ class LengthPerTemperatureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthPerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11367,7 +11368,7 @@ class LengthPerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LengthPerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11385,7 +11386,7 @@ class LengthPerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LightExposureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11403,7 +11404,7 @@ class LightExposureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LinearAccelerationMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11421,7 +11422,7 @@ class LinearAccelerationMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LinearThermalExpansionMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11439,7 +11440,7 @@ class LinearThermalExpansionMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LogarithmicPowerRatioMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11457,7 +11458,7 @@ class LogarithmicPowerRatioMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LogarithmicPowerRatioPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11475,7 +11476,7 @@ class LogarithmicPowerRatioPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LuminanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11493,7 +11494,7 @@ class LuminanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LuminousEfficacyMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11511,7 +11512,7 @@ class LuminousEfficacyMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LuminousFluxMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11529,7 +11530,7 @@ class LuminousFluxMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LuminousIntensityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11547,7 +11548,7 @@ class LuminousIntensityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticDipoleMomentMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11565,7 +11566,7 @@ class MagneticDipoleMomentMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticFieldStrengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11583,7 +11584,7 @@ class MagneticFieldStrengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticFluxDensityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11601,7 +11602,7 @@ class MagneticFluxDensityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticFluxDensityPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11619,7 +11620,7 @@ class MagneticFluxDensityPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticFluxMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11637,7 +11638,7 @@ class MagneticFluxMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticPermeabilityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11655,7 +11656,7 @@ class MagneticPermeabilityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MagneticVectorPotentialMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11673,7 +11674,7 @@ class MagneticVectorPotentialMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11691,7 +11692,7 @@ class MassLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11709,7 +11710,7 @@ class MassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11727,7 +11728,7 @@ class MassPerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerEnergyMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11745,7 +11746,7 @@ class MassPerEnergyMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11763,7 +11764,7 @@ class MassPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11781,7 +11782,7 @@ class MassPerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11799,7 +11800,7 @@ class MassPerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerTimePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11817,7 +11818,7 @@ class MassPerTimePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerTimePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11835,7 +11836,7 @@ class MassPerTimePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11853,7 +11854,7 @@ class MassPerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MassPerVolumePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11871,7 +11872,7 @@ class MassPerVolumePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MobilityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11889,7 +11890,7 @@ class MobilityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MolarEnergyMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11907,7 +11908,7 @@ class MolarEnergyMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MolarHeatCapacityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11925,7 +11926,7 @@ class MolarHeatCapacityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MolarVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11943,7 +11944,7 @@ class MolarVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MolecularWeightMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11961,7 +11962,7 @@ class MolecularWeightMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MomentOfForceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11979,7 +11980,7 @@ class MomentOfForceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MomentOfInertiaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -11997,7 +11998,7 @@ class MomentOfInertiaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MomentumMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12015,7 +12016,7 @@ class MomentumMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class NormalizedPowerMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12033,7 +12034,7 @@ class NormalizedPowerMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PermeabilityLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12051,7 +12052,7 @@ class PermeabilityLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PermeabilityRockMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12069,7 +12070,7 @@ class PermeabilityRockMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PermittivityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12087,7 +12088,7 @@ class PermittivityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PlaneAngleMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12105,7 +12106,7 @@ class PlaneAngleMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PotentialDifferencePerPowerDropMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12123,7 +12124,7 @@ class PotentialDifferencePerPowerDropMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PowerMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12141,7 +12142,7 @@ class PowerMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PowerPerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12159,7 +12160,7 @@ class PowerPerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PowerPerPowerMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12177,7 +12178,7 @@ class PowerPerPowerMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PowerPerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12195,7 +12196,7 @@ class PowerPerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PressureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12213,7 +12214,7 @@ class PressureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PressurePerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12231,7 +12232,7 @@ class PressurePerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PressurePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12249,7 +12250,7 @@ class PressurePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PressureSquaredMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12267,7 +12268,7 @@ class PressureSquaredMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PressureSquaredPerForceTimePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12285,7 +12286,7 @@ class PressureSquaredPerForceTimePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PressureTimePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12303,7 +12304,7 @@ class PressureTimePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ProjectedCrsEpsgCode(AbstractProjectedCrs):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -12322,7 +12323,7 @@ class ProjectedCrsEpsgCode(AbstractProjectedCrs):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ProjectedUnknownCrs(AbstractProjectedCrs):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -12344,7 +12345,7 @@ class ProjectedUnknownCrs(AbstractProjectedCrs):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class QuantityOfLightMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12362,7 +12363,7 @@ class QuantityOfLightMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RadianceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12380,7 +12381,7 @@ class RadianceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RadiantIntensityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12398,7 +12399,7 @@ class RadiantIntensityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12416,7 +12417,7 @@ class ReciprocalAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalElectricPotentialDifferenceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12434,7 +12435,7 @@ class ReciprocalElectricPotentialDifferenceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalForceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12452,7 +12453,7 @@ class ReciprocalForceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12470,7 +12471,7 @@ class ReciprocalLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12488,7 +12489,7 @@ class ReciprocalMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalMassTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12506,7 +12507,7 @@ class ReciprocalMassTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalPressureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12524,7 +12525,7 @@ class ReciprocalPressureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12542,7 +12543,7 @@ class ReciprocalTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReciprocalVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12560,7 +12561,7 @@ class ReciprocalVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReluctanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12578,7 +12579,7 @@ class ReluctanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SecondMomentOfAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12596,7 +12597,7 @@ class SecondMomentOfAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SignalingEventPerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12614,7 +12615,7 @@ class SignalingEventPerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SolidAngleMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12632,7 +12633,7 @@ class SolidAngleMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SpecificHeatCapacityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12650,7 +12651,7 @@ class SpecificHeatCapacityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TemperatureIntervalMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12668,7 +12669,7 @@ class TemperatureIntervalMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TemperatureIntervalPerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12686,7 +12687,7 @@ class TemperatureIntervalPerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TemperatureIntervalPerPressureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12704,7 +12705,7 @@ class TemperatureIntervalPerPressureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TemperatureIntervalPerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12722,7 +12723,7 @@ class TemperatureIntervalPerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThermalConductanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12740,7 +12741,7 @@ class ThermalConductanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThermalConductivityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12758,7 +12759,7 @@ class ThermalConductivityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThermalDiffusivityMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12776,7 +12777,7 @@ class ThermalDiffusivityMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThermalInsulanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12794,7 +12795,7 @@ class ThermalInsulanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThermalResistanceMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12812,7 +12813,7 @@ class ThermalResistanceMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThermodynamicTemperatureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12830,7 +12831,7 @@ class ThermodynamicTemperatureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12848,7 +12849,7 @@ class TimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12866,7 +12867,7 @@ class TimePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimePerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12884,7 +12885,7 @@ class TimePerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimePerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12902,7 +12903,7 @@ class TimePerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12920,7 +12921,7 @@ class TimePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCrsEpsgCode(AbstractVerticalCrs):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -12939,7 +12940,7 @@ class VerticalCrsEpsgCode(AbstractVerticalCrs):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalUnknownCrs(AbstractVerticalCrs):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -12961,7 +12962,7 @@ class VerticalUnknownCrs(AbstractVerticalCrs):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumeFlowRatePerVolumeFlowRateMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12979,7 +12980,7 @@ class VolumeFlowRatePerVolumeFlowRateMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -12997,7 +12998,7 @@ class VolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13015,7 +13016,7 @@ class VolumePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13033,7 +13034,7 @@ class VolumePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerMassMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13051,7 +13052,7 @@ class VolumePerMassMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerPressureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13069,7 +13070,7 @@ class VolumePerPressureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerRotationMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13087,7 +13088,7 @@ class VolumePerRotationMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimeLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13105,7 +13106,7 @@ class VolumePerTimeLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13123,7 +13124,7 @@ class VolumePerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimePerAreaMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13141,7 +13142,7 @@ class VolumePerTimePerAreaMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimePerLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13159,7 +13160,7 @@ class VolumePerTimePerLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimePerPressureLengthMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13177,7 +13178,7 @@ class VolumePerTimePerPressureLengthMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimePerPressureMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13195,7 +13196,7 @@ class VolumePerTimePerPressureMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimePerTimeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13213,7 +13214,7 @@ class VolumePerTimePerTimeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerTimePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13231,7 +13232,7 @@ class VolumePerTimePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumePerVolumeMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13249,7 +13250,7 @@ class VolumePerVolumeMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumetricHeatTransferCoefficientMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13267,7 +13268,7 @@ class VolumetricHeatTransferCoefficientMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumetricThermalExpansionMeasure:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
@@ -13285,7 +13286,7 @@ class VolumetricThermalExpansionMeasure:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractActivityParameter:
     """
     General parameter value used in one instance of activity.
@@ -13339,7 +13340,7 @@ class AbstractActivityParameter:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractBooleanArray(AbstractValueArray):
     """Generic representation of an array of Boolean values.
 
@@ -13351,7 +13352,7 @@ class AbstractBooleanArray(AbstractValueArray):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractContactInterpretationPart:
     """The parent class of an atomic, linear, or surface geologic contact
     description.
@@ -13402,7 +13403,7 @@ class AbstractContactInterpretationPart:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractDoubleArray(AbstractValueArray):
     """Generic representation of an array of double values.
 
@@ -13414,7 +13415,7 @@ class AbstractDoubleArray(AbstractValueArray):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractIntegerArray(AbstractValueArray):
     """Generic representation of an array of integer values.
 
@@ -13426,7 +13427,7 @@ class AbstractIntegerArray(AbstractValueArray):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractSeismicCoordinates:
     """Parent class is used to associate horizon and fault representations to
     seismic 2D and seismic 3D technical features.
@@ -13448,7 +13449,7 @@ class AbstractSeismicCoordinates:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AdditionalGridPoints:
     """
     Geometry given by means of points attached to additional elements of a grid.
@@ -13492,7 +13493,7 @@ class AdditionalGridPoints:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ChronostratigraphicRank:
     """The chronostratigraphic ranking of “well known” stratigraphic unit features
     in the global chronostratigraphic column.
@@ -13534,7 +13535,7 @@ class ChronostratigraphicRank:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ContactElementReference(DataObjectReference):
     """A reference to either a geologic feature interpretation or a frontier
     feature.
@@ -13563,7 +13564,7 @@ class ContactElementReference(DataObjectReference):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ContactRepresentationReference(AbstractContactRepresentationPart):
     """
     Used when the contact already exists as a top level element representation.
@@ -13582,7 +13583,7 @@ class ContactRepresentationReference(AbstractContactRepresentationPart):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeologicUnitInterpretationIndex:
     """Element that lets you index and order rock feature interpretations.
 
@@ -13617,7 +13618,7 @@ class GeologicUnitInterpretationIndex:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class HorizonInterpretationIndex:
     """Element that lets you index and order horizon interpretations.
 
@@ -13663,7 +13664,7 @@ class HorizonInterpretationIndex:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LocalPropertyKind(AbstractPropertyKind):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
@@ -13678,7 +13679,7 @@ class LocalPropertyKind(AbstractPropertyKind):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ObjectParameterKey(AbstractParameterKey):
     """
     Parameters
@@ -13700,7 +13701,7 @@ class ObjectParameterKey(AbstractParameterKey):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Patch1d(Patch):
     """
     A patch with a single 1D index count.
@@ -13724,7 +13725,7 @@ class Patch1d(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PatchBoundaries:
     """Defines the boundaries of an indexed patch.
 
@@ -13750,6 +13751,7 @@ class PatchBoundaries:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     referenced_patch: int = field(
         metadata={
             "name": "ReferencedPatch",
@@ -13776,8 +13778,7 @@ class PatchBoundaries:
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PatchOfPoints:
     """A patch of points.
 
@@ -13797,6 +13798,7 @@ class PatchOfPoints:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     points: AbstractPoint3dArray = field(
         metadata={
             "name": "Points",
@@ -13815,8 +13817,7 @@ class PatchOfPoints:
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PatchOfValues:
     """
     A patch of values.
@@ -13832,7 +13833,6 @@ class PatchOfValues:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
 
     values: AbstractValueArray = field(
         metadata={
@@ -13851,7 +13851,8 @@ class PatchOfValues:
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PropertyKindFacet:
     """Qualifiers for property values, which allows users to semantically
     specialize a property without creating a new property kind.
@@ -13887,7 +13888,7 @@ class PropertyKindFacet:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PropertyValuesPatch:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
@@ -13909,7 +13910,7 @@ class PropertyValuesPatch:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RockFluidUnitInterpretationIndex:
     """
     An element that allows ordering of fluid feature interpretations in a fluid
@@ -13943,7 +13944,7 @@ class RockFluidUnitInterpretationIndex:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StandardPropertyKind(AbstractPropertyKind):
     """A standard property kind is defined in the Energistics catalog.
 
@@ -13963,7 +13964,7 @@ class StandardPropertyKind(AbstractPropertyKind):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StratigraphicUnitInterpretationIndex:
     """Element that lets you index and order stratigraphic unit interpretations.
 
@@ -13998,7 +13999,7 @@ class StratigraphicUnitInterpretationIndex:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SubnodePatch(Patch):
     """Each patch of subnodes is defined independently of the others.
 
@@ -14039,7 +14040,7 @@ class SubnodePatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ThreePoint3d:
     """
     List of three 3D points.
@@ -14060,7 +14061,7 @@ class ThreePoint3d:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeIndex:
     """Index into a time series.
 
@@ -14094,7 +14095,7 @@ class TimeIndex:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeInterval:
     """Geological time during which a geological event (e.g., deposition, erosion,
     fracturation, faulting, intrusion) occurred.
@@ -14123,7 +14124,7 @@ class TimeInterval:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumeShell:
     """
     The shell or envelope of a structural, stratigraphic, or fluid unit.
@@ -14151,7 +14152,7 @@ class VolumeShell:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreTrajectoryParentIntersection:
     """
     For a wellbore trajectory in a multi-lateral well, indicates the MD of the
@@ -14188,7 +14189,7 @@ class WellboreTrajectoryParentIntersection:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WitsmlWellboreReference:
     """
     Reference to the WITSML wellbore that this wellbore feature is based on.
@@ -14215,7 +14216,7 @@ class WitsmlWellboreReference:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Boolean_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
@@ -14239,7 +14240,7 @@ class Boolean_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DateTime_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
@@ -14263,7 +14264,7 @@ class DateTime_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Date_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
@@ -14296,7 +14297,7 @@ class Date_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Real_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
@@ -14320,43 +14321,43 @@ class Real_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractDQ_Result_Type(AbstractObject_Type):
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_DateTypeCode(CodeListValue_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_OnLineFunctionCode(CodeListValue_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_PresentationFormCode(CodeListValue_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_RoleCode(CodeListValue_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DQ_EvaluationMethodTypeCode(CodeListValue_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DQ_Result_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -14429,7 +14430,7 @@ class DQ_Result_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_GeographicExtent_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -14502,7 +14503,7 @@ class EX_GeographicExtent_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class URL_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -14526,7 +14527,7 @@ class URL_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TM_Primitive_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gts"
@@ -14599,7 +14600,7 @@ class TM_Primitive_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CodeWithAuthorityType(CodeType):
     """
     Gml:CodeWithAuthorityType requires that the codeSpace attribute is provided in
@@ -14615,11 +14616,11 @@ class CodeWithAuthorityType(CodeType):
             "name": "codeSpace",
             "type": "Attribute",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeneralConversionPropertyType:
     """
     Gml:GeneralConversionPropertyType is a property type for association roles to a
@@ -14691,7 +14692,7 @@ class GeneralConversionPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ReferenceType:
     """
     Gml:ReferenceType is intended to be used in application schemas directly, if a
@@ -14768,7 +14769,7 @@ class ReferenceType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StringOrRefType:
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -14840,7 +14841,7 @@ class StringOrRefType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimePrimitivePropertyType:
     """
     Gml:TimePrimitivePropertyType provides a standard content model for
@@ -14918,7 +14919,7 @@ class TimePrimitivePropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class anchorDefinition(CodeType):
     """Gml:anchorDefinition is a description, possibly including coordinates, of
     the definition used to anchor the datum to the Earth. Also known as the
@@ -14936,7 +14937,7 @@ class anchorDefinition(CodeType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class axisAbbrev(CodeType):
     """Gml:axisAbbrev is the abbreviation used for this coordinate system axis;
     this abbreviation is also used to identify the coordinates in the coordinate
@@ -14950,7 +14951,7 @@ class axisAbbrev(CodeType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class coordinateOperationAccuracy:
     """Gml:coordinateOperationAccuracy is an association role to a
     DQ_PositionalAccuracy object as encoded in ISO/TS 19139, either referencing or
@@ -15026,7 +15027,7 @@ class coordinateOperationAccuracy:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class name(CodeType):
     """The gml:name property provides a label or identifier for the object,
     commonly a descriptive name.
@@ -15045,7 +15046,7 @@ class name(CodeType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class secondDefiningParameter_2:
     """Gml:secondDefiningParameter is a property containing the definition of the
     second parameter that defines the shape of an ellipsoid.
@@ -15068,7 +15069,7 @@ class secondDefiningParameter_2:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractCitedDataObject(AbstractObject):
     """The Mother Class for all Top Level Elements in RESQML.
 
@@ -15087,11 +15088,11 @@ class AbstractCitedDataObject(AbstractObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractContextualObject(AbstractObject):
     """
     Substitution group for contextual objects.
@@ -15101,7 +15102,7 @@ class AbstractContextualObject(AbstractObject):
         namespace = "http://www.energistics.org/energyml/data/commonv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractDataObject(AbstractObject):
     """
     Substitution group for normative data objects.
@@ -15111,7 +15112,7 @@ class AbstractDataObject(AbstractObject):
         namespace = "http://www.energistics.org/energyml/data/commonv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGeometry:
     """
     The base class for all geometric values, which is always associated with a
@@ -15120,6 +15121,7 @@ class AbstractGeometry:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     local_crs: DataObjectReference = field(
         metadata={
             "name": "LocalCrs",
@@ -15138,8 +15140,7 @@ class AbstractGeometry:
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Activation:
     """Used to activate and deactivate the referencing object at the times
     indicated.
@@ -15178,7 +15179,7 @@ class Activation:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BinaryContactInterpretationPart(AbstractContactInterpretationPart):
     """The main class for data describing an opinion of the contact between two
     geologic feature interpretations.
@@ -15214,35 +15215,35 @@ class BinaryContactInterpretationPart(AbstractContactInterpretationPart):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     direct_object: ContactElementReference = field(
-        default = None,
+        default=None,
         metadata={
             "name": "DirectObject",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     verb: ContactVerb = field(
-        default = None,
+        default=None,
         metadata={
             "name": "Verb",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     subject: ContactElementReference = field(
-        default = None,
+        default=None,
         metadata={
             "name": "Subject",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BooleanArrayFromDiscretePropertyArray(AbstractBooleanArray):
     """An array of Boolean values that is explicitly defined by indicating which
     indices in the array are either true or false.
@@ -15278,7 +15279,7 @@ class BooleanArrayFromDiscretePropertyArray(AbstractBooleanArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BooleanArrayFromIndexArray(AbstractBooleanArray):
     """An array of Boolean values defined by specifying explicitly which indices in
     the array are either true or false.
@@ -15325,7 +15326,7 @@ class BooleanArrayFromIndexArray(AbstractBooleanArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BooleanConstantArray(AbstractBooleanArray):
     """Represents an array of Boolean values where all values are identical.
 
@@ -15361,7 +15362,7 @@ class BooleanConstantArray(AbstractBooleanArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BooleanHdf5Array(AbstractBooleanArray):
     """
     Array of boolean values provided explicitly by an HDF5 dataset.
@@ -15385,7 +15386,7 @@ class BooleanHdf5Array(AbstractBooleanArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CellFluidPhaseUnits:
     """
     A mapping from cells to fluid phase unit interpretation to describe the initial
@@ -15425,7 +15426,7 @@ class CellFluidPhaseUnits:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CellStratigraphicUnits:
     """
     A mapping from cell to stratigraphic unit interpretation for a representations
@@ -15462,7 +15463,7 @@ class CellStratigraphicUnits:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ColumnLayerSplitColumnEdges:
     """Column edges are needed to construct the indices for the cell faces for
     column layer grids.
@@ -15514,7 +15515,7 @@ class ColumnLayerSplitColumnEdges:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ColumnSubnodePatch(SubnodePatch):
     """
     Use this subnode construction if the number of subnodes per object varies from
@@ -15540,7 +15541,7 @@ class ColumnSubnodePatch(SubnodePatch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ContactIdentity:
     """Indicates identity between two (or more) contacts.
 
@@ -15589,7 +15590,7 @@ class ContactIdentity:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ContactPatch(Patch1d):
     """
     A subset of topological elements of an existing contact representation part
@@ -15626,7 +15627,7 @@ class ContactPatch(Patch1d):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DataObjectParameter(AbstractActivityParameter):
     """
     Parameter referencing to a top level object.
@@ -15641,17 +15642,17 @@ class DataObjectParameter(AbstractActivityParameter):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     data_object: DataObjectReference = field(
-        default = None,
+        default=None,
         metadata={
             "name": "DataObject",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DoubleConstantArray(AbstractDoubleArray):
     """Represents an array of double values where all values are identical.
 
@@ -15687,7 +15688,7 @@ class DoubleConstantArray(AbstractDoubleArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DoubleHdf5Array(AbstractDoubleArray):
     """An array of double values provided explicitly by an HDF5 dataset.
 
@@ -15712,7 +15713,7 @@ class DoubleHdf5Array(AbstractDoubleArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EdgePatch(Patch1d):
     """Describes edges that are not linked to any other edge.
 
@@ -15742,7 +15743,7 @@ class EdgePatch(Patch1d):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Edges:
     """Unstructured cell grids require the definition of edges if the subnode
     attachment is of kind edges.
@@ -15779,7 +15780,7 @@ class Edges:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElementIdentity:
     """Indicates the nature of the relationship between 2 or more representations,
     specifically if they are partially or totally identical.
@@ -15807,7 +15808,6 @@ class ElementIdentity:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
 
     identity_kind: IdentityKind = field(
         metadata={
@@ -15858,7 +15858,8 @@ class ElementIdentity:
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ElementIndices:
     """
     Index into the indexable elements selected.
@@ -15885,7 +15886,7 @@ class ElementIndices:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FaultThrow:
     """
     Identifies the characteristic of the throw of a fault interpretation.
@@ -15913,7 +15914,7 @@ class FaultThrow:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FloatingPointQuantityParameter(AbstractActivityParameter):
     """
     Parameter containing a double value.
@@ -15936,7 +15937,7 @@ class FloatingPointQuantityParameter(AbstractActivityParameter):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     uom: ResqmlUom = field(
         default=None,
@@ -15945,11 +15946,11 @@ class FloatingPointQuantityParameter(AbstractActivityParameter):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntegerArrayFromBooleanMaskArray(AbstractIntegerArray):
     """
     One-dimensional array of integer values obtained from the true elements of the
@@ -15987,7 +15988,7 @@ class IntegerArrayFromBooleanMaskArray(AbstractIntegerArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntegerConstantArray(AbstractIntegerArray):
     """Represents an array of integer values where all values are identical.
 
@@ -16023,7 +16024,7 @@ class IntegerConstantArray(AbstractIntegerArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntegerHdf5Array(AbstractIntegerArray):
     """Array of integer values provided explicitly by a HDF5 dataset.
 
@@ -16058,7 +16059,7 @@ class IntegerHdf5Array(AbstractIntegerArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntegerQuantityParameter(AbstractActivityParameter):
     """
     Parameter containing an integer value.
@@ -16079,11 +16080,11 @@ class IntegerQuantityParameter(AbstractActivityParameter):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntegerRangeArray(AbstractIntegerArray):
     """Defines an array as a range of integers.
 
@@ -16119,7 +16120,7 @@ class IntegerRangeArray(AbstractIntegerArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntervalGridCells:
     """Specifies the (Grid,Cell) intersection of each Interval of the
     representation, if any.
@@ -16197,7 +16198,7 @@ class IntervalGridCells:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntervalStratigraphicUnits:
     """
     A mapping from intervals to stratigraphic units for representations (grids or
@@ -16235,7 +16236,7 @@ class IntervalStratigraphicUnits:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Intervals:
     """Refinement and/or Coarsening per interval.
 
@@ -16303,7 +16304,7 @@ class Intervals:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class KGaps:
     """Optional object used to indicate that there are global gaps between layers
     in the grid.
@@ -16345,7 +16346,7 @@ class KGaps:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MultipleContactInterpretationPart(AbstractContactInterpretationPart):
     """Describes multiple interface contacts of geologic feature interpretations
     (compared to a binary contact).
@@ -16373,7 +16374,7 @@ class MultipleContactInterpretationPart(AbstractContactInterpretationPart):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class OverlapVolume:
     """Optional parent-child cell overlap volume information.
 
@@ -16410,7 +16411,7 @@ class OverlapVolume:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ParameterTemplate:
     """
     Description of one parameter that participate in one type of activity.
@@ -16457,7 +16458,6 @@ class ParameterTemplate:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
 
     is_input: bool = field(
         metadata={
@@ -16543,7 +16543,7 @@ class ParameterTemplate:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ParametricLineIntersections:
     """Used to specify the intersections between parametric lines.
 
@@ -16592,7 +16592,7 @@ class ParametricLineIntersections:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point2dHdf5Array(AbstractPoint3dArray):
     """An array of explicit XY points stored as two coordinates in an HDF5 dataset.
 
@@ -16619,7 +16619,7 @@ class Point2dHdf5Array(AbstractPoint3dArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3dHdf5Array(AbstractPoint3dArray):
     """
     N array of explicit XYZ points stored as three coordinates in an HDF5 dataset.
@@ -16645,7 +16645,7 @@ class Point3dHdf5Array(AbstractPoint3dArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3dOffset:
     """Defines the size and sampling in each dimension (direction) of the point 3D
     lattice array.
@@ -16686,7 +16686,7 @@ class Point3dOffset:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3dParametricArray(AbstractPoint3dArray):
     """
     A parametric specification of an array of XYZ points.
@@ -16758,8 +16758,7 @@ class Point3dParametricArray(AbstractPoint3dArray):
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3dZValueArray(AbstractPoint3dArray):
     """An array of points defined by applying a Z value on top of an existing array
     of points, XYZ, where Z is ignored. Used in these cases:
@@ -16796,7 +16795,7 @@ class Point3dZValueArray(AbstractPoint3dArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ResqmlJaggedArray:
     """Representation for an array of 1D variable length arrays. The representation
     consists of these two arrays:
@@ -16837,7 +16836,7 @@ class ResqmlJaggedArray:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Seismic2dCoordinates(AbstractSeismicCoordinates):
     """A group of 2D seismic coordinates that stores the 1-to-1 mapping between
     geometry patch coordinates (usually X, Y, Z) and trace or inter-trace positions
@@ -16878,7 +16877,7 @@ class Seismic2dCoordinates(AbstractSeismicCoordinates):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Seismic3dCoordinates(AbstractSeismicCoordinates):
     """
     The 1-to-1 mapping between geometry coordinates (usually X, Y, Z or X, Y, TWT)
@@ -16929,7 +16928,7 @@ class Seismic3dCoordinates(AbstractSeismicCoordinates):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StreamlineWellbores:
     """
     The information that allows you to locate, on one or several grids (existing or
@@ -16980,7 +16979,7 @@ class StreamlineWellbores:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StringHdf5Array(AbstractValueArray):
     """Used to store explicit string values, i.e., values that are not double,
     boolean or integers.
@@ -17007,7 +17006,7 @@ class StringHdf5Array(AbstractValueArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StringParameter(AbstractActivityParameter):
     """
     Parameter containing a string value.
@@ -17023,11 +17022,11 @@ class StringParameter(AbstractActivityParameter):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeIndexParameter(AbstractActivityParameter):
     """
     Parameter containing a time index value.
@@ -17043,11 +17042,11 @@ class TimeIndexParameter(AbstractActivityParameter):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeIndexParameterKey(AbstractParameterKey):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
@@ -17062,7 +17061,7 @@ class TimeIndexParameterKey(AbstractParameterKey):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeIndices:
     """Indices into a time series.
 
@@ -17129,8 +17128,7 @@ class TimeIndices:
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeSeriesParentage:
     """
     Indicates that a time series has the associated time series as a parent, i.e.,
@@ -17166,7 +17164,7 @@ class TimeSeriesParentage:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UniformSubnodePatch(SubnodePatch):
     """
     Use this subnode construction if the number of subnodes is the same for every
@@ -17192,7 +17190,7 @@ class UniformSubnodePatch(SubnodePatch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredGridHingeNodeFaces:
     """Hinge nodes define a triangulated interpolation on a cell face.
 
@@ -17231,7 +17229,7 @@ class UnstructuredGridHingeNodeFaces:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VariableSubnodePatch(SubnodePatch):
     """
     If the number of subnodes per object are variable for each object, use this
@@ -17266,7 +17264,7 @@ class VariableSubnodePatch(SubnodePatch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VolumeRegion:
     """
     The volume within a shell or envelope.
@@ -17309,7 +17307,8 @@ class VolumeRegion:
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CharacterString_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gco"
@@ -17373,7 +17372,7 @@ class CharacterString_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractEX_GeographicExtent_Type(AbstractObject_Type):
     """
     Geographic area of the dataset.
@@ -17392,7 +17391,7 @@ class AbstractEX_GeographicExtent_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_DateTypeCode_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -17416,7 +17415,7 @@ class CI_DateTypeCode_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_OnLineFunctionCode_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -17440,7 +17439,7 @@ class CI_OnLineFunctionCode_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_PresentationFormCode_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -17464,7 +17463,7 @@ class CI_PresentationFormCode_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_RoleCode_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -17488,7 +17487,7 @@ class CI_RoleCode_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DQ_EvaluationMethodTypeCode_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -17512,7 +17511,7 @@ class DQ_EvaluationMethodTypeCode_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_TemporalExtent_Type(AbstractObject_Type):
     """
     Time period covered by the content of the dataset.
@@ -17527,11 +17526,11 @@ class EX_TemporalExtent_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_VerticalExtent_Type(AbstractObject_Type):
     """
     Vertical domain of dataset.
@@ -17547,7 +17546,7 @@ class EX_VerticalExtent_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     maximum_value: Real_PropertyType = field(
         default=None,
@@ -17556,7 +17555,7 @@ class EX_VerticalExtent_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     vertical_crs: "SC_CRS_PropertyType" = field(
         default=None,
@@ -17565,11 +17564,11 @@ class EX_VerticalExtent_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RelatedTimeType(TimePrimitivePropertyType):
     """Gml:RelatedTimeType provides a content model for indicating the relative
     position of an arbitrary member of the substitution group whose head is
@@ -17592,7 +17591,7 @@ class RelatedTimeType(TimePrimitivePropertyType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class axisDirection(CodeWithAuthorityType):
     """Gml:axisDirection is the direction of this coordinate system axis (or in the
     case of Cartesian projected coordinates, the direction of this coordinate
@@ -17612,7 +17611,7 @@ class axisDirection(CodeWithAuthorityType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class conversion(GeneralConversionPropertyType):
     """
     Gml:conversion is an association role to the coordinate conversion used to
@@ -17623,7 +17622,7 @@ class conversion(GeneralConversionPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class description(StringOrRefType):
     """The value of this property is a text description of the object.
 
@@ -17638,7 +17637,7 @@ class description(StringOrRefType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class descriptionReference(ReferenceType):
     """The value of this property is a remote text description of the object.
 
@@ -17650,7 +17649,7 @@ class descriptionReference(ReferenceType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class identifier(CodeWithAuthorityType):
     """Often, a special identifier is assigned to an object by the maintaining
     authority with the intention that it is used in references to the object For
@@ -17665,7 +17664,7 @@ class identifier(CodeWithAuthorityType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class rangeMeaning(CodeWithAuthorityType):
     """Gml:rangeMeaning describes the meaning of axis value range specified by
     gml:minimumValue and gml:maximumValue.
@@ -17683,7 +17682,7 @@ class rangeMeaning(CodeWithAuthorityType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ProjectedCrs_1(AbstractCitedDataObject):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -17700,7 +17699,7 @@ class ProjectedCrs_1(AbstractCitedDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
     abstract_projected_crs: AbstractProjectedCrs = field(
         default=None,
@@ -17709,7 +17708,7 @@ class ProjectedCrs_1(AbstractCitedDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
     uom: Optional[LengthUom] = field(
         default=None,
@@ -17719,7 +17718,7 @@ class ProjectedCrs_1(AbstractCitedDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCrs_1(AbstractCitedDataObject):
     class Meta:
         name = "VerticalCrs"
@@ -17732,7 +17731,7 @@ class VerticalCrs_1(AbstractCitedDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
     abstract_vertical_crs: AbstractVerticalCrs = field(
         default=None,
@@ -17741,18 +17740,18 @@ class VerticalCrs_1(AbstractCitedDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
     uom: LengthUom = field(
         default=None,
         metadata={
             "type": "Attribute",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_EpcExternalPartReference(AbstractCitedDataObject):
     """It defines a proxy for external part of the EPC package.
 
@@ -17776,11 +17775,11 @@ class obj_EpcExternalPartReference(AbstractCitedDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractParametricLineGeometry(AbstractGeometry):
     """
     The abstract class for defining a single parametric line.
@@ -17790,7 +17789,7 @@ class AbstractParametricLineGeometry(AbstractGeometry):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractPlaneGeometry(AbstractGeometry):
     """
     The abstract class for all geometric values defined by planes.
@@ -17800,7 +17799,7 @@ class AbstractPlaneGeometry(AbstractGeometry):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractResqmlDataObject(AbstractCitedDataObject):
     """The parent class for all top-level elements in RESQML.
 
@@ -17821,7 +17820,7 @@ class AbstractResqmlDataObject(AbstractCitedDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CellOverlap:
     """Optional cell volume overlap information between the current grid (the
     child) and the parent grid.
@@ -17869,7 +17868,7 @@ class CellOverlap:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ColumnLayerSplitCoordinateLines:
     """Definition of the indexing for the split coordinate lines.
 
@@ -17931,7 +17930,7 @@ class ColumnLayerSplitCoordinateLines:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ConnectionInterpretations:
     """
     Parameters
@@ -17965,7 +17964,7 @@ class ConnectionInterpretations:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DoubleLatticeArray(AbstractDoubleArray):
     """Represents an array of doubles based on an origin and a multi-dimensional
     offset.
@@ -18003,7 +18002,7 @@ class DoubleLatticeArray(AbstractDoubleArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IjSplitColumnEdges:
     """Used to construct the indices for the cell faces.
 
@@ -18044,7 +18043,7 @@ class IjSplitColumnEdges:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IntegerLatticeArray(AbstractIntegerArray):
     """Represents an array of integers based on an origin and a multi-dimensional
     offset.
@@ -18083,7 +18082,7 @@ class IntegerLatticeArray(AbstractIntegerArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class NodesPerCell:
     """Optional component of Unstructured Cell Finite Elements.
 
@@ -18109,7 +18108,7 @@ class NodesPerCell:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class NonSealedContactRepresentationPart(AbstractContactRepresentationPart):
     """
     Defines a nonsealed contact representation, meaning that this contact
@@ -18118,6 +18117,7 @@ class NonSealedContactRepresentationPart(AbstractContactRepresentationPart):
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     geometry: AbstractGeometry = field(
         metadata={
             "name": "Geometry",
@@ -18136,8 +18136,7 @@ class NonSealedContactRepresentationPart(AbstractContactRepresentationPart):
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ParametricLineArray(AbstractParametricLineArray):
     """Defines an array of parametric lines of multiple kinds.
 
@@ -18235,7 +18234,6 @@ class ParametricLineArray(AbstractParametricLineArray):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-
     control_points: AbstractPoint3dArray = field(
         metadata={
             "name": "ControlPoints",
@@ -18286,7 +18284,7 @@ class ParametricLineArray(AbstractParametricLineArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PatchOfGeometry:
     """
     Indicates which patch of the representation has a new geometry.
@@ -18300,7 +18298,6 @@ class PatchOfGeometry:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
 
     geometry: AbstractGeometry = field(
         metadata={
@@ -18319,7 +18316,8 @@ class PatchOfGeometry:
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3dLatticeArray(AbstractPoint3dArray):
     """Describes a lattice array of points obtained by sampling from along a multi-
     dimensional lattice.
@@ -18343,7 +18341,6 @@ class Point3dLatticeArray(AbstractPoint3dArray):
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
-
 
     origin: Point3d = field(
         metadata={
@@ -18371,7 +18368,8 @@ class Point3dLatticeArray(AbstractPoint3dArray):
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PointGeometry(AbstractGeometry):
     """
     The geometry of a set of points defined by their location in the local CRS,
@@ -18388,7 +18386,7 @@ class PointGeometry(AbstractGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     seismic_coordinates: Optional[AbstractSeismicCoordinates] = field(
         default=None,
@@ -18400,7 +18398,7 @@ class PointGeometry(AbstractGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Regrid:
     """One-dimensional I, J, or K refinement and coarsening regrid specification.
 
@@ -18441,7 +18439,7 @@ class Regrid:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SealedContactRepresentationPart(AbstractContactRepresentationPart):
     """Sealed contact elements that indicate that 2 or more contact patches are
     partially or totally colocated or equivalent.
@@ -18461,6 +18459,7 @@ class SealedContactRepresentationPart(AbstractContactRepresentationPart):
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     identity_kind: IdentityKind = field(
         metadata={
             "name": "IdentityKind",
@@ -18489,7 +18488,7 @@ class SealedContactRepresentationPart(AbstractContactRepresentationPart):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SplitEdges:
     """If split nodes are used in the construction of a column layer grid and
     indexable elements of kind edges are referenced, then the grid edges need to be
@@ -18538,7 +18537,7 @@ class SplitEdges:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StreamlinePolylineSetPatch(Patch):
     """A patch containing a set of polylines. For performance reasons, the geometry
     of each patch is described in only one 1D array of 3D points, which aggregates
@@ -18616,7 +18615,7 @@ class StreamlinePolylineSetPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SubRepresentationPatch(Patch1d):
     """Each sub-representation patch has its own list of representation indices,
     drawn from the supporting representation.
@@ -18642,7 +18641,7 @@ class SubRepresentationPatch(Patch1d):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SubnodeTopology:
     """
     Finite element subnode topology for an unstructured cell can be either variable
@@ -18670,7 +18669,7 @@ class SubnodeTopology:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TruncationCellPatch(Patch):
     """Truncation definitions for the truncated and split cells.
 
@@ -18786,7 +18785,7 @@ class TruncationCellPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredColumnEdges:
     """Column edges are used to construct the index for faces.
 
@@ -18827,7 +18826,7 @@ class UnstructuredColumnEdges:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Address_Type(AbstractObject_Type):
     """
     Location of the responsible individual or organisation.
@@ -18884,7 +18883,7 @@ class CI_Address_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Date_Type(AbstractObject_Type):
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -18895,7 +18894,7 @@ class CI_Date_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     date_type: CI_DateTypeCode_PropertyType = field(
         default=None,
@@ -18904,11 +18903,11 @@ class CI_Date_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_OnlineResource_Type(AbstractObject_Type):
     """
     Information about online sources from which the dataset, specification, or
@@ -18924,7 +18923,7 @@ class CI_OnlineResource_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     protocol: Optional[CharacterString_PropertyType] = field(
         default=None,
@@ -18964,7 +18963,7 @@ class CI_OnlineResource_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Series_Type(AbstractObject_Type):
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -18993,7 +18992,7 @@ class CI_Series_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Telephone_Type(AbstractObject_Type):
     """
     Telephone numbers for contacting the responsible individual or organisation.
@@ -19018,22 +19017,23 @@ class CI_Telephone_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_TemporalExtent(EX_TemporalExtent_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_VerticalExtent(EX_VerticalExtent_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGMLType:
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
+
     id: str = field(
         metadata={
             "type": "Attribute",
@@ -19072,14 +19072,13 @@ class AbstractGMLType:
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EpcExternalPartReference(obj_EpcExternalPartReference):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/commonv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractFeature(AbstractResqmlDataObject):
     """Something that has physical existence at some point during the exploration,
     development, production or abandonment of a reservoir.
@@ -19092,7 +19091,7 @@ class AbstractFeature(AbstractResqmlDataObject):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractFeatureInterpretation(AbstractResqmlDataObject):
     """
     The main class that contains all of the other feature interpretations included
@@ -19109,7 +19108,7 @@ class AbstractFeatureInterpretation(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     interpreted_feature: DataObjectReference = field(
         default=None,
@@ -19118,7 +19117,7 @@ class AbstractFeatureInterpretation(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     has_occured_during: Optional[TimeInterval] = field(
         default=None,
@@ -19130,7 +19129,7 @@ class AbstractFeatureInterpretation(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGridGeometry(PointGeometry):
     """
     Grid geometry described by means of points attached to nodes and additional
@@ -19151,7 +19150,7 @@ class AbstractGridGeometry(PointGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractLocal3dCrs(AbstractResqmlDataObject):
     """Defines a local 2D+1D coordinate reference system, by translation and
     rotation, whose origin is located at the (X,Y,Z) Offset from the Projected and
@@ -19224,7 +19223,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     zoffset: float = field(
         default=None,
@@ -19233,7 +19232,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     areal_rotation: PlaneAngleMeasure = field(
         default=None,
@@ -19242,7 +19241,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_axis_order: AxisOrder2d = field(
         default=None,
@@ -19251,7 +19250,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_uom: LengthUom = field(
         default=None,
@@ -19260,7 +19259,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     vertical_uom: LengthUom = field(
         default=None,
@@ -19269,7 +19268,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     xoffset: float = field(
         default=None,
@@ -19278,7 +19277,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     zincreasing_downward: bool = field(
         default=None,
@@ -19287,7 +19286,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     vertical_crs: AbstractVerticalCrs = field(
         default=None,
@@ -19296,7 +19295,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_crs: AbstractProjectedCrs = field(
         default=None,
@@ -19305,11 +19304,11 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractParentWindow:
     """Parent window specification, organized according to the topology of the
     parent grid.
@@ -19333,7 +19332,7 @@ class AbstractParentWindow:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractProperty(AbstractResqmlDataObject):
     """Base class for storing all property values on representations, except
     current geometry location.
@@ -19373,7 +19372,7 @@ class AbstractProperty(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     indexable_element: IndexableElements = field(
         default=None,
@@ -19382,7 +19381,7 @@ class AbstractProperty(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     realization_index: Optional[int] = field(
         default=None,
@@ -19415,7 +19414,7 @@ class AbstractProperty(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     local_crs: Optional[DataObjectReference] = field(
         default=None,
@@ -19432,11 +19431,11 @@ class AbstractProperty(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractPropertyLookup(AbstractResqmlDataObject):
     """Generic representation of a property lookup table.
 
@@ -19448,7 +19447,7 @@ class AbstractPropertyLookup(AbstractResqmlDataObject):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractRepresentation(AbstractResqmlDataObject):
     """The parent class of all specialized digital descriptions, which may provide
     a representation of a feature interpretation or a technical feature. It may be
@@ -19473,7 +19472,7 @@ class AbstractRepresentation(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ColumnLayerSubnodeTopology(SubnodeTopology):
     """
     This data-object consists of the Unstructured Cell Finite Elements subnode
@@ -19493,7 +19492,7 @@ class ColumnLayerSubnodeTopology(SubnodeTopology):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Grid2dPatch(Patch):
     """Patch representing a single 2D grid and its geometry.
 
@@ -19542,7 +19541,7 @@ class Grid2dPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class HorizontalPlaneGeometry(AbstractPlaneGeometry):
     """
     Defines the infinite geometry of a horizontal plane provided by giving its
@@ -19559,11 +19558,11 @@ class HorizontalPlaneGeometry(AbstractPlaneGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IjGaps:
     """
     Optional object used to indicate that adjacent columns of the model are split
@@ -19621,7 +19620,7 @@ class IjGaps:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class NodePatch(Patch1d):
     """
     Patch representing a list of nodes to which geometry may be attached.
@@ -19640,7 +19639,7 @@ class NodePatch(Patch1d):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ParametricLineFromRepresentationGeometry(AbstractParametricLineGeometry):
     """The parametric line extracted from an existing representation.
 
@@ -19665,7 +19664,7 @@ class ParametricLineFromRepresentationGeometry(AbstractParametricLineGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     supporting_representation: DataObjectReference = field(
         default=None,
@@ -19674,11 +19673,11 @@ class ParametricLineFromRepresentationGeometry(AbstractParametricLineGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ParametricLineFromRepresentationLatticeArray(AbstractParametricLineArray):
     """The lattice array of parametric lines extracted from an existing
     representation.
@@ -19721,7 +19720,7 @@ class ParametricLineFromRepresentationLatticeArray(AbstractParametricLineArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ParametricLineGeometry(AbstractParametricLineGeometry):
     """Defines a parametric line of any kind.
 
@@ -19775,7 +19774,6 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-
     control_points: AbstractPoint3dArray = field(
         default=None,
         metadata={
@@ -19783,7 +19781,7 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     knot_count: int = field(
         default=None,
@@ -19792,7 +19790,7 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     line_kind_index: int = field(
         default=None,
@@ -19801,7 +19799,7 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     tangent_vectors: Optional[AbstractPoint3dArray] = field(
         default=None,
@@ -19820,7 +19818,8 @@ class ParametricLineGeometry(AbstractParametricLineGeometry):
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Point3dFromRepresentationLatticeArray(AbstractPoint3dArray):
     """A lattice array of points extracted from an existing representation.
 
@@ -19857,7 +19856,7 @@ class Point3dFromRepresentationLatticeArray(AbstractPoint3dArray):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PolylineSetPatch(Patch):
     """A patch containing a set of polylines. For performance reasons, the geometry
     of each patch is described in only one 1D array of 3D points, which aggregates
@@ -19909,7 +19908,7 @@ class PolylineSetPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SplitFaces:
     """Optional construction used to introduce additional faces created by split
     nodes.
@@ -19966,7 +19965,7 @@ class SplitFaces:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TiltedPlaneGeometry(AbstractPlaneGeometry):
     """
     Describes the geometry of a tilted (or potentially not tilted) plane from three
@@ -19987,7 +19986,7 @@ class TiltedPlaneGeometry(AbstractPlaneGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TrianglePatch(Patch1d):
     """Patch made of triangles, where the number of triangles is given by the patch count.
     BUSINESS RULE: Within a patch, all the triangles must be contiguous.
@@ -20043,7 +20042,7 @@ class TrianglePatch(Patch1d):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredSubnodeTopology(SubnodeTopology):
     """If edge subnodes are used, then edges must be defined.
 
@@ -20071,7 +20070,7 @@ class UnstructuredSubnodeTopology(SubnodeTopology):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreMarker(AbstractResqmlDataObject):
     """Representation of a wellbore marker that is located along a wellbore
     trajectory, one for each MD value in the wellbore frame.
@@ -20133,7 +20132,7 @@ class WellboreMarker(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_Activity(AbstractResqmlDataObject):
     """
     Instance of a given activity.
@@ -20142,7 +20141,6 @@ class obj_Activity(AbstractResqmlDataObject):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-
     activity_descriptor: DataObjectReference = field(
         default=None,
         metadata={
@@ -20150,7 +20148,7 @@ class obj_Activity(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     parameter: List[AbstractActivityParameter] = field(
         default_factory=list,
@@ -20170,7 +20168,8 @@ class obj_Activity(AbstractResqmlDataObject):
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_ActivityTemplate(AbstractResqmlDataObject):
     """
     Description of one type of activity.
@@ -20190,7 +20189,7 @@ class obj_ActivityTemplate(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GlobalChronostratigraphicColumn(AbstractResqmlDataObject):
     """
     Chronological successions of some chronostratigraphic units organized into 1 to
@@ -20211,7 +20210,7 @@ class obj_GlobalChronostratigraphicColumn(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_LocalGridSet(AbstractResqmlDataObject):
     """Used to activate and/or deactivate the specified children grids as local
     grids on their parents.
@@ -20246,7 +20245,7 @@ class obj_LocalGridSet(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_MdDatum(AbstractResqmlDataObject):
     """Specifies the location of the measured depth = 0 reference point.
 
@@ -20272,7 +20271,7 @@ class obj_MdDatum(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     md_reference: MdReference = field(
         default=None,
@@ -20281,7 +20280,7 @@ class obj_MdDatum(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     local_crs: DataObjectReference = field(
         default=None,
@@ -20290,11 +20289,11 @@ class obj_MdDatum(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PropertyKind(AbstractResqmlDataObject):
     """A description of a property name relative to a standard definition.
 
@@ -20339,7 +20338,7 @@ class obj_PropertyKind(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     is_abstract: bool = field(
         default=None,
@@ -20348,7 +20347,7 @@ class obj_PropertyKind(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     representative_uom: ResqmlUom = field(
         default=None,
@@ -20357,7 +20356,7 @@ class obj_PropertyKind(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     parent_property_kind: AbstractPropertyKind = field(
         default=None,
@@ -20366,11 +20365,11 @@ class obj_PropertyKind(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PropertySet(AbstractResqmlDataObject):
     """A set of properties collected together for a specific purpose.
 
@@ -20402,7 +20401,7 @@ class obj_PropertySet(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     has_single_property_kind: bool = field(
         default=None,
@@ -20411,7 +20410,7 @@ class obj_PropertySet(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     has_multiple_realizations: bool = field(
         default=None,
@@ -20420,7 +20419,7 @@ class obj_PropertySet(AbstractResqmlDataObject):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     parent_set: List[DataObjectReference] = field(
         default_factory=list,
@@ -20441,7 +20440,7 @@ class obj_PropertySet(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StratigraphicColumn(AbstractResqmlDataObject):
     """A global interpretation of the stratigraphy, which can be made up of several
     ranks of stratigraphic unit interpretations.
@@ -20463,7 +20462,7 @@ class obj_StratigraphicColumn(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_TimeSeries(AbstractResqmlDataObject):
     """Stores an ordered list of times, for example, for time-dependent properties,
     geometries, or representations.
@@ -20501,37 +20500,37 @@ class obj_TimeSeries(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Address(CI_Address_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Date(CI_Date_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_OnlineResource(CI_OnlineResource_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Series(CI_Series_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Telephone(CI_Telephone_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_TemporalExtent_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -20612,7 +20611,7 @@ class EX_TemporalExtent_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_VerticalExtent_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -20693,13 +20692,13 @@ class EX_VerticalExtent_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractTimeObjectType(AbstractGMLType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DefinitionBaseType(AbstractGMLType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -20710,11 +20709,11 @@ class DefinitionBaseType(AbstractGMLType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGeologicFeature(AbstractFeature):
     """Objects that exist a priori, in the natural world, for example: the rock
     formations and how they are positioned with regard to each other; the fluids
@@ -20729,7 +20728,7 @@ class AbstractGeologicFeature(AbstractFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGridRepresentation(AbstractRepresentation):
     """
     Abstract class for all grid representations.
@@ -20764,7 +20763,7 @@ class AbstractGridRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractOrganizationInterpretation(AbstractFeatureInterpretation):
     """The main class used to group features into meaningful units as a step in
     working towards the goal of building an earth model (the organization of all
@@ -20791,7 +20790,7 @@ class AbstractOrganizationInterpretation(AbstractFeatureInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractSurfaceRepresentation(AbstractRepresentation):
     """Parent class of structural surface representations, which can be bounded by
     an outer ring and has inner rings.
@@ -20809,7 +20808,7 @@ class AbstractSurfaceRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     boundaries: List[PatchBoundaries] = field(
         default_factory=list,
@@ -20821,7 +20820,7 @@ class AbstractSurfaceRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractTechnicalFeature(AbstractFeature):
     """Objects that exist by the action of humans.
 
@@ -20833,7 +20832,7 @@ class AbstractTechnicalFeature(AbstractFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractValuesProperty(AbstractProperty):
     """Base class for property values.
 
@@ -20863,19 +20862,19 @@ class AbstractValuesProperty(AbstractProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Activity(obj_Activity):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ActivityTemplate(obj_ActivityTemplate):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CellParentWindow(AbstractParentWindow):
     """
     Parent window for ANY grid indexed as if it were an unstructured cell grid,
@@ -20900,7 +20899,7 @@ class CellParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     parent_grid: DataObjectReference = field(
         default=None,
@@ -20909,11 +20908,11 @@ class CellParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ColumnLayerParentWindow(AbstractParentWindow):
     """
     Parent window for any column layer grid indexed as if it were an unstructured
@@ -20945,7 +20944,7 @@ class ColumnLayerParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     omit_parent_cells: Optional[AbstractIntegerArray] = field(
         default=None,
@@ -20962,7 +20961,7 @@ class ColumnLayerParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     parent_grid: DataObjectReference = field(
         default=None,
@@ -20971,17 +20970,17 @@ class ColumnLayerParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GlobalChronostratigraphicColumn(obj_GlobalChronostratigraphicColumn):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IjkParentWindow(AbstractParentWindow):
     """
     Parent window for any IJK grid.
@@ -21003,7 +21002,6 @@ class IjkParentWindow(AbstractParentWindow):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-
     jregrid: Regrid = field(
         default=None,
         metadata={
@@ -21011,7 +21009,7 @@ class IjkParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     parent_grid: DataObjectReference = field(
         default=None,
@@ -21020,7 +21018,7 @@ class IjkParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     kregrid: Regrid = field(
         default=None,
@@ -21029,7 +21027,7 @@ class IjkParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     iregrid: Regrid = field(
         default=None,
@@ -21038,7 +21036,7 @@ class IjkParentWindow(AbstractParentWindow):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
     omit_parent_cells: Optional[AbstractIntegerArray] = field(
@@ -21049,31 +21047,33 @@ class IjkParentWindow(AbstractParentWindow):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LocalGridSet(obj_LocalGridSet):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MdDatum(obj_MdDatum):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PropertyKind(obj_PropertyKind):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PropertySet(obj_PropertySet):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SplitNodePatch(Patch):
     """Optional construction used to introduce additional nodes on coordinate
     lines.
@@ -21132,19 +21132,19 @@ class SplitNodePatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StratigraphicColumn(obj_StratigraphicColumn):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TimeSeries(obj_TimeSeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredGridGeometry(AbstractGridGeometry):
     """Description of the geometry of an unstructured cell grid, which includes
     geometric characteristics, e.g., cell face parity, and supporting topology.
@@ -21186,7 +21186,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     node_count: int = field(
         default=None,
@@ -21195,7 +21195,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     face_count: int = field(
         default=None,
@@ -21204,7 +21204,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     nodes_per_face: ResqmlJaggedArray = field(
         default=None,
@@ -21213,7 +21213,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     faces_per_cell: ResqmlJaggedArray = field(
         default=None,
@@ -21222,7 +21222,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     cell_face_is_right_handed: AbstractBooleanArray = field(
         default=None,
@@ -21231,7 +21231,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     hinge_node_faces: Optional[UnstructuredGridHingeNodeFaces] = field(
         default=None,
@@ -21251,7 +21251,7 @@ class UnstructuredGridGeometry(AbstractGridGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_BoundaryFeatureInterpretation(AbstractFeatureInterpretation):
     """The main class for data describing an opinion of a surface feature between
     two volumes.
@@ -21263,7 +21263,7 @@ class obj_BoundaryFeatureInterpretation(AbstractFeatureInterpretation):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_DeviationSurveyRepresentation(AbstractRepresentation):
     """Specifies the station data from a deviation survey.
 
@@ -21317,7 +21317,6 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-
     is_final: bool = field(
         default=None,
         metadata={
@@ -21325,7 +21324,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     station_count: int = field(
         default=None,
@@ -21334,7 +21333,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     md_uom: LengthUom = field(
         default=None,
@@ -21343,7 +21342,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     mds: AbstractDoubleArray = field(
         default=None,
@@ -21352,7 +21351,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     first_station_location: Point3d = field(
         default=None,
@@ -21361,7 +21360,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     angle_uom: PlaneAngleUom = field(
         default=None,
@@ -21370,7 +21369,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     azimuths: AbstractDoubleArray = field(
         default=None,
@@ -21379,7 +21378,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     inclinations: AbstractDoubleArray = field(
         default=None,
@@ -21388,7 +21387,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     md_datum: DataObjectReference = field(
         default=None,
@@ -21397,7 +21396,7 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     time_index: Optional[TimeIndex] = field(
         default=None,
@@ -21416,7 +21415,8 @@ class obj_DeviationSurveyRepresentation(AbstractRepresentation):
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_DoubleTableLookup(AbstractPropertyLookup):
     """Defines a function for table lookups.
 
@@ -21438,7 +21438,7 @@ class obj_DoubleTableLookup(AbstractPropertyLookup):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_EarthModelInterpretation(AbstractFeatureInterpretation):
     """An earth model interpretation has a specific role: it gathers a maximum of one of each of these other organization interpretations: structural organization interpretation, stratigraphic organization interpretation, and/or fluid organization interpretation.
     BUSINESS RULE: An earth model Interpretation interprets only an earth model feature.
@@ -21481,13 +21481,13 @@ class obj_EarthModelInterpretation(AbstractFeatureInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GenericFeatureInterpretation(AbstractFeatureInterpretation):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GeologicUnitInterpretation(AbstractFeatureInterpretation):
     """
     The main class for data describing an opinion of a volume-based geologic
@@ -21505,19 +21505,19 @@ class obj_GeologicUnitInterpretation(AbstractFeatureInterpretation):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
-    geologic_unit_material_implacement: Optional[
-        GeologicUnitMaterialImplacement
-    ] = field(
-        default=None,
-        metadata={
-            "name": "GeologicUnitMaterialImplacement",
-            "type": "Element",
-            "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
-        },
+    geologic_unit_material_implacement: Optional[GeologicUnitMaterialImplacement] = (
+        field(
+            default=None,
+            metadata={
+                "name": "GeologicUnitMaterialImplacement",
+                "type": "Element",
+                "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
+            },
+        )
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GridConnectionSetRepresentation(AbstractRepresentation):
     """Representation which consists of a list of connections between grid cells,
     potentially on different grids.
@@ -21562,7 +21562,7 @@ class obj_GridConnectionSetRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     cell_index_pairs: AbstractIntegerArray = field(
         default=None,
@@ -21571,7 +21571,7 @@ class obj_GridConnectionSetRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     grid_index_pairs: Optional[AbstractIntegerArray] = field(
         default=None,
@@ -21608,7 +21608,7 @@ class obj_GridConnectionSetRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_LocalDepth3dCrs(AbstractLocal3dCrs):
     """Defines a local depth coordinate system, the geometrical origin and location
     is defined by the elements of the base class AbstractLocal3dCRS.
@@ -21621,7 +21621,7 @@ class obj_LocalDepth3dCrs(AbstractLocal3dCrs):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_LocalTime3dCrs(AbstractLocal3dCrs):
     """Defines a local time coordinate system, the geometrical origin and location
     is defined by the elements of the base class AbstractLocal3dCRS.
@@ -21646,11 +21646,11 @@ class obj_LocalTime3dCrs(AbstractLocal3dCrs):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PointSetRepresentation(AbstractRepresentation):
     """A representation that consists of one or more node patches.
 
@@ -21672,7 +21672,7 @@ class obj_PointSetRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PointsProperty(AbstractProperty):
     """
     Represents the geometric information that should *not* be used as
@@ -21694,7 +21694,7 @@ class obj_PointsProperty(AbstractProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PolylineRepresentation(AbstractRepresentation):
     """A representation made up of a single polyline or "polygonal chain", which
     may be closed or not.
@@ -21710,7 +21710,6 @@ class obj_PolylineRepresentation(AbstractRepresentation):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-
     is_closed: bool = field(
         default=None,
         metadata={
@@ -21718,7 +21717,7 @@ class obj_PolylineRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     node_patch: NodePatch = field(
         default=None,
@@ -21727,7 +21726,7 @@ class obj_PolylineRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     line_role: Optional[LineRole] = field(
         default=None,
@@ -21738,7 +21737,8 @@ class obj_PolylineRepresentation(AbstractRepresentation):
         },
     )
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PolylineSetRepresentation(AbstractRepresentation):
     """A representation made up of a set of polylines or a set of polygonal chains
     (for more information, see PolylineRepresentation).
@@ -21772,7 +21772,7 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_RedefinedGeometryRepresentation(AbstractRepresentation):
     """A representation derived from an existing representation by redefining its
     geometry.
@@ -21800,11 +21800,11 @@ class obj_RedefinedGeometryRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_RepresentationSetRepresentation(AbstractRepresentation):
     """The parent class of the framework representations.
 
@@ -21836,7 +21836,7 @@ class obj_RepresentationSetRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     representation: List[DataObjectReference] = field(
         default_factory=list,
@@ -21849,7 +21849,7 @@ class obj_RepresentationSetRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StreamlinesRepresentation(AbstractRepresentation):
     """Representation of streamlines associated with a streamline feature and
     interpretation.
@@ -21876,7 +21876,7 @@ class obj_StreamlinesRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     streamline_wellbores: Optional[StreamlineWellbores] = field(
         default=None,
@@ -21896,7 +21896,7 @@ class obj_StreamlinesRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StringTableLookup(AbstractPropertyLookup):
     """Defines an integer-to-string lookup table, for example, stores facies properties, where a facies index is associated with a facies name. .
     Used for categorical properties, which also may use a double table lookup."""
@@ -21915,7 +21915,7 @@ class obj_StringTableLookup(AbstractPropertyLookup):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_WellboreFrameRepresentation(AbstractRepresentation):
     """Representation of a wellbore that is organized along a wellbore trajectory
     by its MD values.
@@ -21947,7 +21947,7 @@ class obj_WellboreFrameRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     node_md: AbstractDoubleArray = field(
         default=None,
@@ -21956,7 +21956,7 @@ class obj_WellboreFrameRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     witsml_log_reference: Optional[DataObjectReference] = field(
         default=None,
@@ -21989,11 +21989,11 @@ class obj_WellboreFrameRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_WellboreInterpretation(AbstractFeatureInterpretation):
     """This class contains the data describing an opinion of a borehole.
 
@@ -22019,11 +22019,11 @@ class obj_WellboreInterpretation(AbstractFeatureInterpretation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
     """
     Representation of a wellbore trajectory.
@@ -22065,7 +22065,7 @@ class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     finish_md: float = field(
         default=None,
@@ -22074,7 +22074,7 @@ class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     md_uom: LengthUom = field(
         default=None,
@@ -22083,7 +22083,7 @@ class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     md_domain: Optional[MdDomain] = field(
         default=None,
@@ -22116,7 +22116,7 @@ class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     deviation_survey: Optional[DataObjectReference] = field(
         default=None,
@@ -22136,7 +22136,7 @@ class obj_WellboreTrajectoryRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Address_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -22217,7 +22217,7 @@ class CI_Address_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Date_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -22298,7 +22298,7 @@ class CI_Date_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_OnlineResource_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -22379,7 +22379,7 @@ class CI_OnlineResource_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Series_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -22460,7 +22460,7 @@ class CI_Series_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Telephone_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -22541,7 +22541,7 @@ class CI_Telephone_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_Extent_Type(AbstractObject_Type):
     """
     Information about spatial, vertical, and temporal extent.
@@ -22583,7 +22583,7 @@ class EX_Extent_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractTimePrimitiveType(AbstractTimeObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -22598,7 +22598,7 @@ class AbstractTimePrimitiveType(AbstractTimeObjectType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DefinitionType(DefinitionBaseType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -22612,7 +22612,7 @@ class DefinitionType(DefinitionBaseType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
     """Description of the geometry of a column layer grid, e.g., parity and pinch,
     together with its supporting topology.
@@ -22673,7 +22673,7 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     pillar_geometry_is_defined: AbstractBooleanArray = field(
         default=None,
@@ -22682,7 +22682,7 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     pillar_shape: PillarShape = field(
         default=None,
@@ -22691,7 +22691,7 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     cell_geometry_is_defined: Optional[AbstractBooleanArray] = field(
         default=None,
@@ -22743,7 +22743,7 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractColumnLayerGridRepresentation(AbstractGridRepresentation):
     """Abstract class that includes IJK grids and unstructured column layer grids.
 
@@ -22767,7 +22767,7 @@ class AbstractColumnLayerGridRepresentation(AbstractGridRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     interval_stratigraphic_units: Optional[IntervalStratigraphicUnits] = field(
         default=None,
@@ -22779,7 +22779,7 @@ class AbstractColumnLayerGridRepresentation(AbstractGridRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractSeismicSurveyFeature(AbstractTechnicalFeature):
     """An organization of seismic lines. For the context of RESQML, a seismic
     survey does not refer to any vertical dimension information, but only really at
@@ -22797,7 +22797,7 @@ class AbstractSeismicSurveyFeature(AbstractTechnicalFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractStratigraphicOrganizationInterpretation(
     AbstractOrganizationInterpretation
 ):
@@ -22817,11 +22817,11 @@ class AbstractStratigraphicOrganizationInterpretation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractSurfaceFrameworkRepresentation(obj_RepresentationSetRepresentation):
     """Parent class for a sealed or non-sealed surface framework representation.
 
@@ -22845,7 +22845,7 @@ class AbstractSurfaceFrameworkRepresentation(obj_RepresentationSetRepresentation
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractTruncatedColumnLayerGridRepresentation(AbstractGridRepresentation):
     """Abstract class for truncated IJK grids and truncated unstructured column
     layer grids.
@@ -22870,7 +22870,7 @@ class AbstractTruncatedColumnLayerGridRepresentation(AbstractGridRepresentation)
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     truncation_cells: TruncationCellPatch = field(
         default=None,
@@ -22879,11 +22879,11 @@ class AbstractTruncatedColumnLayerGridRepresentation(AbstractGridRepresentation)
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AdditionalGridTopology:
     """Additional grid topology and/or patches, if required, for indexable elements
     that otherwise do not have their topology defined within the grid
@@ -22962,43 +22962,43 @@ class AdditionalGridTopology:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BoundaryFeatureInterpretation(obj_BoundaryFeatureInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DeviationSurveyRepresentation(obj_DeviationSurveyRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DoubleTableLookup(obj_DoubleTableLookup):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EarthModelInterpretation(obj_EarthModelInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GenericFeatureInterpretation(obj_GenericFeatureInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeologicUnitInterpretation(obj_GeologicUnitInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GpGridUnstructuredGridPatch(Patch):
     """Used to specify unstructured cell grid patch(es) within a general purpose
     grid.
@@ -23034,91 +23034,91 @@ class GpGridUnstructuredGridPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GridConnectionSetRepresentation(obj_GridConnectionSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LocalDepth3dCrs(obj_LocalDepth3dCrs):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class LocalTime3dCrs(obj_LocalTime3dCrs):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PointSetRepresentation(obj_PointSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PointsProperty(obj_PointsProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PolylineRepresentation(obj_PolylineRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PolylineSetRepresentation(obj_PolylineSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RedefinedGeometryRepresentation(obj_RedefinedGeometryRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RepresentationSetRepresentation(obj_RepresentationSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StreamlinesRepresentation(obj_StreamlinesRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StringTableLookup(obj_StringTableLookup):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreFrameRepresentation(obj_WellboreFrameRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreInterpretation(obj_WellboreInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreTrajectoryRepresentation(obj_WellboreTrajectoryRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
     """
     The information that allows you to locate, on one or several grids (existing or
@@ -23155,7 +23155,7 @@ class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     cell_indices: AbstractIntegerArray = field(
         default=None,
@@ -23164,7 +23164,7 @@ class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     grid_indices: AbstractIntegerArray = field(
         default=None,
@@ -23173,7 +23173,7 @@ class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     local_face_pair_per_cell_indices: AbstractIntegerArray = field(
         default=None,
@@ -23182,7 +23182,7 @@ class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     grid: List[DataObjectReference] = field(
         default_factory=list,
@@ -23195,7 +23195,7 @@ class obj_BlockedWellboreRepresentation(obj_WellboreFrameRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_BoundaryFeature(AbstractGeologicFeature):
     """An interface between two geological objects, such as horizons and faults.
 
@@ -23206,7 +23206,7 @@ class obj_BoundaryFeature(AbstractGeologicFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_CategoricalProperty(AbstractValuesProperty):
     """Information specific to one categorical property. Contains discrete integer.
 
@@ -23225,11 +23225,11 @@ class obj_CategoricalProperty(AbstractValuesProperty):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_CommentProperty(AbstractValuesProperty):
     """Information specific to one comment property.
 
@@ -23257,7 +23257,7 @@ class obj_CommentProperty(AbstractValuesProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_ContinuousProperty(AbstractValuesProperty):
     """Most common type of property used for storing rock or fluid attributes; all
     are represented as doubles.
@@ -23279,6 +23279,7 @@ class obj_ContinuousProperty(AbstractValuesProperty):
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     uom: ResqmlUom = field(
         default=None,
         metadata={
@@ -23286,7 +23287,7 @@ class obj_ContinuousProperty(AbstractValuesProperty):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     minimum_value: List[float] = field(
         default_factory=list,
@@ -23306,8 +23307,7 @@ class obj_ContinuousProperty(AbstractValuesProperty):
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_DiscreteProperty(AbstractValuesProperty):
     """Contains discrete integer values; typically used to store any type of index.
 
@@ -23345,7 +23345,7 @@ class obj_DiscreteProperty(AbstractValuesProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_FaultInterpretation(obj_BoundaryFeatureInterpretation):
     """
     A type of boundary feature, this class contains the data describing an opinion
@@ -23409,7 +23409,7 @@ class obj_FaultInterpretation(obj_BoundaryFeatureInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_FrontierFeature(AbstractTechnicalFeature):
     """
     Identifies a frontier or boundary in the earth model that is not a geological
@@ -23421,7 +23421,7 @@ class obj_FrontierFeature(AbstractTechnicalFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GeobodyBoundaryInterpretation(obj_BoundaryFeatureInterpretation):
     """
     A type of boundary feature, this class identifies if the boundary is a geobody
@@ -23441,7 +23441,7 @@ class obj_GeobodyBoundaryInterpretation(obj_BoundaryFeatureInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GeobodyInterpretation(obj_GeologicUnitInterpretation):
     """
     A type of rock feature, this class identifies if a rock feature is a geobody
@@ -23461,7 +23461,7 @@ class obj_GeobodyInterpretation(obj_GeologicUnitInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GeologicUnitFeature(AbstractGeologicFeature):
     """A volume of rock located between one or more boundary features.
 
@@ -23473,7 +23473,7 @@ class obj_GeologicUnitFeature(AbstractGeologicFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
     """Representation based on a 2D grid.
 
@@ -23491,11 +23491,11 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_Grid2dSetRepresentation(AbstractSurfaceRepresentation):
     """Set of representations based on a 2D grid.
 
@@ -23516,7 +23516,7 @@ class obj_Grid2dSetRepresentation(AbstractSurfaceRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_HorizonInterpretation(obj_BoundaryFeatureInterpretation):
     """A type of boundary feature, the class specifies if the boundary feature is a
     horizon.
@@ -23548,7 +23548,7 @@ class obj_HorizonInterpretation(obj_BoundaryFeatureInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_OrganizationFeature(AbstractGeologicFeature):
     """The explicit description of the relationships between geologic features,
     such as rock features (e.g., stratigraphic units, geobodies, phase unit) and
@@ -23567,11 +23567,11 @@ class obj_OrganizationFeature(AbstractGeologicFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_PlaneSetRepresentation(AbstractSurfaceRepresentation):
     """Defines a plane representation, which can be made up of multiple patches.
 
@@ -23593,7 +23593,7 @@ class obj_PlaneSetRepresentation(AbstractSurfaceRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_RockFluidOrganizationInterpretation(AbstractOrganizationInterpretation):
     """
     Interpretation of the fluid organization units.
@@ -23609,11 +23609,11 @@ class obj_RockFluidOrganizationInterpretation(AbstractOrganizationInterpretation
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_RockFluidUnitInterpretation(obj_GeologicUnitInterpretation):
     """
     A type of rock fluid feature interpretation , this class identifies if a rock
@@ -23633,7 +23633,7 @@ class obj_RockFluidUnitInterpretation(obj_GeologicUnitInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_SealedVolumeFrameworkRepresentation(obj_RepresentationSetRepresentation):
     """A strict boundary representation (BREP), which represents the volume region
     by assembling together shells.
@@ -23651,7 +23651,7 @@ class obj_SealedVolumeFrameworkRepresentation(obj_RepresentationSetRepresentatio
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     shells: List[VolumeShell] = field(
         default_factory=list,
@@ -23673,7 +23673,7 @@ class obj_SealedVolumeFrameworkRepresentation(obj_RepresentationSetRepresentatio
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StratigraphicUnitInterpretation(obj_GeologicUnitInterpretation):
     """
     Interpretation of a stratigraphic unit which includes the knowledge of the top,
@@ -23718,7 +23718,7 @@ class obj_StratigraphicUnitInterpretation(obj_GeologicUnitInterpretation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StreamlinesFeature(AbstractTechnicalFeature):
     """Specification of the vector field upon which the streamlines are based.
 
@@ -23750,7 +23750,7 @@ class obj_StreamlinesFeature(AbstractTechnicalFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     other_flux: Optional[str] = field(
         default=None,
@@ -23767,11 +23767,11 @@ class obj_StreamlinesFeature(AbstractTechnicalFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StructuralOrganizationInterpretation(AbstractOrganizationInterpretation):
     """
     One of the main types of RESQML organizations, this class gathers boundary
@@ -23790,7 +23790,7 @@ class obj_StructuralOrganizationInterpretation(AbstractOrganizationInterpretatio
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     faults: List[DataObjectReference] = field(
         default_factory=list,
@@ -23834,7 +23834,7 @@ class obj_StructuralOrganizationInterpretation(AbstractOrganizationInterpretatio
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_TriangulatedSetRepresentation(AbstractSurfaceRepresentation):
     """A representation based on set of triangulated mesh patches, which gets its
     geometry from a 1D array of points.
@@ -23856,7 +23856,7 @@ class obj_TriangulatedSetRepresentation(AbstractSurfaceRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_UnstructuredGridRepresentation(AbstractGridRepresentation):
     """Unstructured grid representation characterized by a cell count, and
     potentially nothing else.
@@ -23881,7 +23881,7 @@ class obj_UnstructuredGridRepresentation(AbstractGridRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     geometry: Optional[UnstructuredGridGeometry] = field(
         default=None,
@@ -23893,7 +23893,7 @@ class obj_UnstructuredGridRepresentation(AbstractGridRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_WellboreFeature(AbstractTechnicalFeature):
     """May refer to one of these:
     wellbore. A unique, oriented path from the bottom of a drilled borehole to the surface of the earth. The path must not overlap or cross itself.
@@ -23914,7 +23914,7 @@ class obj_WellboreFeature(AbstractTechnicalFeature):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_WellboreMarkerFrameRepresentation(obj_WellboreFrameRepresentation):
     """
     A well log frame where each entry represents a well marker.
@@ -23934,7 +23934,7 @@ class obj_WellboreMarkerFrameRepresentation(obj_WellboreFrameRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Contact_Type(AbstractObject_Type):
     """
     Information required enabling contact with the  responsible person and/or
@@ -23984,13 +23984,13 @@ class CI_Contact_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EX_Extent(EX_Extent_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Definition(DefinitionType):
     """The basic gml:Definition element specifies a definition, which can be
     included in or referenced by a dictionary.
@@ -24012,7 +24012,7 @@ class Definition(DefinitionType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IdentifiedObjectType(DefinitionType):
     """Gml:IdentifiedObjectType provides identification properties of a CRS-related
     object.
@@ -24040,91 +24040,91 @@ class IdentifiedObjectType(DefinitionType):
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BlockedWellboreRepresentation(obj_BlockedWellboreRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class BoundaryFeature(obj_BoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CategoricalProperty(obj_CategoricalProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CommentProperty(obj_CommentProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ContinuousProperty(obj_ContinuousProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DiscreteProperty(obj_DiscreteProperty):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FaultInterpretation(obj_FaultInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FrontierFeature(obj_FrontierFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeobodyBoundaryInterpretation(obj_GeobodyBoundaryInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeobodyInterpretation(obj_GeobodyInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeologicUnitFeature(obj_GeologicUnitFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Grid2dRepresentation(obj_Grid2dRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Grid2dSetRepresentation(obj_Grid2dSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class HorizonInterpretation(obj_HorizonInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IjkGridGeometry(AbstractColumnLayerGridGeometry):
     """Explicit geometry definition for the cells of the IJK grid.
 
@@ -24148,7 +24148,7 @@ class IjkGridGeometry(AbstractColumnLayerGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     ij_gaps: Optional[IjGaps] = field(
         default=None,
@@ -24160,19 +24160,19 @@ class IjkGridGeometry(AbstractColumnLayerGridGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class OrganizationFeature(obj_OrganizationFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PlaneSetRepresentation(obj_PlaneSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RepresentationIdentity:
     """Indicates the nature of the relationship between 2 or more representations,
     specifically if they are partially or totally identical.
@@ -24218,25 +24218,25 @@ class RepresentationIdentity:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RockFluidOrganizationInterpretation(obj_RockFluidOrganizationInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RockFluidUnitInterpretation(obj_RockFluidUnitInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SealedVolumeFrameworkRepresentation(obj_SealedVolumeFrameworkRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SeismicLatticeSetFeature(AbstractSeismicSurveyFeature):
     """An unordered set of several seismic lattices.
 
@@ -24247,31 +24247,31 @@ class SeismicLatticeSetFeature(AbstractSeismicSurveyFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StratigraphicUnitInterpretation(obj_StratigraphicUnitInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StreamlinesFeature(obj_StreamlinesFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StructuralOrganizationInterpretation(obj_StructuralOrganizationInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TriangulatedSetRepresentation(obj_TriangulatedSetRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
     """Description of the geometry of an unstructured column layer grid, e.g.,
     parity and pinch, together with its supporting topology.
@@ -24309,7 +24309,7 @@ class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     pillar_count: int = field(
         default=None,
@@ -24318,7 +24318,7 @@ class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     pillars_per_column: ResqmlJaggedArray = field(
         default=None,
@@ -24327,7 +24327,7 @@ class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     column_is_right_handed: AbstractBooleanArray = field(
         default=None,
@@ -24336,7 +24336,7 @@ class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     column_edges: Optional[UnstructuredColumnEdges] = field(
         default=None,
@@ -24348,25 +24348,25 @@ class UnstructuredColumnLayerGridGeometry(AbstractColumnLayerGridGeometry):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredGridRepresentation(obj_UnstructuredGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreFeature(obj_WellboreFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class WellboreMarkerFrameRepresentation(obj_WellboreMarkerFrameRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_CategoricalPropertySeries(obj_CategoricalProperty):
     """Information specific to one comment property.
 
@@ -24406,7 +24406,7 @@ class obj_CategoricalPropertySeries(obj_CategoricalProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_CommentPropertySeries(obj_CommentProperty):
     """Information specific to one comment property.
 
@@ -24446,7 +24446,7 @@ class obj_CommentPropertySeries(obj_CommentProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_ContinuousPropertySeries(obj_ContinuousProperty):
     """Information specific to one comment property.
 
@@ -24486,7 +24486,7 @@ class obj_ContinuousPropertySeries(obj_ContinuousProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_DiscretePropertySeries(obj_DiscreteProperty):
     """Information specific to one comment property.
 
@@ -24526,7 +24526,7 @@ class obj_DiscretePropertySeries(obj_DiscreteProperty):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_FluidBoundaryFeature(obj_BoundaryFeature):
     """A boundary (usually a plane) separating two fluid phases, such as a gas-oil
     contact (GOC), a water-oil contact (WOC), a gas-oil contact (GOC), or others.
@@ -24544,11 +24544,11 @@ class obj_FluidBoundaryFeature(obj_BoundaryFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GeneticBoundaryFeature(obj_BoundaryFeature):
     """A boundary between two units produced by a contrast between two deposits
     that occurred at two different geologic time periods.
@@ -24566,7 +24566,7 @@ class obj_GeneticBoundaryFeature(obj_BoundaryFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     absolute_age: Optional[Timestamp] = field(
         default=None,
@@ -24578,7 +24578,7 @@ class obj_GeneticBoundaryFeature(obj_BoundaryFeature):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GeobodyFeature(obj_GeologicUnitFeature):
     """A volume of rock that is identified based on some specific attribute, like
     its mineral content or other physical characteristic.
@@ -24591,7 +24591,7 @@ class obj_GeobodyFeature(obj_GeologicUnitFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_NonSealedSurfaceFrameworkRepresentation(
     AbstractSurfaceFrameworkRepresentation
 ):
@@ -24616,7 +24616,7 @@ class obj_NonSealedSurfaceFrameworkRepresentation(
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_RockFluidUnitFeature(obj_GeologicUnitFeature):
     """A fluid phase plus one or more stratigraphic units.
 
@@ -24635,7 +24635,7 @@ class obj_RockFluidUnitFeature(obj_GeologicUnitFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     fluid_boundary_bottom: DataObjectReference = field(
         default=None,
@@ -24644,7 +24644,7 @@ class obj_RockFluidUnitFeature(obj_GeologicUnitFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     fluid_boundary_top: DataObjectReference = field(
         default=None,
@@ -24653,11 +24653,11 @@ class obj_RockFluidUnitFeature(obj_GeologicUnitFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_SealedSurfaceFrameworkRepresentation(AbstractSurfaceFrameworkRepresentation):
     """A collection of contact representations parts, which are a list of contact
     patches and their identities.
@@ -24680,7 +24680,7 @@ class obj_SealedSurfaceFrameworkRepresentation(AbstractSurfaceFrameworkRepresent
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_SeismicLineFeature(AbstractSeismicSurveyFeature):
     """Defined by one lateral dimension: trace (lateral). Seismic trace of the 3D seismic survey.
     To specify its location, the seismic feature can be associated with the seismic coordinates of the points of a representation.
@@ -24706,7 +24706,7 @@ class obj_SeismicLineFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     trace_count: int = field(
         default=None,
@@ -24715,7 +24715,7 @@ class obj_SeismicLineFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     trace_index_increment: int = field(
         default=None,
@@ -24724,7 +24724,7 @@ class obj_SeismicLineFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     is_part_of: Optional[DataObjectReference] = field(
         default=None,
@@ -24736,7 +24736,7 @@ class obj_SeismicLineFeature(AbstractSeismicSurveyFeature):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_SeismicLineSetFeature(AbstractSeismicSurveyFeature):
     """An unordered set of several seismic lines.
 
@@ -24747,7 +24747,7 @@ class obj_SeismicLineSetFeature(AbstractSeismicSurveyFeature):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StratigraphicColumnRankInterpretation(
     AbstractStratigraphicOrganizationInterpretation
 ):
@@ -24766,7 +24766,7 @@ class obj_StratigraphicColumnRankInterpretation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     stratigraphic_units: List[StratigraphicUnitInterpretationIndex] = field(
         default_factory=list,
@@ -24779,7 +24779,7 @@ class obj_StratigraphicColumnRankInterpretation(
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StratigraphicOccurrenceInterpretation(
     AbstractStratigraphicOrganizationInterpretation
 ):
@@ -24812,7 +24812,7 @@ class obj_StratigraphicOccurrenceInterpretation(
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_StratigraphicUnitFeature(obj_GeologicUnitFeature):
     """A stratigraphic unit that can have a well-known (e.g., "Jurassic")
     chronostratigraphic top and chronostratigraphic bottom.
@@ -24842,7 +24842,7 @@ class obj_StratigraphicUnitFeature(obj_GeologicUnitFeature):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_SubRepresentation(AbstractRepresentation):
     """An ordered list of indexable elements and/or indexable element pairs of an
     existing representation.
@@ -24860,6 +24860,7 @@ class obj_SubRepresentation(AbstractRepresentation):
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
     supporting_representation: DataObjectReference = field(
         default=None,
         metadata={
@@ -24867,7 +24868,7 @@ class obj_SubRepresentation(AbstractRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     additional_grid_topology: Optional[AdditionalGridTopology] = field(
         default=None,
@@ -24889,7 +24890,7 @@ class obj_SubRepresentation(AbstractRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_TectonicBoundaryFeature(obj_BoundaryFeature):
     """A boundary caused by tectonic movement or metamorphism, such as a fault or a
     fracture.
@@ -24907,17 +24908,17 @@ class obj_TectonicBoundaryFeature(obj_BoundaryFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Contact(CI_Contact_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CoordinateSystemAxisType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -24929,7 +24930,7 @@ class CoordinateSystemAxisType(IdentifiedObjectType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     axis_direction: axisDirection = field(
         default=None,
@@ -24938,7 +24939,7 @@ class CoordinateSystemAxisType(IdentifiedObjectType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     minimum_value: Optional[float] = field(
         default=None,
@@ -24966,7 +24967,7 @@ class CoordinateSystemAxisType(IdentifiedObjectType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EllipsoidType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -24978,7 +24979,7 @@ class EllipsoidType(IdentifiedObjectType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     second_defining_parameter: secondDefiningParameter_2 = field(
         default=None,
@@ -24987,11 +24988,11 @@ class EllipsoidType(IdentifiedObjectType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PrimeMeridianType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -25003,11 +25004,11 @@ class PrimeMeridianType(IdentifiedObjectType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class domainOfValidity:
     """
     The gml:domainOfValidity property implements an association role to an
@@ -25087,49 +25088,49 @@ class domainOfValidity:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CategoricalPropertySeries(obj_CategoricalPropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CommentPropertySeries(obj_CommentPropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ContinuousPropertySeries(obj_ContinuousPropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class DiscretePropertySeries(obj_DiscretePropertySeries):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class FluidBoundaryFeature(obj_FluidBoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeneticBoundaryFeature(obj_GeneticBoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeobodyFeature(obj_GeobodyFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GpGridIjkGridPatch(Patch):
     """Used to specify IJK grid patch(es) within a general purpose grid.
 
@@ -25196,7 +25197,7 @@ class GpGridIjkGridPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GpGridUnstructuredColumnLayerGridPatch(Patch):
     """Used to specify unstructured column layer grid patch(es) within a general
     purpose grid.
@@ -25241,7 +25242,7 @@ class GpGridUnstructuredColumnLayerGridPatch(Patch):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class NonSealedSurfaceFrameworkRepresentation(
     obj_NonSealedSurfaceFrameworkRepresentation
 ):
@@ -25249,61 +25250,61 @@ class NonSealedSurfaceFrameworkRepresentation(
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RockFluidUnitFeature(obj_RockFluidUnitFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SealedSurfaceFrameworkRepresentation(obj_SealedSurfaceFrameworkRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SeismicLineFeature(obj_SeismicLineFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SeismicLineSetFeature(obj_SeismicLineSetFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StratigraphicColumnRankInterpretation(obj_StratigraphicColumnRankInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StratigraphicOccurrenceInterpretation(obj_StratigraphicOccurrenceInterpretation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class StratigraphicUnitFeature(obj_StratigraphicUnitFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SubRepresentation(obj_SubRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TectonicBoundaryFeature(obj_TectonicBoundaryFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_IjkGridRepresentation(AbstractColumnLayerGridRepresentation):
     """Grid whose topology is characterized by structured column indices (I,J) and
     a layer index, K.
@@ -25342,7 +25343,7 @@ class obj_IjkGridRepresentation(AbstractColumnLayerGridRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     nj: int = field(
         default=None,
@@ -25351,7 +25352,7 @@ class obj_IjkGridRepresentation(AbstractColumnLayerGridRepresentation):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     radial_grid_is_complete: Optional[bool] = field(
         default=None,
@@ -25379,7 +25380,7 @@ class obj_IjkGridRepresentation(AbstractColumnLayerGridRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_RepresentationIdentitySet(AbstractResqmlDataObject):
     """
     A collection of representation identities.
@@ -25399,7 +25400,7 @@ class obj_RepresentationIdentitySet(AbstractResqmlDataObject):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
     """Defined by two lateral ordered dimensions: inline (lateral), crossline (lateral and orthogonal to the inline dimension), which are fixed.
     To specify its location, a seismic feature can be associated with the seismic coordinates of the points of a representation.
@@ -25433,7 +25434,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     crossline_index_increment: int = field(
         default=None,
@@ -25442,7 +25443,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     first_crossline_index: int = field(
         default=None,
@@ -25451,7 +25452,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     first_inline_index: int = field(
         default=None,
@@ -25460,7 +25461,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     inline_count: int = field(
         default=None,
@@ -25469,7 +25470,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     inline_index_increment: int = field(
         default=None,
@@ -25478,7 +25479,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     is_part_of: Optional[SeismicLatticeSetFeature] = field(
         default=None,
@@ -25490,7 +25491,7 @@ class obj_SeismicLatticeFeature(AbstractSeismicSurveyFeature):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_TruncatedIjkGridRepresentation(
     AbstractTruncatedColumnLayerGridRepresentation
 ):
@@ -25520,7 +25521,7 @@ class obj_TruncatedIjkGridRepresentation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     nj: int = field(
         default=None,
@@ -25529,7 +25530,7 @@ class obj_TruncatedIjkGridRepresentation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     geometry: IjkGridGeometry = field(
         default=None,
@@ -25538,11 +25539,11 @@ class obj_TruncatedIjkGridRepresentation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_TruncatedUnstructuredColumnLayerGridRepresentation(
     AbstractTruncatedColumnLayerGridRepresentation
 ):
@@ -25570,7 +25571,7 @@ class obj_TruncatedUnstructuredColumnLayerGridRepresentation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     geometry: UnstructuredColumnLayerGridGeometry = field(
         default=None,
@@ -25579,11 +25580,11 @@ class obj_TruncatedUnstructuredColumnLayerGridRepresentation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_UnstructuredColumnLayerGridRepresentation(
     AbstractColumnLayerGridRepresentation
 ):
@@ -25610,7 +25611,7 @@ class obj_UnstructuredColumnLayerGridRepresentation(
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     geometry: Optional[UnstructuredColumnLayerGridGeometry] = field(
         default=None,
@@ -25622,7 +25623,7 @@ class obj_UnstructuredColumnLayerGridRepresentation(
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Contact_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -25703,7 +25704,7 @@ class CI_Contact_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractCRSType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -25726,7 +25727,7 @@ class AbstractCRSType(IdentifiedObjectType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractDatumType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -25765,7 +25766,7 @@ class AbstractDatumType(IdentifiedObjectType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CoordinateSystemAxis(CoordinateSystemAxisType):
     """
     Gml:CoordinateSystemAxis is a definition of a coordinate system axis.
@@ -25775,7 +25776,7 @@ class CoordinateSystemAxis(CoordinateSystemAxisType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class Ellipsoid_1(EllipsoidType):
     """A gml:Ellipsoid is a geometric figure that may be used to describe the
     approximate shape of the earth.
@@ -25789,7 +25790,7 @@ class Ellipsoid_1(EllipsoidType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PrimeMeridian_1(PrimeMeridianType):
     """A gml:PrimeMeridian defines the origin from which longitude values are
     determined.
@@ -25803,7 +25804,7 @@ class PrimeMeridian_1(PrimeMeridianType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GpGridColumnLayerGrid:
     """Used to construct a column layer grid patch based upon multiple unstructured
     column layer and IJK grids which share a layering scheme.
@@ -25858,31 +25859,31 @@ class GpGridColumnLayerGrid:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class IjkGridRepresentation(obj_IjkGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class RepresentationIdentitySet(obj_RepresentationIdentitySet):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SeismicLatticeFeature(obj_SeismicLatticeFeature):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TruncatedIjkGridRepresentation(obj_TruncatedIjkGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class TruncatedUnstructuredColumnLayerGridRepresentation(
     obj_TruncatedUnstructuredColumnLayerGridRepresentation
 ):
@@ -25890,7 +25891,7 @@ class TruncatedUnstructuredColumnLayerGridRepresentation(
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class UnstructuredColumnLayerGridRepresentation(
     obj_UnstructuredColumnLayerGridRepresentation
 ):
@@ -25898,7 +25899,7 @@ class UnstructuredColumnLayerGridRepresentation(
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_ResponsibleParty_Type(AbstractObject_Type):
     """
     Identification of, and means of communication with, person(s) and organisations
@@ -25907,13 +25908,14 @@ class CI_ResponsibleParty_Type(AbstractObject_Type):
 
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
+
     role: CI_RoleCode_PropertyType = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     individual_name: Optional[CharacterString_PropertyType] = field(
         default=None,
@@ -25949,8 +25951,7 @@ class CI_ResponsibleParty_Type(AbstractObject_Type):
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGeneralDerivedCRSType(AbstractCRSType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -25961,11 +25962,11 @@ class AbstractGeneralDerivedCRSType(AbstractCRSType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CoordinateSystemAxisPropertyType:
     """
     Gml:CoordinateSystemAxisPropertyType is a property type for association roles
@@ -26045,7 +26046,7 @@ class CoordinateSystemAxisPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EllipsoidPropertyType:
     """
     Gml:EllipsoidPropertyType is a property type for association roles to an
@@ -26124,7 +26125,7 @@ class EllipsoidPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class PrimeMeridianPropertyType:
     """
     Gml:PrimeMeridianPropertyType is a property type for association roles to a
@@ -26204,13 +26205,13 @@ class PrimeMeridianPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalDatumType(AbstractDatumType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class obj_GpGridRepresentation(AbstractGridRepresentation):
     """General purpose (GP) grid representation, which includes and/or extends the
     features from all other grid representations.
@@ -26241,13 +26242,13 @@ class obj_GpGridRepresentation(AbstractGridRepresentation):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_ResponsibleParty(CI_ResponsibleParty_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalDatum_1(VerticalDatumType):
     """
     Gml:VerticalDatum is a textual description and/or a set of parameters
@@ -26261,7 +26262,7 @@ class VerticalDatum_1(VerticalDatumType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class axis(CoordinateSystemAxisPropertyType):
     """The gml:axis property is an association role (ordered sequence) to the
     coordinate system axes included in this coordinate system.
@@ -26277,7 +26278,7 @@ class axis(CoordinateSystemAxisPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ellipsoid_2(EllipsoidPropertyType):
     """
     Gml:ellipsoid is an association role to the ellipsoid used by this geodetic
@@ -26289,7 +26290,7 @@ class ellipsoid_2(EllipsoidPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class primeMeridian_2(PrimeMeridianPropertyType):
     """
     Gml:primeMeridian is an association role to the prime meridian used by this
@@ -26301,13 +26302,13 @@ class primeMeridian_2(PrimeMeridianPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GpGridRepresentation(obj_GpGridRepresentation):
     class Meta:
         namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_ResponsibleParty_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -26388,7 +26389,7 @@ class CI_ResponsibleParty_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractCoordinateSystemType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -26410,7 +26411,7 @@ class AbstractCoordinateSystemType(IdentifiedObjectType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeodeticDatumType(AbstractDatumType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -26422,7 +26423,7 @@ class GeodeticDatumType(AbstractDatumType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     ellipsoid: ellipsoid_2 = field(
         default=None,
@@ -26430,11 +26431,11 @@ class GeodeticDatumType(AbstractDatumType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalDatumPropertyType:
     """
     Gml:VerticalDatumPropertyType is property type for association roles to a
@@ -26513,7 +26514,7 @@ class VerticalDatumPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Citation_Type(AbstractObject_Type):
     """
     Standardized resource reference.
@@ -26528,7 +26529,7 @@ class CI_Citation_Type(AbstractObject_Type):
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     alternate_title: List[CharacterString_PropertyType] = field(
         default_factory=list,
@@ -26625,19 +26626,19 @@ class CI_Citation_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CartesianCSType(AbstractCoordinateSystemType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EllipsoidalCSType(AbstractCoordinateSystemType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeodeticDatum_1(GeodeticDatumType):
     """
     Gml:GeodeticDatum is a geodetic datum defines the precise location and
@@ -26650,19 +26651,19 @@ class GeodeticDatum_1(GeodeticDatumType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SphericalCSType(AbstractCoordinateSystemType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCSType(AbstractCoordinateSystemType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class verticalDatum_2(VerticalDatumPropertyType):
     """
     Gml:verticalDatum is an association role to the vertical datum used by this
@@ -26674,13 +26675,13 @@ class verticalDatum_2(VerticalDatumPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Citation(CI_Citation_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CartesianCS_1(CartesianCSType):
     """Gml:CartesianCS is a 1-, 2-, or 3-dimensional coordinate system.
 
@@ -26696,7 +26697,7 @@ class CartesianCS_1(CartesianCSType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EllipsoidalCS_1(EllipsoidalCSType):
     """Gml:EllipsoidalCS is a two- or three-dimensional coordinate system in which
     position is specified by geodetic latitude, geodetic longitude, and (in the
@@ -26711,7 +26712,7 @@ class EllipsoidalCS_1(EllipsoidalCSType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeodeticDatumPropertyType:
     """
     Gml:GeodeticDatumPropertyType is a property type for association roles to a
@@ -26790,7 +26791,7 @@ class GeodeticDatumPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SphericalCS_1(SphericalCSType):
     """Gml:SphericalCS is a three-dimensional coordinate system with one distance
     measured from the origin and two angular coordinates.
@@ -26803,7 +26804,7 @@ class SphericalCS_1(SphericalCSType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCS_1(VerticalCSType):
     """Gml:VerticalCS is a one-dimensional coordinate system used to record the
     heights or depths of points.
@@ -26819,7 +26820,7 @@ class VerticalCS_1(VerticalCSType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CI_Citation_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -26900,7 +26901,7 @@ class CI_Citation_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CartesianCSPropertyType:
     """
     Gml:CartesianCSPropertyType is a property type for association roles to a
@@ -26980,7 +26981,7 @@ class CartesianCSPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class EllipsoidalCSPropertyType:
     """
     Gml:EllipsoidalCSPropertyType is a property type for association roles to an
@@ -27060,7 +27061,7 @@ class EllipsoidalCSPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SphericalCSPropertyType:
     """
     Gml:SphericalCSPropertyType is property type for association roles to a
@@ -27140,7 +27141,7 @@ class SphericalCSPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCSPropertyType:
     """
     Gml:VerticalCSPropertyType is a property type for association roles to a
@@ -27220,7 +27221,7 @@ class VerticalCSPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class geodeticDatum_2(GeodeticDatumPropertyType):
     """
     Gml:geodeticDatum is an association role to the geodetic datum used by this
@@ -27232,17 +27233,18 @@ class geodeticDatum_2(GeodeticDatumPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MD_Identifier_Type(AbstractObject_Type):
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
+
     code: CharacterString_PropertyType = field(
         default=None,
         metadata={
             "type": "Element",
             "namespace": "http://www.isotc211.org/2005/gmd",
             "required": True,
-        }
+        },
     )
     authority: Optional[CI_Citation_PropertyType] = field(
         default=None,
@@ -27253,8 +27255,7 @@ class MD_Identifier_Type(AbstractObject_Type):
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class cartesianCS_2(CartesianCSPropertyType):
     """
     Gml:cartesianCS is an association role to the Cartesian coordinate system used
@@ -27266,7 +27267,7 @@ class cartesianCS_2(CartesianCSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ellipsoidalCS_2(EllipsoidalCSPropertyType):
     """
     Gml:ellipsoidalCS is an association role to the ellipsoidal coordinate system
@@ -27278,7 +27279,7 @@ class ellipsoidalCS_2(EllipsoidalCSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class sphericalCS_2(SphericalCSPropertyType):
     """
     Gml:sphericalCS is an association role to the spherical coordinate system used
@@ -27290,7 +27291,7 @@ class sphericalCS_2(SphericalCSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class verticalCS_2(VerticalCSPropertyType):
     """
     Gml:verticalCS is an association role to the vertical coordinate system used by
@@ -27302,13 +27303,13 @@ class verticalCS_2(VerticalCSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MD_Identifier(MD_Identifier_Type):
     class Meta:
         namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeodeticCRSType(AbstractCRSType):
     """
     Gml:GeodeticCRS is a coordinate reference system based on a geodetic datum.
@@ -27316,6 +27317,7 @@ class GeodeticCRSType(AbstractCRSType):
 
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
+
     geodetic_datum: geodeticDatum_2 = field(
         default=None,
         metadata={
@@ -27323,7 +27325,7 @@ class GeodeticCRSType(AbstractCRSType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     ellipsoidal_cs: Optional[ellipsoidalCS_2] = field(
         default=None,
@@ -27351,8 +27353,7 @@ class GeodeticCRSType(AbstractCRSType):
     )
 
 
-
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCRSType(AbstractCRSType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -27364,7 +27365,7 @@ class VerticalCRSType(AbstractCRSType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     vertical_datum: verticalDatum_2 = field(
         default=None,
@@ -27373,11 +27374,11 @@ class VerticalCRSType(AbstractCRSType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GmlVerticalCrsDefinition(AbstractVerticalCrs):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -27396,7 +27397,7 @@ class GmlVerticalCrsDefinition(AbstractVerticalCrs):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class MD_Identifier_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -27477,13 +27478,13 @@ class MD_Identifier_PropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeodeticCRS(GeodeticCRSType):
     class Meta:
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class VerticalCRS(VerticalCRSType):
     """Gml:VerticalCRS is a 1D coordinate reference system used for recording
     heights or depths.
@@ -27501,7 +27502,7 @@ class VerticalCRS(VerticalCRSType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractDQ_Element_Type(AbstractObject_Type):
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
@@ -27573,7 +27574,7 @@ class AbstractDQ_Element_Type(AbstractObject_Type):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class CRSPropertyType:
     """
     Gml:CRSPropertyType is a property type for association roles to a CRS abstract
@@ -27669,7 +27670,7 @@ class CRSPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GeodeticCRSPropertyType:
     """
     Gml:GeodeticCRSPropertyType is a property type for association roles to a
@@ -27749,13 +27750,13 @@ class GeodeticCRSPropertyType:
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractDQ_PositionalAccuracy_Type(AbstractDQ_Element_Type):
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gmd"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class baseGeodeticCRS(GeodeticCRSPropertyType):
     """
     Gml:baseGeodeticCRS is an association role to the geodetic coordinate reference
@@ -27766,7 +27767,7 @@ class baseGeodeticCRS(GeodeticCRSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class sourceCRS(CRSPropertyType):
     """
     Gml:sourceCRS is an association role to the source CRS (coordinate reference
@@ -27777,7 +27778,7 @@ class sourceCRS(CRSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class targetCRS(CRSPropertyType):
     """
     Gml:targetCRS is an association role to the target CRS (coordinate reference
@@ -27788,7 +27789,7 @@ class targetCRS(CRSPropertyType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractCoordinateOperationType(IdentifiedObjectType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -27843,7 +27844,7 @@ class AbstractCoordinateOperationType(IdentifiedObjectType):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ProjectedCRSType(AbstractGeneralDerivedCRSType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -27855,7 +27856,7 @@ class ProjectedCRSType(AbstractGeneralDerivedCRSType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
     cartesian_cs: cartesianCS_2 = field(
         default=None,
@@ -27864,11 +27865,11 @@ class ProjectedCRSType(AbstractGeneralDerivedCRSType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class GmlProjectedCrsDefinition(AbstractProjectedCrs):
     """
     This is the Energistics encapsulation of the ProjectedCrs type from GML.
@@ -27887,7 +27888,7 @@ class GmlProjectedCrsDefinition(AbstractProjectedCrs):
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class AbstractGeneralConversionType(AbstractCoordinateOperationType):
     class Meta:
         target_namespace = "http://www.opengis.net/gml/3.2"
@@ -27919,11 +27920,11 @@ class AbstractGeneralConversionType(AbstractCoordinateOperationType):
             "type": "Element",
             "namespace": "http://www.opengis.net/gml/3.2",
             "required": True,
-        }
+        },
     )
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class ProjectedCRS(ProjectedCRSType):
     """Gml:ProjectedCRS is a 2D coordinate reference system used to approximate the
     shape of the earth on a planar surface, but in such a way that the distortion
@@ -27938,7 +27939,7 @@ class ProjectedCRS(ProjectedCRSType):
         namespace = "http://www.opengis.net/gml/3.2"
 
 
-@dataclass(**({"slots": True,"kw_only":True} if py310 else {}))
+@dataclass(**({"slots": True, "kw_only": True} if py310 else {}))
 class SC_CRS_PropertyType:
     class Meta:
         target_namespace = "http://www.isotc211.org/2005/gsr"
