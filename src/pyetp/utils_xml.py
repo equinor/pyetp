@@ -17,11 +17,14 @@ if T.TYPE_CHECKING:
     from xtgeo import RegularSurface
 
 
-schema_version = "2.0.1"
+resqml_schema_version = "2.0.1"
+common_schema_version = "2.0"
 
 
 def get_content_type_string(
-    obj: ro.AbstractObject, schema_version: str = schema_version
+    obj: ro.AbstractObject,
+    resqml_schema_version: str = resqml_schema_version,
+    common_schema_version: str = common_schema_version,
 ) -> str:
     # See Energistics Identifier Specification 4.0 (it is downloaded alongside
     # the RESQML v2.0.1 standard) section 4.1 for an explanation on the format
@@ -33,12 +36,12 @@ def get_content_type_string(
 
     if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
         return (
-            f"application/x-resqml+xml;version={schema_version};"
+            f"application/x-resqml+xml;version={resqml_schema_version};"
             f"type={obj.__class__.__name__}"
         )
     elif namespace == "http://www.energistics.org/energyml/data/commonv2":
         return (
-            f"application/x-eml+xml;version={schema_version};"
+            f"application/x-eml+xml;version={common_schema_version};"
             f"type={obj.__class__.__name__}"
         )
 
@@ -71,10 +74,15 @@ def create_common_citation(title: str):
     )
 
 
-def create_common_crs(title: str, projected_epsg, rotation: float = 0.0):
+def create_common_crs(
+    title: str,
+    projected_epsg,
+    rotation: float = 0.0,
+    resqml_schema_version: str = resqml_schema_version,
+):
     return ro.LocalDepth3dCrs(
         citation=create_common_citation(f"CRS for {title}"),
-        schema_version=schema_version,
+        schema_version=resqml_schema_version,
         uuid=str(uuid4()),
         # NOTE: I assume that we let the CRS have no offset, and add any offset
         # in the grid instead.
@@ -98,10 +106,10 @@ def create_common_crs(title: str, projected_epsg, rotation: float = 0.0):
     )
 
 
-def create_epc(schema_version="2.0"):
+def create_epc(common_schema_version: str = common_schema_version):
     return ro.EpcExternalPartReference(
         citation=create_common_citation("Hdf Proxy"),
-        schema_version=schema_version,
+        schema_version=common_schema_version,
         uuid=str(uuid4()),
         mime_type="application/x-hdf5",
     )
@@ -144,13 +152,14 @@ def instantiate_resqml_grid(
     nx: int,
     ny: int,
     epsg: int,
+    resqml_schema_version: str = resqml_schema_version,
 ):
     epc = create_epc()
     crs = create_common_crs(name, epsg, rotation)
 
     gri = ro.Grid2dRepresentation(
         uuid=(grid_uuid := str(uuid4())),
-        schema_version=schema_version,
+        schema_version=resqml_schema_version,
         surface_role=ro.SurfaceRole.MAP,
         citation=create_common_citation(name),
         grid2d_patch=ro.Grid2dPatch(
@@ -262,6 +271,8 @@ def create_resqml_property(
     timeseries=None,
     time_index=-1,
     pre_existing_propertykind=None,
+    resqml_schema_version: str = resqml_schema_version,
+    common_schema_version: str = common_schema_version,
 ):
     timeindex_ref = None
     use_timeseries = timeseries is not None
@@ -277,7 +288,7 @@ def create_resqml_property(
     if pre_existing_propertykind is None:
         pk_uuid = uuid4()
         propertykind0 = ro.PropertyKind(
-            schema_version=schema_version,
+            schema_version=resqml_schema_version,
             citation=create_common_citation(f"{prop_title}"),
             naming_system="urn:resqml:bp.com:resqpy",
             is_abstract=False,
@@ -313,7 +324,7 @@ def create_resqml_property(
 
     if continuous:
         cprop0 = ro.ContinuousProperty(
-            schema_version=schema_version,
+            schema_version=resqml_schema_version,
             citation=create_common_citation(f"{prop_title}"),
             uuid=str(prop_uuid),
             uom=r_uom,
@@ -338,7 +349,7 @@ def create_resqml_property(
         )
     else:
         cprop0 = ro.DiscreteProperty(
-            schema_version=schema_version,
+            schema_version=resqml_schema_version,
             citation=create_common_citation(f"{prop_title}"),
             uuid=str(prop_uuid),
             # uom = prop.uom(),
@@ -381,14 +392,14 @@ def create_resqml_mesh(
 
     timeseries = ro.TimeSeries(
         citation=create_common_citation(str(gts_citation_title)),
-        schema_version=schema_version,
+        schema_version=resqml_schema_version,
         uuid=str(gts_uuid),
         time=ro_timestamps,
     )
     crs = create_common_crs(gts_citation_title, projected_epsg)
     epc = ro.EpcExternalPartReference(
         citation=create_common_citation("Hdf Proxy"),
-        schema_version=schema_version,
+        schema_version=common_schema_version,
         uuid=str(uuid4()),
         mime_type="application/x-hdf5",
     )
@@ -494,7 +505,7 @@ def create_resqml_mesh(
     #
     uns = ro.UnstructuredGridRepresentation(
         uuid=str(hexa_uuid),
-        schema_version=schema_version,
+        schema_version=resqml_schema_version,
         # surface_role=resqml_objects.SurfaceRole.MAP,
         citation=create_common_citation(gts_citation_title),
         cell_count=cell_count,
@@ -504,7 +515,11 @@ def create_resqml_mesh(
 
 
 def convert_epc_mesh_to_resqml_mesh(
-    epc_filename: str, title_in: str, projected_epsg: int
+    epc_filename: str,
+    title_in: str,
+    projected_epsg: int,
+    resqml_schema_version: str = resqml_schema_version,
+    common_schema_version: str = common_schema_version,
 ):
     title = title_in or "hexamesh"
 
@@ -541,7 +556,7 @@ def convert_epc_mesh_to_resqml_mesh(
         )
         timeseries = ro.TimeSeries(
             citation=create_common_citation(str(gts.citation_title)),
-            schema_version=schema_version,
+            schema_version=resqml_schema_version,
             uuid=str(gts.uuid),
             time=ro_timestamps,
         )
@@ -550,7 +565,7 @@ def convert_epc_mesh_to_resqml_mesh(
 
     epc = ro.EpcExternalPartReference(
         citation=create_common_citation("Hdf Proxy"),
-        schema_version=schema_version,
+        schema_version=common_schema_version,
         uuid=str(uuid4()),
         mime_type="application/x-hdf5",
     )
@@ -617,7 +632,7 @@ def convert_epc_mesh_to_resqml_mesh(
     #
     uns = ro.UnstructuredGridRepresentation(
         uuid=str(hexa.uuid),
-        schema_version=schema_version,
+        schema_version=resqml_schema_version,
         # surface_role=resqml_objects.SurfaceRole.MAP,
         citation=create_common_citation(hexa.title),
         cell_count=hexa.cell_count or -1,
@@ -668,7 +683,7 @@ def convert_epc_mesh_property_to_resqml_mesh(
     else:
         pk = rqp.PropertyKind(model, uuid=prop0.local_property_kind_uuid())
         propertykind0 = ro.PropertyKind(
-            schema_version=schema_version,
+            schema_version=resqml_schema_version,
             citation=create_common_citation(f"{prop_title}"),
             naming_system="urn:resqml:bp.com:resqpy",
             is_abstract=False,
@@ -724,7 +739,7 @@ def convert_epc_mesh_property_to_resqml_mesh(
 
         if continuous:
             cprop0 = ro.ContinuousProperty(
-                schema_version=schema_version,
+                schema_version=resqml_schema_version,
                 citation=create_common_citation(f"{prop_title}"),
                 uuid=str(prop.uuid),
                 uom=r_uom,
@@ -749,7 +764,7 @@ def convert_epc_mesh_property_to_resqml_mesh(
             )
         else:
             cprop0 = ro.DiscreteProperty(
-                schema_version=schema_version,
+                schema_version=resqml_schema_version,
                 citation=create_common_citation(f"{prop_title}"),
                 uuid=str(prop.uuid),
                 # uom = prop.uom(),
