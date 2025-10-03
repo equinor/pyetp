@@ -20,8 +20,44 @@ if T.TYPE_CHECKING:
 schema_version = "2.0.1"
 
 
-def get_data_object_type(obj: ro.AbstractObject):
-    return obj.__class__.__name__
+def get_content_type_string(
+    obj: ro.AbstractObject, schema_version: str = schema_version
+) -> str:
+    # See Energistics Identifier Specification 4.0 (it is downloaded alongside
+    # the RESQML v2.0.1 standard) section 4.1 for an explanation on the format
+    # of content_type.
+
+    namespace = getattr(obj.Meta, "namespace", None) or getattr(
+        obj.Meta, "target_namespace"
+    )
+
+    if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
+        return (
+            f"application/x-resqml+xml;version={schema_version};"
+            f"type={obj.__class__.__name__}"
+        )
+    elif namespace == "http://www.energistics.org/energyml/data/commonv2":
+        return (
+            f"application/x-eml+xml;version={schema_version};"
+            f"type={obj.__class__.__name__}"
+        )
+
+    raise NotImplementedError(
+        f"Namespace {namespace} from object {obj} is not supported"
+    )
+
+
+def get_data_object_reference(
+    obj: ro.AbstractCitedDataObject,
+) -> ro.DataObjectReference:
+    content_type = get_content_type_string(obj)
+
+    return ro.DataObjectReference(
+        content_type=content_type,
+        title=obj.citation.title,
+        uuid=obj.uuid,
+        version_string=obj.citation.version_string,
+    )
 
 
 def create_common_citation(title: str):
@@ -128,15 +164,7 @@ def instantiate_resqml_grid(
             fastest_axis_count=ny,
             slowest_axis_count=nx,
             geometry=ro.PointGeometry(
-                local_crs=ro.DataObjectReference(
-                    # NOTE: See Energistics Identifier Specification 4.0
-                    # (it is downloaded alongside the RESQML v2.0.1
-                    # standard) section 4.1 for an explanation on the
-                    # format of content_type.
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}",
-                    title=crs.citation.title,
-                    uuid=crs.uuid,
-                ),
+                local_crs=get_data_object_reference(crs),
                 points=ro.Point3dZValueArray(
                     supporting_geometry=ro.Point3dLatticeArray(
                         origin=ro.Point3d(
@@ -183,11 +211,7 @@ def instantiate_resqml_grid(
                     zvalues=ro.DoubleHdf5Array(
                         values=ro.Hdf5Dataset(
                             path_in_hdf_file=f"/RESQML/{grid_uuid}/zvalues",
-                            hdf_proxy=ro.DataObjectReference(
-                                content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                                title=epc.citation.title,
-                                uuid=epc.uuid,
-                            ),
+                            hdf_proxy=get_data_object_reference(epc),
                         ),
                     ),
                 ),
@@ -245,11 +269,7 @@ def create_resqml_property(
         # time_index = time_indices[i]
         timeindex_ref = ro.TimeIndex(
             index=time_index,
-            time_series=ro.DataObjectReference(
-                content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(timeseries)}",
-                title=timeseries.citation.title,
-                uuid=timeseries.uuid,
-            ),
+            time_series=get_data_object_reference(timeseries),
         )
 
     r_uom = ro.ResqmlUom(value=uom_for_prop_title(prop_title))
@@ -278,22 +298,14 @@ def create_resqml_property(
         values=ro.DoubleHdf5Array(
             values=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
-                ),
+                hdf_proxy=get_data_object_reference(epc),
             )
         )
         if continuous
         else ro.IntegerHdf5Array(
             values=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
-                ),
+                hdf_proxy=get_data_object_reference(epc),
             ),
             null_value=int(1e30),
         )
@@ -307,19 +319,11 @@ def create_resqml_property(
             uom=r_uom,
             count=1,
             indexable_element=indexable_element,
-            supporting_representation=ro.DataObjectReference(
-                content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
-                title=uns.citation.title,
-                uuid=uns.uuid,
-            ),
+            supporting_representation=get_data_object_reference(uns),
             property_kind=propertykind0
             if pre_existing_propertykind is not None
             else ro.LocalPropertyKind(
-                local_property_kind=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
-                    title=propertykind0.citation.title,
-                    uuid=propertykind0.uuid,
-                )
+                local_property_kind=get_data_object_reference(propertykind0),
             ),  # if (propertykind0 is not None) else ro.StandardPropertyKind(kind=prop.property_kind()),
             minimum_value=[min_val],
             maximum_value=[max_val],
@@ -340,19 +344,11 @@ def create_resqml_property(
             # uom = prop.uom(),
             count=1,
             indexable_element=indexable_element,
-            supporting_representation=ro.DataObjectReference(
-                content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
-                title=uns.citation.title,
-                uuid=uns.uuid,
-            ),
+            supporting_representation=get_data_object_reference(uns),
             property_kind=propertykind0
             if pre_existing_propertykind is not None
             else ro.LocalPropertyKind(
-                local_property_kind=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
-                    title=propertykind0.citation.title,
-                    uuid=propertykind0.uuid,
-                )
+                local_property_kind=get_data_object_reference(propertykind0),
             ),  # if (propertykind0 is not None) else ro.StandardPropertyKind(kind=prop.property_kind()),
             minimum_value=[int(min_val)],
             maximum_value=[int(max_val)],
@@ -445,22 +441,14 @@ def create_resqml_mesh(
 
     hexa_uuid = uuid4()
     geom = ro.UnstructuredGridGeometry(
-        local_crs=ro.DataObjectReference(
-            content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}",
-            title=crs.citation.title,
-            uuid=crs.uuid,
-        ),
+        local_crs=get_data_object_reference(crs),
         node_count=node_count,
         face_count=face_count,
         cell_shape=cellshape,
         points=ro.Point3dHdf5Array(
             coordinates=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/points",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
-                ),
+                hdf_proxy=get_data_object_reference(epc),
             )
         ),
         nodes_per_face=ro.ResqmlJaggedArray(
@@ -468,22 +456,14 @@ def create_resqml_mesh(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/nodes_per_face",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
             cumulative_length=ro.IntegerHdf5Array(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/nodes_per_face_cl",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
         ),
@@ -492,33 +472,21 @@ def create_resqml_mesh(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/faces_per_cell",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
             cumulative_length=ro.IntegerHdf5Array(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/faces_per_cell_cl",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
         ),
         cell_face_is_right_handed=ro.BooleanHdf5Array(
             values=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/cell_face_is_right_handed",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
-                ),
+                hdf_proxy=get_data_object_reference(epc),
             )
         ),
     )
@@ -594,22 +562,14 @@ def convert_epc_mesh_to_resqml_mesh(
     )
 
     geom = ro.UnstructuredGridGeometry(
-        local_crs=ro.DataObjectReference(
-            content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(crs)}",
-            title=crs.citation.title,
-            uuid=crs.uuid,
-        ),
+        local_crs=get_data_object_reference(crs),
         node_count=hexa.node_count or -1,
         face_count=hexa.face_count or -1,
         cell_shape=cellshape,
         points=ro.Point3dHdf5Array(
             coordinates=ro.Hdf5Dataset(
                 path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/points",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
-                ),
+                hdf_proxy=get_data_object_reference(epc),
             )
         ),
         nodes_per_face=ro.ResqmlJaggedArray(
@@ -617,22 +577,14 @@ def convert_epc_mesh_to_resqml_mesh(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/nodes_per_face",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
             cumulative_length=ro.IntegerHdf5Array(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/nodes_per_face_cl",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
         ),
@@ -641,33 +593,23 @@ def convert_epc_mesh_to_resqml_mesh(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/faces_per_cell",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
             cumulative_length=ro.IntegerHdf5Array(
                 null_value=-1,
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/faces_per_cell_cl",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
             ),
         ),
         cell_face_is_right_handed=ro.BooleanHdf5Array(
             values=ro.Hdf5Dataset(
-                path_in_hdf_file=f"/RESQML/{str(hexa_uuid)}/cell_face_is_right_handed",
-                hdf_proxy=ro.DataObjectReference(
-                    content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                    title=epc.citation.title,
-                    uuid=str(epc.uuid),
+                path_in_hdf_file=(
+                    f"/RESQML/{str(hexa_uuid)}/cell_face_is_right_handed"
                 ),
+                hdf_proxy=get_data_object_reference(epc),
             )
         ),
     )
@@ -749,28 +691,18 @@ def convert_epc_mesh_property_to_resqml_mesh(
             prop_uuid = prop_uuids[time_indices[i]]
             prop = rqp.Property(model, uuid=prop_uuid)
 
-        # def create_resqml_property(prop_title, continuous, indexable_element, uns, epc, min_val=0.0, max_val=1.0, timeseries=None, time_index=-1):
-
         pov = ro.PatchOfValues(
             values=ro.DoubleHdf5Array(
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 )
             )
             if continuous
             else ro.IntegerHdf5Array(
                 values=ro.Hdf5Dataset(
                     path_in_hdf_file=f"/RESQML/{str(prop_uuid)}/values",
-                    hdf_proxy=ro.DataObjectReference(
-                        content_type=f"application/x-eml+xml;version={schema_version};type={get_data_object_type(epc)}",
-                        title=epc.citation.title,
-                        uuid=str(epc.uuid),
-                    ),
+                    hdf_proxy=get_data_object_reference(epc),
                 ),
                 null_value=int(1e30),
             )
@@ -781,11 +713,7 @@ def convert_epc_mesh_property_to_resqml_mesh(
             time_index = time_indices[i]
             timeindex_ref = ro.TimeIndex(
                 index=time_index,
-                time_series=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(timeseries)}",
-                    title=timeseries.citation.title,
-                    uuid=timeseries.uuid,
-                ),
+                time_series=get_data_object_reference(timeseries),
             )
 
         r_uom = (
@@ -802,17 +730,9 @@ def convert_epc_mesh_property_to_resqml_mesh(
                 uom=r_uom,
                 count=1,
                 indexable_element=prop.indexable_element(),
-                supporting_representation=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
-                    title=uns.citation.title,
-                    uuid=uns.uuid,
-                ),
+                supporting_representation=get_data_object_reference(uns),
                 property_kind=ro.LocalPropertyKind(
-                    local_property_kind=ro.DataObjectReference(
-                        content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
-                        title=propertykind0.citation.title,
-                        uuid=propertykind0.uuid,
-                    )
+                    local_property_kind=get_data_object_reference(propertykind0),
                 )
                 if (propertykind0 is not None)
                 else ro.StandardPropertyKind(kind=prop.property_kind()),
@@ -835,17 +755,9 @@ def convert_epc_mesh_property_to_resqml_mesh(
                 # uom = prop.uom(),
                 count=1,
                 indexable_element=prop.indexable_element(),
-                supporting_representation=ro.DataObjectReference(
-                    content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(uns)}",
-                    title=uns.citation.title,
-                    uuid=uns.uuid,
-                ),
+                supporting_representation=get_data_object_reference(uns),
                 property_kind=ro.LocalPropertyKind(
-                    local_property_kind=ro.DataObjectReference(
-                        content_type=f"application/x-resqml+xml;version={schema_version};type={get_data_object_type(propertykind0)}",
-                        title=propertykind0.citation.title,
-                        uuid=propertykind0.uuid,
-                    )
+                    local_property_kind=get_data_object_reference(propertykind0),
                 )
                 if (propertykind0 is not None)
                 else ro.StandardPropertyKind(kind=prop.property_kind()),
