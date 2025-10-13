@@ -909,6 +909,11 @@ class DataObjectReference:
         },
     )
 
+    def __post_init__(self):
+        # Hacky solution to remove the "obj_"-prefix that is sometimes
+        # included, but not accepted by the RDDMS.
+        self.content_type = self.content_type.replace("type=obj_", "type=")
+
 
 class DataTransferSpeedUom(Enum):
     """
