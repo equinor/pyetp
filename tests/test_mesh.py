@@ -27,23 +27,26 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
     assert hexa.cell_face_is_right_handed is not None, "hexamesh object is incomplete"
 
     uuids = model.uuids(obj_type="ContinuousProperty")
+    assert len(uuids) == len(set(uuids))
+
     prop_titles = list(set([rqp.Property(model, uuid=u).title for u in uuids]))
     uuids = model.uuids(obj_type="DiscreteProperty")
+
     prop_titles = list(
         set(prop_titles + [rqp.Property(model, uuid=u).title for u in uuids])
     )
 
-    #
-    # The optional "points" (dynamic nodes) property is neither ContinuousProperty nor DiscreteProperty: special treatment
-    #
+    # The optional "points" (dynamic nodes) property is neither
+    # ContinuousProperty nor DiscreteProperty: special treatment
     node_uuids = model.uuids(title="points")
     special_prop_titles = list(
         set([rqp.Property(model, uuid=u).title for u in node_uuids])
     )
     prop_titles = prop_titles + special_prop_titles
-    rddms_uris, prop_uris = await eclient.put_epc_mesh(
-        input_mesh_file, hexa.title, prop_titles, 23031, duri
+    rddms_uris, prop_uris = await put_epc_mesh(
+        eclient, str(input_mesh_file), hexa.title, prop_titles, 23031, duri
     )
+
     (
         uns,
         points,
@@ -52,7 +55,7 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
         faces_per_cell,
         faces_per_cell_cl,
         cell_face_is_right_handed,
-    ) = await eclient.get_epc_mesh(rddms_uris[0], rddms_uris[2])
+    ) = await get_epc_mesh(eclient, rddms_uris[0], rddms_uris[2])
 
     mesh_has_timeseries = len(rddms_uris) > 3 and len(str(rddms_uris[3])) > 0
 
@@ -70,7 +73,9 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
     for key, value in prop_uris.items():
         found_indices = set()
         for prop_uri in value[1]:
-            prop0, values = await eclient.get_epc_mesh_property(rddms_uris[0], prop_uri)
+            prop0, values = await get_epc_mesh_property(
+                eclient, rddms_uris[0], prop_uri
+            )
             assert prop0.supporting_representation.uuid == str(uns.uuid), (
                 "property support must match the mesh"
             )
@@ -97,11 +102,11 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
             )  # type: ignore
             found_indices.add(time_index)
 
-    arr = await eclient.get_epc_property_surface_slice(
-        rddms_uris[0], rddms_uris[2], prop_uris["Temperature"][1][0], 2, 13
+    arr = await get_epc_property_surface_slice(
+        eclient, rddms_uris[0], rddms_uris[2], prop_uris["Temperature"][1][0], 2, 13
     )
     assert np.std(arr[:, -1]) < 10
-    arr = await eclient.get_epc_property_surface_slice(
-        rddms_uris[0], rddms_uris[2], prop_uris["LayerID"][1][0], 2, 13
+    arr = await get_epc_property_surface_slice(
+        eclient, rddms_uris[0], rddms_uris[2], prop_uris["LayerID"][1][0], 2, 13
     )
     assert np.all(np.diff(arr[:, -1]) == 0)
