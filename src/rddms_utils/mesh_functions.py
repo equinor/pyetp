@@ -186,39 +186,6 @@ async def get_epc_mesh_property(
     return cprop0, values
 
 
-async def put_epc_mesh_new(
-    etp_client: ETPClient,
-    epc_filename: str | pathlib.Path,
-    dataspace_uri: DataspaceURI,
-) -> list[DataObjectURI, ...]:
-    path = pathlib.Path(epc_filename)
-    mesh_objects = get_resqml_v201_objects(path)
-    mesh_arrays = get_arrays_and_paths_in_hdf_file(path.with_suffix(".h5"))
-
-    transaction_uuid = await etp_client.start_transaction(
-        dataspace_uri=dataspace_uri, read_only=False
-    )
-
-    uris = await etp_client.put_resqml_objects(
-        *mesh_objects, dataspace_uri=dataspace_uri
-    )
-    epc_uris = list(filter(lambda e: "EpcExternalPartReference" in str(e), uris))
-    assert len(epc_uris) == 1
-    epc_uri = str(epc_uris[0])
-
-    tasks = []
-    for pir, arr in mesh_arrays.items():
-        dai = DataArrayIdentifier(uri=epc_uri, path_in_resource=pir)
-        arr = arr.astype(pyetp.utils_arrays.get_valid_dtype_cast(arr))
-        tasks.append(etp_client.put_array(dai, arr))
-
-    _ = await asyncio.gather(*tasks)
-
-    await etp_client.commit_transaction(transaction_uuid=transaction_uuid)
-
-    return uris
-
-
 async def put_epc_mesh(
     etp_client: ETPClient,
     epc_filename: str,
