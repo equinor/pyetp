@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import logging
 import sys
-import time
 import typing as T
 import uuid
 from collections import defaultdict
@@ -139,7 +138,6 @@ from etptypes.energistics.etp.v12.protocol.transaction.start_transaction import 
     StartTransaction,
 )
 from pydantic import SecretStr
-from scipy.interpolate import griddata
 from xtgeo import RegularSurface
 
 import resqml_objects.v201 as ro
@@ -856,9 +854,9 @@ class ETPClient(ETPConnection):
         return [response.array_metadata[i.path_in_resource] for i in uids]
 
     async def get_array(self, uid: DataArrayIdentifier):
-        # Check if we can upload the full array in one go.
+        # Check if we can download the full array in one go.
         (meta,) = await self.get_array_metadata(uid)
-        if utils_arrays.get_nbytes(meta) > self.max_array_size:
+        if utils_arrays.get_transport_array_size(meta) > self.max_array_size:
             return await self._get_array_chunked(uid)
 
         response = await self.send(
@@ -869,30 +867,32 @@ class ETPClient(ETPConnection):
         )
 
         arrays = list(response.data_arrays.values())
-        return utils_arrays.to_numpy(arrays[0])
+        return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
 
     async def put_array(
         self,
         uid: DataArrayIdentifier,
         data: np.ndarray,
-        transaction_id: Uuid | None = None,
     ):
-        await self._put_uninitialized_data_array(
-            uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype)
+        logical_array_type, transport_array_type = (
+            utils_arrays.get_logical_and_transport_array_types(data.dtype)
         )
-        if isinstance(transaction_id, Uuid):
-            await self.commit_transaction(transaction_id)
+        await self._put_uninitialized_data_array(
+            uid,
+            data.shape,
+            transport_array_type=transport_array_type,
+            logical_array_type=logical_array_type,
+        )
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
-            return await self._put_array_chunked(
-                uid, data, isinstance(transaction_id, Uuid)
-            )
+            return await self._put_array_chunked(uid, data)
 
         response = await self.send(
             PutDataArrays(
-                dataArrays={
+                data_arrays={
                     uid.path_in_resource: PutDataArraysType(
-                        uid=uid, array=utils_arrays.to_data_array(data)
+                        uid=uid,
+                        array=utils_arrays.get_etp_data_array_from_numpy(data),
                     )
                 }
             )
@@ -929,7 +929,7 @@ class ETPClient(ETPConnection):
         )
 
         arrays = list(response.data_subarrays.values())
-        return utils_arrays.to_numpy(arrays[0])
+        return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
 
     async def put_subarray(
         self,
@@ -938,6 +938,9 @@ class ETPClient(ETPConnection):
         starts: T.Union[np.ndarray, T.List[int]],
         counts: T.Union[np.ndarray, T.List[int]],
     ):
+        # NOTE: This function assumes that the user (or previous methods) have
+        # called _put_uninitialized_data_array.
+
         # starts [start_X, starts_Y]
         # counts [count_X, count_Y]
         # len = 2 [x_start_index, y_start_index]
@@ -946,7 +949,7 @@ class ETPClient(ETPConnection):
         ends = starts + counts  # len = 2
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
-        dataarray = utils_arrays.to_data_array(data[slices])
+        dataarray = utils_arrays.get_etp_data_array_from_numpy(data[slices])
         payload = PutDataSubarraysType(
             uid=uid,
             data=dataarray.data,
@@ -1013,7 +1016,9 @@ class ETPClient(ETPConnection):
             buffer_shape = np.array([total_count], dtype=np.int64)
         else:
             buffer_shape = np.array(metadata.dimensions, dtype=np.int64)
-        dtype = utils_arrays.get_dtype(metadata.transport_array_type)
+        dtype = utils_arrays.get_dtype_from_any_array_type(
+            metadata.transport_array_type
+        )
         buffer = np.zeros(buffer_shape, dtype=dtype)
         params = []
 
@@ -1046,8 +1051,8 @@ class ETPClient(ETPConnection):
         self,
         uid: DataArrayIdentifier,
         shape: T.Tuple[int, ...],
-        transport_array_type=AnyArrayType.ARRAY_OF_FLOAT,
-        logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN,
+        transport_array_type: AnyArrayType,
+        logical_array_type: AnyLogicalArrayType,
     ):
         payload = PutUninitializedDataArrayType(
             uid=uid,

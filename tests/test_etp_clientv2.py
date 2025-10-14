@@ -12,7 +12,6 @@ import pytest_asyncio
 import websockets
 import xtgeo
 from conftest import construct_2d_resqml_grid_from_array
-from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
     DataArrayIdentifier,
 )
@@ -30,7 +29,6 @@ import resqml_objects.v201 as ro
 from pyetp import utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils_arrays import get_transport, to_data_array
 from pyetp.utils_xml import (
     instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
@@ -187,7 +185,7 @@ async def test_arraymeta_not_found(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "dtype", [np.float32, np.float64, np.int32, np.int64, np.bool_]
+    "dtype", [np.float32, np.float64, np.int32, np.int64, np.bool_, np.int8]
 )
 async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
     shape = (100, 50)
@@ -269,8 +267,14 @@ async def test_put_array_chunked(
         ),
     )
 
+    logical_array_type, transport_array_type = (
+        utils_arrays.get_logical_and_transport_array_types(data.dtype)
+    )
     await eclient._put_uninitialized_data_array(
-        uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype)
+        uid,
+        data.shape,
+        logical_array_type=logical_array_type,
+        transport_array_type=transport_array_type,
     )
 
     with temp_maxsize(eclient):
@@ -307,9 +311,14 @@ async def test_subarrays(
             gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
         ),
     )
-    transport_array_type = get_transport(data.dtype)
+    logical_array_type, transport_array_type = (
+        utils_arrays.get_logical_and_transport_array_types(data.dtype)
+    )
     await eclient._put_uninitialized_data_array(
-        uid, data.shape, transport_array_type=transport_array_type
+        uid,
+        data.shape,
+        logical_array_type=logical_array_type,
+        transport_array_type=transport_array_type,
     )
     resp = await eclient.put_subarray(uid, data, starts=starts, counts=[10, 10])
     _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
@@ -517,13 +526,18 @@ async def test_sub_array_map(
     epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
         epc, crs, gri, dataspace_uri=duri
     )
-    transport_array_type = AnyArrayType.ARRAY_OF_DOUBLE
     uid = DataArrayIdentifier(
         uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
         pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore
     )
+    logical_array_type, transport_array_type = (
+        utils_arrays.get_logical_and_transport_array_types(surface.values.dtype)
+    )
     await eclient._put_uninitialized_data_array(
-        uid, (surface.ncol, surface.nrow), transport_array_type=transport_array_type
+        uid,
+        (surface.ncol, surface.nrow),
+        logical_array_type=logical_array_type,
+        transport_array_type=transport_array_type,
     )
     # upload row by row
     v = surface.values.filled(np.nan)
@@ -535,7 +549,7 @@ async def test_sub_array_map(
         )  # len = 2 [x_start_index, y_start_index]
         counts = np.array((surface.ncol, 1), dtype=np.int64)  # len = 2
         values = row.reshape((surface.ncol, 1))
-        dataarray = to_data_array(values)
+        dataarray = utils_arrays.get_etp_data_array_from_numpy(values)
         payload = PutDataSubarraysType(
             uid=uid,
             data=dataarray.data,
