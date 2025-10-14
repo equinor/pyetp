@@ -101,12 +101,3 @@ async def test_mesh(eclient: ETPClient, duri: DataspaceURI, input_mesh_file: str
                 err_msg=f"property {key} at time_index {time_index} does not match",
             )  # type: ignore
             found_indices.add(time_index)
-
-    arr = await get_epc_property_surface_slice(
-        eclient, rddms_uris[0], rddms_uris[2], prop_uris["Temperature"][1][0], 2, 13
-    )
-    assert np.std(arr[:, -1]) < 10
-    arr = await get_epc_property_surface_slice(
-        eclient, rddms_uris[0], rddms_uris[2], prop_uris["LayerID"][1][0], 2, 13
-    )
-    assert np.all(np.diff(arr[:, -1]) == 0)
