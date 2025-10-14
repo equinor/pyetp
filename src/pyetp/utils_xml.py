@@ -1,19 +1,16 @@
 import datetime
-import logging
 import typing as T
 from uuid import uuid4
 
-import numpy as np
 from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
+from pyetp.config import SETTINGS
 from resqml_objects.v201.utils import (
-    get_content_type_string,
+    common_schema_version,
     get_data_object_reference,
     resqml_schema_version,
-    common_schema_version,
 )
-from pyetp.config import SETTINGS
 
 if T.TYPE_CHECKING:
     from xtgeo import RegularSurface

@@ -1,42 +1,30 @@
-import sys
-import time
-import logging
-import typing
 import asyncio
 import datetime
+import logging
+import sys
+import time
+import typing
 import uuid
-import pathlib
 
 import numpy as np
-
 import resqpy.model as rq
 import resqpy.property as rqp
 import resqpy.time_series as rts
 import resqpy.unstructured as rug
-
-from scipy.interpolate import griddata
-import pyetp.utils_arrays
-
-from pyetp import ETPClient, utils_arrays
-from pyetp.config import SETTINGS
-from pyetp.uri import DataObjectURI, DataspaceURI
-from resqml_objects.epc_readers import (
-    get_resqml_v201_objects,
-    get_arrays_and_paths_in_hdf_file,
-)
-from resqml_objects.v201.utils import (
-    resqml_schema_version,
-    common_schema_version,
-    get_content_type_string,
-    get_data_object_reference,
-)
-from xsdata.models.datatype import XmlDateTime
-
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
     DataArrayIdentifier,
 )
+from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
+from pyetp import ETPClient
+from pyetp.config import SETTINGS
+from pyetp.uri import DataObjectURI, DataspaceURI
+from resqml_objects.v201.utils import (
+    common_schema_version,
+    get_data_object_reference,
+    resqml_schema_version,
+)
 
 
 async def put_rddms_property(

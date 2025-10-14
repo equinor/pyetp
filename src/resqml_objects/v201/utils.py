@@ -1,6 +1,5 @@
 import resqml_objects.v201 as ro
 
-
 resqml_schema_version = "2.0.1"
 common_schema_version = "2.0"
 

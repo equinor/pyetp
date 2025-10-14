@@ -1,9 +1,10 @@
-import numpy as np
-import numpy.typing as npt
-import h5py
-import zipfile
 import logging
 import pathlib
+import zipfile
+
+import h5py
+import numpy as np
+import numpy.typing as npt
 
 import resqml_objects.v201 as ro_201
 
