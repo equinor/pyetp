@@ -33,6 +33,7 @@ from pyetp.utils_xml import (
     instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
 )
+from rddms_utils.surf_functions import get_surface_value_x_y
 
 
 def create_surface(ncol: int, nrow: int, rotation: float):
@@ -470,13 +471,13 @@ async def test_get_xy_from_surface(
     y_max = y_ori + (surface.yinc * surface.nrow)
     x = random.uniform(x_ori, x_max)
     y = random.uniform(y_ori, y_max)
-    nearest = await eclient.get_surface_value_x_y(
-        epc_uri, gri_uri, crs_uri, x, y, "nearest"
+    nearest = await get_surface_value_x_y(
+        eclient, epc_uri, gri_uri, crs_uri, x, y, "nearest"
     )
     xtgeo_nearest = surface.get_value_from_xy((x, y), sampling="nearest")
     assert nearest == pytest.approx(xtgeo_nearest)
-    linear = await eclient.get_surface_value_x_y(
-        epc_uri, gri_uri, crs_uri, x, y, "bilinear"
+    linear = await get_surface_value_x_y(
+        eclient, epc_uri, gri_uri, crs_uri, x, y, "bilinear"
     )
     xtgeo_linear = surface.get_value_from_xy((x, y))
     assert linear == pytest.approx(xtgeo_linear)
@@ -485,8 +486,8 @@ async def test_get_xy_from_surface(
     x_i = x_max - surface.xinc - 1
     y_i = y_max - surface.yinc - 1
 
-    linear_i = await eclient.get_surface_value_x_y(
-        epc_uri, gri_uri, crs_uri, x_i, y_i, "bilinear"
+    linear_i = await get_surface_value_x_y(
+        eclient, epc_uri, gri_uri, crs_uri, x_i, y_i, "bilinear"
     )
     xtgeo_linear_i = surface.get_value_from_xy((x_i, y_i))
     assert linear_i == pytest.approx(xtgeo_linear_i, rel=1e-2)
@@ -494,8 +495,8 @@ async def test_get_xy_from_surface(
     # test outside map coverage
     x_ii = x_max + 100
     y_ii = y_max + 100
-    linear_ii = await eclient.get_surface_value_x_y(
-        epc_uri, gri_uri, crs_uri, x_ii, y_ii, "bilinear"
+    linear_ii = await get_surface_value_x_y(
+        eclient, epc_uri, gri_uri, crs_uri, x_ii, y_ii, "bilinear"
     )
     assert linear_ii is None
 

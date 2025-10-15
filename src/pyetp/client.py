@@ -614,113 +614,31 @@ class ETPClient(ETPConnection):
 
         return response.deleted_uris
 
+    async def start_transaction(
+        self, dataspace_uri: DataspaceURI, read_only: bool = True
+    ) -> Uuid:
+        trans_id = await self.send(
+            StartTransaction(
+                read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]
+            )
+        )
+        if trans_id.successful is False:
+            raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
+        # uuid.UUID(bytes=trans_id.transaction_uuid)
+        return Uuid(trans_id.transaction_uuid)
+
+    async def commit_transaction(self, transaction_uuid: Uuid):
+        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
+        if r.successful is False:
+            raise Exception(r.failure_reason)
+        return r
+
+    async def rollback_transaction(self, transaction_id: Uuid):
+        return await self.send(RollbackTransaction(transactionUuid=transaction_id))
+
     #
     # xtgeo
     #
-
-    @staticmethod
-    def check_inside(x: float, y: float, patch: ro.Grid2dPatch):
-        xori = patch.geometry.points.supporting_geometry.origin.coordinate1
-        yori = patch.geometry.points.supporting_geometry.origin.coordinate2
-        xmax = xori + (
-            patch.geometry.points.supporting_geometry.offset[0].spacing.value
-            * patch.geometry.points.supporting_geometry.offset[0].spacing.count
-        )
-        ymax = yori + (
-            patch.geometry.points.supporting_geometry.offset[1].spacing.value
-            * patch.geometry.points.supporting_geometry.offset[1].spacing.count
-        )
-        if x < xori:
-            return False
-        if y < yori:
-            return False
-        if x > xmax:
-            return False
-        if y > ymax:
-            return False
-        return True
-
-    @staticmethod
-    def find_closest_index(x, y, patch: ro.Grid2dPatch):
-        x_ind = (
-            x - patch.geometry.points.supporting_geometry.origin.coordinate1
-        ) / patch.geometry.points.supporting_geometry.offset[0].spacing.value
-        y_ind = (
-            y - patch.geometry.points.supporting_geometry.origin.coordinate2
-        ) / patch.geometry.points.supporting_geometry.offset[1].spacing.value
-        return round(x_ind), round(y_ind)
-
-    async def get_surface_value_x_y(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        gri_uri: T.Union[DataObjectURI, str],
-        crs_uri: T.Union[DataObjectURI, str],
-        x: T.Union[int, float],
-        y: T.Union[int, float],
-        method: T.Literal["bilinear", "nearest"],
-    ):
-        # parallelized using subarray
-        (gri,) = await self.get_resqml_objects(gri_uri)
-        xori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate1
-        yori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate2
-        xinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[
-            0
-        ].spacing.value
-        yinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[
-            1
-        ].spacing.value
-        max_x_index_in_gri = (
-            gri.grid2d_patch.geometry.points.supporting_geometry.offset[0].spacing.count
-        )
-        max_y_index_in_gri = (
-            gri.grid2d_patch.geometry.points.supporting_geometry.offset[1].spacing.count
-        )
-        buffer = 4
-        if not self.check_inside(x, y, gri.grid2d_patch):
-            logging.info(f"Points not inside {x}:{y} {gri}")
-            return
-        uid = DataArrayIdentifier(
-            uri=str(epc_uri),
-            pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,
-        )
-        if max_x_index_in_gri <= 10 or max_y_index_in_gri <= 10:
-            surf = await self.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
-            return surf.get_value_from_xy((x, y), sampling=method)
-
-        x_ind, y_ind = self.find_closest_index(x, y, gri.grid2d_patch)
-        if method == "nearest":
-            arr = await self.get_subarray(uid, [x_ind, y_ind], [1, 1])
-            return arr[0][0]
-        min_x_ind = max(x_ind - (buffer / 2), 0)
-        min_y_ind = max(y_ind - (buffer / 2), 0)
-        count_x = min(max_x_index_in_gri - min_x_ind, buffer)
-        count_y = min(max_y_index_in_gri - min_y_ind, buffer)
-        # shift start index to left if not enough buffer on right
-        if count_x < buffer:
-            x_index_to_add = 3 - count_x
-            min_x_ind_new = max(0, min_x_ind - x_index_to_add)
-            count_x = count_x + min_x_ind - min_x_ind_new + 1
-            min_x_ind = min_x_ind_new
-        if count_y < buffer:
-            y_index_to_add = 3 - count_y
-            min_y_ind_new = max(0, min_y_ind - y_index_to_add)
-            count_y = count_y + min_y_ind - min_y_ind_new + 1
-            min_y_ind = min_y_ind_new
-        arr = await self.get_subarray(uid, [min_x_ind, min_y_ind], [count_x, count_y])
-        new_x_ori = xori + (min_x_ind * xinc)
-        new_y_ori = yori + (min_y_ind * yinc)
-        regridded = RegularSurface(
-            ncol=arr.shape[0],
-            nrow=arr.shape[1],
-            xori=new_x_ori,
-            yori=new_y_ori,
-            xinc=xinc,
-            yinc=yinc,
-            rotation=0.0,
-            values=arr.flatten(),
-        )
-        return regridded.get_value_from_xy((x, y))
-
     async def get_xtgeo_surface(
         self,
         epc_uri: T.Union[DataObjectURI, str],
@@ -775,28 +693,6 @@ class ETPClient(ETPConnection):
             rotation=rotation,
             masked=True,
         )
-
-    async def start_transaction(
-        self, dataspace_uri: DataspaceURI, read_only: bool = True
-    ) -> Uuid:
-        trans_id = await self.send(
-            StartTransaction(
-                read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]
-            )
-        )
-        if trans_id.successful is False:
-            raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
-        # uuid.UUID(bytes=trans_id.transaction_uuid)
-        return Uuid(trans_id.transaction_uuid)
-
-    async def commit_transaction(self, transaction_uuid: Uuid):
-        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
-        if r.successful is False:
-            raise Exception(r.failure_reason)
-        return r
-
-    async def rollback_transaction(self, transaction_id: Uuid):
-        return await self.send(RollbackTransaction(transactionUuid=transaction_id))
 
     async def put_xtgeo_surface(
         self,
