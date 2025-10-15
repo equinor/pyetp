@@ -306,21 +306,6 @@ async def put_epc_mesh(
     return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
 
 
-async def get_mesh_points(
-    etp_client: ETPClient,
-    epc_uri: typing.Union[DataObjectURI, str],
-    uns_uri: typing.Union[DataObjectURI, str],
-):
-    (uns,) = await etp_client.get_resqml_objects(uns_uri)
-    points = await etp_client.get_array(
-        DataArrayIdentifier(
-            uri=str(epc_uri),
-            pathInResource=uns.geometry.points.coordinates.path_in_hdf_file,
-        )
-    )
-    return points
-
-
 def create_common_citation(title: str):
     return ro.Citation(
         title=title,
