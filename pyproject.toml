@@ -23,7 +23,6 @@ dependencies = [
     "xtgeo >= 4.0.0",
     "xsdata >= 24.3.1",
     "etpproto >= 1.0.7",
-    "resqpy >= 5.1.10",
 ]
 
 [project.urls]
