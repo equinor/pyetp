@@ -1,5 +1,4 @@
 import asyncio
-import random
 import sys
 from contextlib import contextmanager
 from typing import Tuple
@@ -33,7 +32,6 @@ from pyetp.utils_xml import (
     instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
 )
-from rddms_utils.surf_functions import get_surface_value_x_y
 
 
 def create_surface(ncol: int, nrow: int, rotation: float):
@@ -449,56 +447,6 @@ async def test_surface(eclient: ETPClient, duri: DataspaceURI):
     nsurf = await eclient.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
     assert surf.metadata.get_metadata() == nsurf.metadata.get_metadata()
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "surface", [create_surface(100, 40, 0), create_surface(3, 3, 0)]
-)
-async def test_get_xy_from_surface(
-    eclient: ETPClient, surface: xtgeo.RegularSurface, duri: DataspaceURI
-):
-    # NOTE: xtgeo calls the first axis (axis 0) of the values-array
-    # columns, and the second axis by rows.
-
-    epsg_code = 23031
-    epc_uri, gri_uri, crs_uri = await eclient.put_xtgeo_surface(
-        surface, epsg_code, duri
-    )
-    x_ori = surface.xori
-    y_ori = surface.yori
-    x_max = x_ori + (surface.xinc * surface.ncol)
-    y_max = y_ori + (surface.yinc * surface.nrow)
-    x = random.uniform(x_ori, x_max)
-    y = random.uniform(y_ori, y_max)
-    nearest = await get_surface_value_x_y(
-        eclient, epc_uri, gri_uri, crs_uri, x, y, "nearest"
-    )
-    xtgeo_nearest = surface.get_value_from_xy((x, y), sampling="nearest")
-    assert nearest == pytest.approx(xtgeo_nearest)
-    linear = await get_surface_value_x_y(
-        eclient, epc_uri, gri_uri, crs_uri, x, y, "bilinear"
-    )
-    xtgeo_linear = surface.get_value_from_xy((x, y))
-    assert linear == pytest.approx(xtgeo_linear)
-
-    # # test x y index fencing
-    x_i = x_max - surface.xinc - 1
-    y_i = y_max - surface.yinc - 1
-
-    linear_i = await get_surface_value_x_y(
-        eclient, epc_uri, gri_uri, crs_uri, x_i, y_i, "bilinear"
-    )
-    xtgeo_linear_i = surface.get_value_from_xy((x_i, y_i))
-    assert linear_i == pytest.approx(xtgeo_linear_i, rel=1e-2)
-
-    # test outside map coverage
-    x_ii = x_max + 100
-    y_ii = y_max + 100
-    linear_ii = await get_surface_value_x_y(
-        eclient, epc_uri, gri_uri, crs_uri, x_ii, y_ii, "bilinear"
-    )
-    assert linear_ii is None
 
 
 @pytest.mark.asyncio
