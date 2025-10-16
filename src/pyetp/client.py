@@ -376,6 +376,16 @@ class ETPClient(ETPConnection):
     async def request_session(self):
         # Handshake protocol
         etp_version = Version(major=1, minor=2, revision=0, patch=0)
+
+        def get_protocol_server_role(protocol: CommunicationProtocol) -> str:
+            match protocol:
+                case CommunicationProtocol.CORE:
+                    return "server"
+                case CommunicationProtocol.CHANNEL_STREAMING:
+                    return "producer"
+
+            return "store"
+
         msg = await self.send(
             RequestSession(
                 applicationName=SETTINGS.application_name,
@@ -383,7 +393,9 @@ class ETPClient(ETPConnection):
                 clientInstanceId=uuid.uuid4(),  # type: ignore
                 requestedProtocols=[
                     SupportedProtocol(
-                        protocol=p.value, protocolVersion=etp_version, role="store"
+                        protocol=p.value,
+                        protocolVersion=etp_version,
+                        role=get_protocol_server_role(p),
                     )
                     for p in CommunicationProtocol
                 ],
