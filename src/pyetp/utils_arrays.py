@@ -243,14 +243,10 @@ def get_dtype_from_any_array_type(_type: T.Union[AnyArrayType | str]) -> npt.DTy
 def get_numpy_array_from_etp_data_array(
     data_array: DataArray,
 ) -> npt.NDArray[
-    T.Union[
-        np.dtype(np.int8),
-        np.dtype(np.bool_),
-        np.dtype("<i4"),
-        np.dtype("<i8"),
-        np.dtype("<f4"),
-        np.dtype("<f8"),
-    ]
+    # The types used here do not tell which endianess is used for the returned
+    # arrays, but until we can use np.dtype("<f4")-like syntax (Python > 3.10),
+    # this will do.
+    np.int8 | np.bool_ | np.int32 | np.int64 | np.float32 | np.float64
 ]:
     dtype = get_dtype_from_any_array_class(type(data_array.data.item))
 
