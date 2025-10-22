@@ -4,6 +4,7 @@ import logging
 import sys
 import typing as T
 import uuid
+import warnings
 from collections import defaultdict
 from types import TracebackType
 
@@ -910,6 +911,15 @@ class ETPClient(ETPConnection):
                 continue
             yield starts, counts
 
+    async def _get_array_chuncked(self, *args, **kwargs):
+        warnings.warn(
+            "This function is deprecated and will be removed in a later version of "
+            "pyetp. Please use the updated function 'pyetp._get_array_chunked'.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._get_array_chunked(*args, **kwargs)
+
     async def _get_array_chunked(
         self,
         uid: DataArrayIdentifier,
@@ -948,6 +958,15 @@ class ETPClient(ETPConnection):
         )
 
         return buffer
+
+    async def _put_array_chuncked(self, *args, **kwargs):
+        warnings.warn(
+            "This function is deprecated and will be removed in a later version of "
+            "pyetp. Please use the updated function 'pyetp._put_array_chunked'.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._put_array_chunked(*args, **kwargs)
 
     async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray):
         for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
