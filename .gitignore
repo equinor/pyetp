@@ -179,3 +179,6 @@ pytest-coverage.txt
 
 # Auto-generated version file
 _version.py
+
+# uv lock-file
+uv.lock

@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v4
@@ -46,6 +46,14 @@ jobs:
     - name: Run tests
       run: |
         py.test -v -x -s --color=yes --cov-report=term-missing --cov-report=xml --cov=pyetp tests/
+
+    - name: Check formatting
+      run: |
+        ruff format --check
+
+    - name: Check linting
+      run: |
+        ruff check
         
     - name: Upload coverage reports to Codecov
       if: ${{ github.event_name == 'push'}}

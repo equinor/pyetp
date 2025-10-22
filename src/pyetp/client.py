@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import logging
 import sys
-import time
 import typing as T
 import uuid
 from collections import defaultdict
@@ -139,7 +138,6 @@ from etptypes.energistics.etp.v12.protocol.transaction.start_transaction import 
     StartTransaction,
 )
 from pydantic import SecretStr
-from scipy.interpolate import griddata
 from xtgeo import RegularSurface
 
 import resqml_objects.v201 as ro
@@ -378,6 +376,16 @@ class ETPClient(ETPConnection):
     async def request_session(self):
         # Handshake protocol
         etp_version = Version(major=1, minor=2, revision=0, patch=0)
+
+        def get_protocol_server_role(protocol: CommunicationProtocol) -> str:
+            match protocol:
+                case CommunicationProtocol.CORE:
+                    return "server"
+                case CommunicationProtocol.CHANNEL_STREAMING:
+                    return "producer"
+
+            return "store"
+
         msg = await self.send(
             RequestSession(
                 applicationName=SETTINGS.application_name,
@@ -385,7 +393,9 @@ class ETPClient(ETPConnection):
                 clientInstanceId=uuid.uuid4(),  # type: ignore
                 requestedProtocols=[
                     SupportedProtocol(
-                        protocol=p.value, protocolVersion=etp_version, role="store"
+                        protocol=p.value,
+                        protocolVersion=etp_version,
+                        role=get_protocol_server_role(p),
                     )
                     for p in CommunicationProtocol
                 ],
@@ -616,113 +626,31 @@ class ETPClient(ETPConnection):
 
         return response.deleted_uris
 
+    async def start_transaction(
+        self, dataspace_uri: DataspaceURI, read_only: bool = True
+    ) -> Uuid:
+        trans_id = await self.send(
+            StartTransaction(
+                read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]
+            )
+        )
+        if trans_id.successful is False:
+            raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
+        # uuid.UUID(bytes=trans_id.transaction_uuid)
+        return Uuid(trans_id.transaction_uuid)
+
+    async def commit_transaction(self, transaction_uuid: Uuid):
+        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
+        if r.successful is False:
+            raise Exception(r.failure_reason)
+        return r
+
+    async def rollback_transaction(self, transaction_id: Uuid):
+        return await self.send(RollbackTransaction(transactionUuid=transaction_id))
+
     #
     # xtgeo
     #
-
-    @staticmethod
-    def check_inside(x: float, y: float, patch: ro.Grid2dPatch):
-        xori = patch.geometry.points.supporting_geometry.origin.coordinate1
-        yori = patch.geometry.points.supporting_geometry.origin.coordinate2
-        xmax = xori + (
-            patch.geometry.points.supporting_geometry.offset[0].spacing.value
-            * patch.geometry.points.supporting_geometry.offset[0].spacing.count
-        )
-        ymax = yori + (
-            patch.geometry.points.supporting_geometry.offset[1].spacing.value
-            * patch.geometry.points.supporting_geometry.offset[1].spacing.count
-        )
-        if x < xori:
-            return False
-        if y < yori:
-            return False
-        if x > xmax:
-            return False
-        if y > ymax:
-            return False
-        return True
-
-    @staticmethod
-    def find_closest_index(x, y, patch: ro.Grid2dPatch):
-        x_ind = (
-            x - patch.geometry.points.supporting_geometry.origin.coordinate1
-        ) / patch.geometry.points.supporting_geometry.offset[0].spacing.value
-        y_ind = (
-            y - patch.geometry.points.supporting_geometry.origin.coordinate2
-        ) / patch.geometry.points.supporting_geometry.offset[1].spacing.value
-        return round(x_ind), round(y_ind)
-
-    async def get_surface_value_x_y(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        gri_uri: T.Union[DataObjectURI, str],
-        crs_uri: T.Union[DataObjectURI, str],
-        x: T.Union[int, float],
-        y: T.Union[int, float],
-        method: T.Literal["bilinear", "nearest"],
-    ):
-        # parallelized using subarray
-        (gri,) = await self.get_resqml_objects(gri_uri)
-        xori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate1
-        yori = gri.grid2d_patch.geometry.points.supporting_geometry.origin.coordinate2
-        xinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[
-            0
-        ].spacing.value
-        yinc = gri.grid2d_patch.geometry.points.supporting_geometry.offset[
-            1
-        ].spacing.value
-        max_x_index_in_gri = (
-            gri.grid2d_patch.geometry.points.supporting_geometry.offset[0].spacing.count
-        )
-        max_y_index_in_gri = (
-            gri.grid2d_patch.geometry.points.supporting_geometry.offset[1].spacing.count
-        )
-        buffer = 4
-        if not self.check_inside(x, y, gri.grid2d_patch):
-            logging.info(f"Points not inside {x}:{y} {gri}")
-            return
-        uid = DataArrayIdentifier(
-            uri=str(epc_uri),
-            pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,
-        )
-        if max_x_index_in_gri <= 10 or max_y_index_in_gri <= 10:
-            surf = await self.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
-            return surf.get_value_from_xy((x, y), sampling=method)
-
-        x_ind, y_ind = self.find_closest_index(x, y, gri.grid2d_patch)
-        if method == "nearest":
-            arr = await self.get_subarray(uid, [x_ind, y_ind], [1, 1])
-            return arr[0][0]
-        min_x_ind = max(x_ind - (buffer / 2), 0)
-        min_y_ind = max(y_ind - (buffer / 2), 0)
-        count_x = min(max_x_index_in_gri - min_x_ind, buffer)
-        count_y = min(max_y_index_in_gri - min_y_ind, buffer)
-        # shift start index to left if not enough buffer on right
-        if count_x < buffer:
-            x_index_to_add = 3 - count_x
-            min_x_ind_new = max(0, min_x_ind - x_index_to_add)
-            count_x = count_x + min_x_ind - min_x_ind_new + 1
-            min_x_ind = min_x_ind_new
-        if count_y < buffer:
-            y_index_to_add = 3 - count_y
-            min_y_ind_new = max(0, min_y_ind - y_index_to_add)
-            count_y = count_y + min_y_ind - min_y_ind_new + 1
-            min_y_ind = min_y_ind_new
-        arr = await self.get_subarray(uid, [min_x_ind, min_y_ind], [count_x, count_y])
-        new_x_ori = xori + (min_x_ind * xinc)
-        new_y_ori = yori + (min_y_ind * yinc)
-        regridded = RegularSurface(
-            ncol=arr.shape[0],
-            nrow=arr.shape[1],
-            xori=new_x_ori,
-            yori=new_y_ori,
-            xinc=xinc,
-            yinc=yinc,
-            rotation=0.0,
-            values=arr.flatten(),
-        )
-        return regridded.get_value_from_xy((x, y))
-
     async def get_xtgeo_surface(
         self,
         epc_uri: T.Union[DataObjectURI, str],
@@ -778,28 +706,6 @@ class ETPClient(ETPConnection):
             masked=True,
         )
 
-    async def start_transaction(
-        self, dataspace_uri: DataspaceURI, read_only: bool = True
-    ) -> Uuid:
-        trans_id = await self.send(
-            StartTransaction(
-                read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]
-            )
-        )
-        if trans_id.successful is False:
-            raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
-        # uuid.UUID(bytes=trans_id.transaction_uuid)
-        return Uuid(trans_id.transaction_uuid)
-
-    async def commit_transaction(self, transaction_uuid: Uuid):
-        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
-        if r.successful is False:
-            raise Exception(r.failure_reason)
-        return r
-
-    async def rollback_transaction(self, transaction_id: Uuid):
-        return await self.send(RollbackTransaction(transactionUuid=transaction_id))
-
     async def put_xtgeo_surface(
         self,
         surface: RegularSurface,
@@ -840,531 +746,6 @@ class ETPClient(ETPConnection):
         return epc_uri, gri_uri, crs_uri
 
     #
-    # resqpy meshes
-    #
-
-    async def get_epc_mesh(
-        self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str]
-    ):
-        (uns,) = await self.get_resqml_objects(uns_uri)
-
-        # some checks
-        assert isinstance(uns, ro.UnstructuredGridRepresentation), (
-            "obj must be UnstructuredGridRepresentation"
-        )
-        assert isinstance(uns.geometry, ro.UnstructuredGridGeometry), (
-            "geometry must be UnstructuredGridGeometry"
-        )
-        if sys.version_info[1] != 10:
-            assert isinstance(uns.geometry.points, ro.Point3dHdf5Array), (
-                "points must be Point3dHdf5Array"
-            )
-            assert isinstance(
-                uns.geometry.faces_per_cell.elements, ro.IntegerHdf5Array
-            ), "faces_per_cell must be IntegerHdf5Array"
-            assert isinstance(
-                uns.geometry.faces_per_cell.cumulative_length, ro.IntegerHdf5Array
-            ), "faces_per_cell cl must be IntegerHdf5Array"
-        assert isinstance(uns.geometry.points.coordinates, ro.Hdf5Dataset), (
-            "coordinates must be Hdf5Dataset"
-        )
-
-        # # get array
-        points = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file,
-            )
-        )
-        nodes_per_face = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file,
-            )
-        )
-        nodes_per_face_cl = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file,
-            )
-        )
-        faces_per_cell = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file,
-            )
-        )
-        faces_per_cell_cl = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file,
-            )
-        )
-        cell_face_is_right_handed = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file,
-            )
-        )
-
-        return (
-            uns,
-            points,
-            nodes_per_face,
-            nodes_per_face_cl,
-            faces_per_cell,
-            faces_per_cell_cl,
-            cell_face_is_right_handed,
-        )
-
-    async def get_epc_mesh_property(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        prop_uri: T.Union[DataObjectURI, str],
-    ):
-        (cprop0,) = await self.get_resqml_objects(prop_uri)
-
-        # some checks
-        assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(
-            cprop0, ro.DiscreteProperty
-        ), "prop must be a Property"
-        assert len(cprop0.patch_of_values) == 1, (
-            "property obj must have exactly one patch of values"
-        )
-
-        # # get array
-        values = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
-            )
-        )
-
-        return cprop0, values
-
-    @staticmethod
-    def check_bound(points, x: float, y: float):
-        if x > points[:, 0].max() or x < points[:, 0].min():
-            return False
-        if y > points[:, 1].max() or y < points[:, 1].min():
-            return False
-        return True
-
-    async def get_epc_mesh_property_x_y(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        uns_uri: T.Union[DataObjectURI, str],
-        prop_uri: T.Union[DataObjectURI, str],
-        x: float,
-        y: float,
-    ):
-        (uns,) = await self.get_resqml_objects(uns_uri)
-        points = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file,
-            )
-        )
-        chk = self.check_bound(points, x, y)
-        if not chk:
-            return None
-        unique_y = np.unique(points[:, 1])
-        y_smaller_sorted = np.sort(unique_y[np.argwhere(unique_y < y).flatten()])
-        if y_smaller_sorted.size > 1:
-            y_floor = y_smaller_sorted[-2]
-        elif y_smaller_sorted.size == 1:
-            y_floor = y_smaller_sorted[-1]
-        else:
-            pass
-        y_larger_sorted = np.sort(unique_y[np.argwhere(unique_y > y).flatten()])
-        if y_larger_sorted.size > 1:
-            y_ceil = y_larger_sorted[1]
-        elif y_larger_sorted.size == 1:
-            y_ceil = y_larger_sorted[0]
-        else:
-            pass
-        start_new_row_idx = np.argwhere(np.diff(points[:, 1]) != 0).flatten() + 1
-
-        to_fetch = []
-        initial_result_arr_idx = 0
-        for i in range(start_new_row_idx.size - 1):
-            sliced = points[start_new_row_idx[i] : start_new_row_idx[i + 1], :]
-            if sliced[0, 1] <= y_ceil and sliced[0, 1] >= y_floor:
-                # Found slice that has same y
-                x_diff = sliced[:, 0] - x
-                if all(
-                    [np.any((x_diff >= 0)), np.any((x_diff <= 0))]
-                ):  # y within this slice
-                    first_idx = start_new_row_idx[i]
-                    count = start_new_row_idx[i + 1] - first_idx
-                    to_fetch.append(
-                        [
-                            start_new_row_idx[i],
-                            start_new_row_idx[i + 1],
-                            count,
-                            initial_result_arr_idx,
-                        ]
-                    )
-                    initial_result_arr_idx += count
-
-        total_points_filtered = sum([i[2] for i in to_fetch])
-
-        (cprop,) = await self.get_resqml_objects(prop_uri)
-        assert str(cprop.indexable_element) == "IndexableElements.NODES"
-        props_uid = DataArrayIdentifier(
-            uri=str(epc_uri),
-            pathInResource=cprop.patch_of_values[0].values.values.path_in_hdf_file,
-        )
-        (meta,) = await self.get_array_metadata(props_uid)
-        filtered_points = np.zeros((total_points_filtered, 3), dtype=np.float64)
-        all_values = np.empty(total_points_filtered, dtype=np.float64)
-
-        async def populate(i):
-            end_indx = i[2] + i[3]
-            filtered_points[i[3] : end_indx] = points[i[0] : i[1]]
-            if (
-                utils_arrays.get_nbytes(meta) * i[2] / points.shape[0]
-                > self.max_array_size
-            ):
-                all_values[i[3] : end_indx] = await self._get_array_chunked(
-                    props_uid, i[0], i[2]
-                )
-            else:
-                all_values[i[3] : end_indx] = await self.get_subarray(
-                    props_uid, [i[0]], [i[2]]
-                )
-            return
-
-        _ = await asyncio.gather(*[populate(i) for i in to_fetch])
-
-        if isinstance(cprop, ro.DiscreteProperty):
-            method = "nearest"
-        else:
-            method = "linear"
-
-        # resolution= np.mean(np.diff(filtered[:,-1]))
-        top = round(np.min(filtered_points[:, -1]), 1)
-        base = round(np.max(filtered_points[:, -1]), 1)
-        requested_depth = np.arange(top, base + 1, 100)
-        requested_depth = requested_depth[requested_depth > 0]
-        request = np.tile([x, y, 0], (requested_depth.size, 1))
-        request[:, 2] = requested_depth
-        interpolated = griddata(filtered_points, all_values, request, method=method)
-        response = np.vstack((requested_depth, interpolated))
-        response_filtered = response[:, ~np.isnan(response[1])]
-        return {"depth": response_filtered[0], "values": response_filtered[1]}
-
-    async def put_rddms_property(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        cprop0: T.Union[ro.ContinuousProperty, ro.DiscreteProperty],
-        propertykind0: ro.PropertyKind,
-        array_ref: np.ndarray,
-        dataspace_uri: DataspaceURI,
-    ):
-        assert isinstance(cprop0, ro.ContinuousProperty) or isinstance(
-            cprop0, ro.DiscreteProperty
-        ), "prop must be a Property"
-        assert len(cprop0.patch_of_values) == 1, (
-            "property obj must have exactly one patch of values"
-        )
-
-        st = time.time()
-        propkind_uri = (
-            [""]
-            if (propertykind0 is None)
-            else (
-                await self.put_resqml_objects(
-                    propertykind0, dataspace_uri=dataspace_uri
-                )
-            )
-        )
-        cprop_uri = await self.put_resqml_objects(cprop0, dataspace_uri=dataspace_uri)
-        delay = time.time() - st
-        logging.debug(f"pyetp: put_rddms_property: put objects took {delay} s")
-
-        st = time.time()
-        _ = await self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
-            ),
-            array_ref,  # type: ignore
-        )
-        delay = time.time() - st
-        logging.debug(
-            f"pyetp: put_rddms_property: put array ({array_ref.shape}) took {delay} s"
-        )
-        return cprop_uri, propkind_uri
-
-    async def put_epc_mesh(
-        self,
-        epc_filename: str,
-        title_in: str,
-        property_titles: T.List[str],
-        projected_epsg: int,
-        dataspace_uri: DataspaceURI,
-    ):
-        uns, crs, epc, timeseries, hexa = utils_xml.convert_epc_mesh_to_resqml_mesh(
-            epc_filename, title_in, projected_epsg
-        )
-
-        transaction_uuid = await self.start_transaction(
-            dataspace_uri=dataspace_uri, read_only=False
-        )
-
-        epc_uri, crs_uri, uns_uri = await self.put_resqml_objects(
-            epc, crs, uns, dataspace_uri=dataspace_uri
-        )
-        timeseries_uri = ""
-        if timeseries is not None:
-            timeseries_uris = await self.put_resqml_objects(
-                timeseries, dataspace_uri=dataspace_uri
-            )
-            timeseries_uri = (
-                list(timeseries_uris)[0] if (len(list(timeseries_uris)) > 0) else ""
-            )
-
-        #
-        # mesh geometry (six arrays)
-        #
-        put_jobs = []
-
-        p = self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file,
-            ),
-            hexa.points_cached,  # type: ignore
-        )
-        put_jobs.append(p)
-
-        p = self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.nodes_per_face.elements.values.path_in_hdf_file,
-            ),
-            hexa.nodes_per_face.astype(np.int32),  # type: ignore
-        )
-        put_jobs.append(p)
-
-        p = self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.nodes_per_face.cumulative_length.values.path_in_hdf_file,
-            ),
-            hexa.nodes_per_face_cl,  # type: ignore
-        )
-        put_jobs.append(p)
-
-        p = self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.faces_per_cell.elements.values.path_in_hdf_file,
-            ),
-            hexa.faces_per_cell,  # type: ignore
-        )
-        put_jobs.append(p)
-
-        p = self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.faces_per_cell.cumulative_length.values.path_in_hdf_file,
-            ),
-            hexa.faces_per_cell_cl,  # type: ignore
-        )
-        put_jobs.append(p)
-
-        p = self.put_array(
-            DataArrayIdentifier(
-                uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-                pathInResource=uns.geometry.cell_face_is_right_handed.values.path_in_hdf_file,
-            ),
-            hexa.cell_face_is_right_handed,  # type: ignore
-        )
-        put_jobs.append(p)
-
-        _ = await asyncio.gather(*put_jobs)
-
-        #
-        # mesh properties: one Property, one array of values, and an optional PropertyKind per property
-        #
-        prop_rddms_uris = {}
-        for propname in property_titles:
-            if timeseries is not None:
-                time_indices = list(range(len(timeseries.time)))
-                cprop0s, props, propertykind0 = (
-                    utils_xml.convert_epc_mesh_property_to_resqml_mesh(
-                        epc_filename,
-                        hexa,
-                        propname,
-                        uns,
-                        epc,
-                        timeseries=timeseries,
-                        time_indices=time_indices,
-                    )
-                )
-            else:
-                time_indices = [-1]
-                cprop0s, props, propertykind0 = (
-                    utils_xml.convert_epc_mesh_property_to_resqml_mesh(
-                        epc_filename, hexa, propname, uns, epc
-                    )
-                )
-
-            if cprop0s is None:
-                continue
-
-            cprop_uris = []
-            for cprop0, prop, time_index in zip(cprop0s, props, time_indices):
-                cprop_uri, propkind_uri = await self.put_rddms_property(
-                    epc_uri, cprop0, propertykind0, prop.array_ref(), dataspace_uri
-                )
-                cprop_uris.extend(cprop_uri)
-            prop_rddms_uris[propname] = [propkind_uri, cprop_uris]
-
-        await self.commit_transaction(transaction_uuid=transaction_uuid)
-
-        return [epc_uri, crs_uri, uns_uri, timeseries_uri], prop_rddms_uris
-
-    async def get_mesh_points(
-        self, epc_uri: T.Union[DataObjectURI, str], uns_uri: T.Union[DataObjectURI, str]
-    ):
-        (uns,) = await self.get_resqml_objects(uns_uri)
-        points = await self.get_array(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=uns.geometry.points.coordinates.path_in_hdf_file,
-            )
-        )
-        return points
-
-    async def get_epc_property_surface_slice_node(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        cprop0: ro.AbstractObject,
-        points: np.ndarray,
-        node_index: int,
-        n_node_per_pos: int,
-    ):
-        # indexing_array = np.arange(0, points.shape[0], 1, dtype=np.int32)[node_index::n_node_per_pos]
-        indexing_array = np.arange(
-            node_index, points.shape[0], n_node_per_pos, dtype=np.int32
-        )
-        results = points[indexing_array, :]
-        arr = await asyncio.gather(
-            *[
-                self.get_subarray(
-                    DataArrayIdentifier(
-                        uri=str(epc_uri),
-                        pathInResource=cprop0.patch_of_values[
-                            0
-                        ].values.values.path_in_hdf_file,
-                    ),
-                    [i],
-                    [1],
-                )
-                for i in indexing_array
-            ]
-        )
-        arr = np.array(arr).flatten()
-        assert results.shape[0] == arr.size
-        results[:, 2] = arr
-        return results
-
-    async def get_epc_property_surface_slice_cell(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        cprop0: ro.AbstractObject,
-        points: np.ndarray,
-        node_index: int,
-        n_node_per_pos: int,
-        get_cell_pos=True,
-    ):
-        (m,) = await self.get_array_metadata(
-            DataArrayIdentifier(
-                uri=str(epc_uri),
-                pathInResource=cprop0.patch_of_values[0].values.values.path_in_hdf_file,
-            )
-        )
-        n_cells = m.dimensions[0]
-        layers_per_sediment_unit = 2
-        n_cell_per_pos = n_node_per_pos - 1
-        indexing_array = np.arange(node_index, n_cells, n_cell_per_pos, dtype=np.int32)
-        if get_cell_pos:
-            results = utils_arrays.get_cells_positions(
-                points,
-                n_cells,
-                n_cell_per_pos,
-                layers_per_sediment_unit,
-                n_node_per_pos,
-                node_index,
-            )
-        else:
-            results = np.zeros((int(n_cells / n_cell_per_pos), 3), dtype=np.float64)
-        arr = await asyncio.gather(
-            *[
-                self.get_subarray(
-                    DataArrayIdentifier(
-                        uri=str(epc_uri),
-                        pathInResource=cprop0.patch_of_values[
-                            0
-                        ].values.values.path_in_hdf_file,
-                    ),
-                    [i],
-                    [1],
-                )
-                for i in indexing_array
-            ]
-        )
-        arr = np.array(arr).flatten()
-        assert results.shape[0] == arr.size
-        results[:, 2] = arr
-        return results
-
-    async def get_epc_property_surface_slice(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        uns_uri: T.Union[DataObjectURI, str],
-        prop_uri: T.Union[DataObjectURI, str],
-        node_index: int,
-        n_node_per_pos: int,
-    ):
-        # n_node_per_pos number of nodes in a 1D location
-        # node_index index of slice from top. Warmth has 2 nodes per sediment layer. E.g. top of second layer will have index 2
-        points = await self.get_mesh_points(epc_uri, uns_uri)
-        (cprop0,) = await self.get_resqml_objects(prop_uri)
-        prop_at_node = False
-        if str(cprop0.indexable_element) == "IndexableElements.NODES":
-            prop_at_node = True
-        # node_per_sed = 2
-        # n_sed_node = n_sed *node_per_sed
-        # n_crust_node = 4
-        # n_node_per_pos = n_sed_node + n_crust_node
-        # start_idx_pos = sediment_id *node_per_sed
-        if prop_at_node:
-            return await self.get_epc_property_surface_slice_node(
-                epc_uri, cprop0, points, node_index, n_node_per_pos
-            )
-        else:
-            return await self.get_epc_property_surface_slice_cell(
-                epc_uri, cprop0, points, node_index, n_node_per_pos
-            )
-
-    async def get_epc_property_surface_slice_xtgeo(
-        self,
-        epc_uri: T.Union[DataObjectURI, str],
-        uns_uri: T.Union[DataObjectURI, str],
-        prop_uri: T.Union[DataObjectURI, str],
-        node_index: int,
-        n_node_per_pos: int,
-    ):
-        data = await self.get_epc_property_surface_slice(
-            epc_uri, uns_uri, prop_uri, node_index, n_node_per_pos
-        )
-        return utils_arrays.grid_xtgeo(data)
-
-    #
     # array
     #
 
@@ -1381,9 +762,9 @@ class ETPClient(ETPConnection):
         return [response.array_metadata[i.path_in_resource] for i in uids]
 
     async def get_array(self, uid: DataArrayIdentifier):
-        # Check if we can upload the full array in one go.
+        # Check if we can download the full array in one go.
         (meta,) = await self.get_array_metadata(uid)
-        if utils_arrays.get_nbytes(meta) > self.max_array_size:
+        if utils_arrays.get_transport_array_size(meta) > self.max_array_size:
             return await self._get_array_chunked(uid)
 
         response = await self.send(
@@ -1394,30 +775,32 @@ class ETPClient(ETPConnection):
         )
 
         arrays = list(response.data_arrays.values())
-        return utils_arrays.to_numpy(arrays[0])
+        return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
 
     async def put_array(
         self,
         uid: DataArrayIdentifier,
         data: np.ndarray,
-        transaction_id: Uuid | None = None,
     ):
-        await self._put_uninitialized_data_array(
-            uid, data.shape, transport_array_type=utils_arrays.get_transport(data.dtype)
+        logical_array_type, transport_array_type = (
+            utils_arrays.get_logical_and_transport_array_types(data.dtype)
         )
-        if isinstance(transaction_id, Uuid):
-            await self.commit_transaction(transaction_id)
+        await self._put_uninitialized_data_array(
+            uid,
+            data.shape,
+            transport_array_type=transport_array_type,
+            logical_array_type=logical_array_type,
+        )
         # Check if we can upload the full array in one go.
         if data.nbytes > self.max_array_size:
-            return await self._put_array_chunked(
-                uid, data, isinstance(transaction_id, Uuid)
-            )
+            return await self._put_array_chunked(uid, data)
 
         response = await self.send(
             PutDataArrays(
-                dataArrays={
+                data_arrays={
                     uid.path_in_resource: PutDataArraysType(
-                        uid=uid, array=utils_arrays.to_data_array(data)
+                        uid=uid,
+                        array=utils_arrays.get_etp_data_array_from_numpy(data),
                     )
                 }
             )
@@ -1454,7 +837,7 @@ class ETPClient(ETPConnection):
         )
 
         arrays = list(response.data_subarrays.values())
-        return utils_arrays.to_numpy(arrays[0])
+        return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
 
     async def put_subarray(
         self,
@@ -1463,6 +846,9 @@ class ETPClient(ETPConnection):
         starts: T.Union[np.ndarray, T.List[int]],
         counts: T.Union[np.ndarray, T.List[int]],
     ):
+        # NOTE: This function assumes that the user (or previous methods) have
+        # called _put_uninitialized_data_array.
+
         # starts [start_X, starts_Y]
         # counts [count_X, count_Y]
         # len = 2 [x_start_index, y_start_index]
@@ -1471,7 +857,7 @@ class ETPClient(ETPConnection):
         ends = starts + counts  # len = 2
 
         slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
-        dataarray = utils_arrays.to_data_array(data[slices])
+        dataarray = utils_arrays.get_etp_data_array_from_numpy(data[slices])
         payload = PutDataSubarraysType(
             uid=uid,
             data=dataarray.data,
@@ -1538,7 +924,9 @@ class ETPClient(ETPConnection):
             buffer_shape = np.array([total_count], dtype=np.int64)
         else:
             buffer_shape = np.array(metadata.dimensions, dtype=np.int64)
-        dtype = utils_arrays.get_dtype(metadata.transport_array_type)
+        dtype = utils_arrays.get_dtype_from_any_array_type(
+            metadata.transport_array_type
+        )
         buffer = np.zeros(buffer_shape, dtype=dtype)
         params = []
 
@@ -1571,8 +959,8 @@ class ETPClient(ETPConnection):
         self,
         uid: DataArrayIdentifier,
         shape: T.Tuple[int, ...],
-        transport_array_type=AnyArrayType.ARRAY_OF_FLOAT,
-        logical_array_type=AnyLogicalArrayType.ARRAY_OF_BOOLEAN,
+        transport_array_type: AnyArrayType,
+        logical_array_type: AnyLogicalArrayType,
     ):
         payload = PutUninitializedDataArrayType(
             uid=uid,

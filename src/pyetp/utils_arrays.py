@@ -1,8 +1,12 @@
 import typing as T
 
 import numpy as np
+import numpy.typing as npt
 from etptypes.energistics.etp.v12.datatypes.any_array import AnyArray
 from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
+from etptypes.energistics.etp.v12.datatypes.any_logical_array_type import (
+    AnyLogicalArrayType,
+)
 from etptypes.energistics.etp.v12.datatypes.array_of_boolean import ArrayOfBoolean
 from etptypes.energistics.etp.v12.datatypes.array_of_double import ArrayOfDouble
 from etptypes.energistics.etp.v12.datatypes.array_of_float import ArrayOfFloat
@@ -14,146 +18,243 @@ from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array import (
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import (
     DataArrayMetadata,
 )
-from scipy import interpolate
-from xtgeo import RegularSurface
 
-SUPPORED_ARRAY_TYPES = T.Union[
-    ArrayOfFloat, ArrayOfBoolean, ArrayOfInt, ArrayOfLong, ArrayOfDouble
-]
+SUPPORTED_ARRAY_TYPES: T.TypeAlias = (
+    ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
+)
 
-_ARRAY_MAP_TYPES: dict[AnyArrayType, np.dtype[T.Any]] = {
-    AnyArrayType.ARRAY_OF_FLOAT: np.dtype(np.float32),
-    AnyArrayType.ARRAY_OF_DOUBLE: np.dtype(np.float64),
-    AnyArrayType.ARRAY_OF_INT: np.dtype(np.int32),
-    AnyArrayType.ARRAY_OF_LONG: np.dtype(np.int64),
-    AnyArrayType.ARRAY_OF_BOOLEAN: np.dtype(np.bool_),
+
+# See section 13.2.2.1 for the allowed mapping between logical array types and
+# transport array types.
+# NOTE: Currently the logical-array-mapping does not work on the
+# open-etp-server. We write the relevant logical array type, but we only get
+# AnyLogicalArrayType.ARRAY_OF_BOOLEAN in return from the server.
+_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyLogicalArrayType] = {
+    np.dtype(np.bool_): AnyLogicalArrayType.ARRAY_OF_BOOLEAN,
+    np.dtype(np.int8): AnyLogicalArrayType.ARRAY_OF_INT8,
+    np.dtype(np.uint8): AnyLogicalArrayType.ARRAY_OF_UINT8,
+    np.dtype("<i2"): AnyLogicalArrayType.ARRAY_OF_INT16_LE,
+    np.dtype("<i4"): AnyLogicalArrayType.ARRAY_OF_INT32_LE,
+    np.dtype("<i8"): AnyLogicalArrayType.ARRAY_OF_INT64_LE,
+    np.dtype("<u2"): AnyLogicalArrayType.ARRAY_OF_UINT16_LE,
+    np.dtype("<u4"): AnyLogicalArrayType.ARRAY_OF_UINT32_LE,
+    np.dtype("<u8"): AnyLogicalArrayType.ARRAY_OF_UINT64_LE,
+    np.dtype("<f4"): AnyLogicalArrayType.ARRAY_OF_FLOAT32_LE,
+    np.dtype("<f8"): AnyLogicalArrayType.ARRAY_OF_DOUBLE64_LE,
+    np.dtype(">i2"): AnyLogicalArrayType.ARRAY_OF_INT16_BE,
+    np.dtype(">i4"): AnyLogicalArrayType.ARRAY_OF_INT32_BE,
+    np.dtype(">i8"): AnyLogicalArrayType.ARRAY_OF_INT64_BE,
+    np.dtype(">u2"): AnyLogicalArrayType.ARRAY_OF_UINT16_BE,
+    np.dtype(">u4"): AnyLogicalArrayType.ARRAY_OF_UINT32_BE,
+    np.dtype(">u8"): AnyLogicalArrayType.ARRAY_OF_UINT64_BE,
+    np.dtype(">f4"): AnyLogicalArrayType.ARRAY_OF_FLOAT32_BE,
+    np.dtype(">f8"): AnyLogicalArrayType.ARRAY_OF_DOUBLE64_BE,
 }
 
-_ARRAY_MAP: dict[AnyArrayType, T.Type[SUPPORED_ARRAY_TYPES]] = {
+_INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
+    v: k for k, v in _ANY_LOGICAL_ARRAY_TYPE_MAP.items()
+}
+
+
+# TODO: This map should be used once the logical-array-type is supported in the
+# open-etp-server.
+# _ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
+#     np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
+#     np.dtype(np.int8): AnyArrayType.BYTES,
+#     np.dtype(np.uint8): AnyArrayType.BYTES,
+#     np.dtype("<i2"): AnyArrayType.BYTES,
+#     np.dtype("<i4"): AnyArrayType.BYTES,
+#     np.dtype("<i8"): AnyArrayType.BYTES,
+#     np.dtype("<u2"): AnyArrayType.BYTES,
+#     np.dtype("<u4"): AnyArrayType.BYTES,
+#     np.dtype("<u8"): AnyArrayType.BYTES,
+#     np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
+#     np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
+#     np.dtype(">i2"): AnyArrayType.BYTES,
+#     np.dtype(">i4"): AnyArrayType.BYTES,
+#     np.dtype(">i8"): AnyArrayType.BYTES,
+#     np.dtype(">u2"): AnyArrayType.BYTES,
+#     np.dtype(">u4"): AnyArrayType.BYTES,
+#     np.dtype(">u8"): AnyArrayType.BYTES,
+#     np.dtype(">f4"): AnyArrayType.BYTES,
+#     np.dtype(">f8"): AnyArrayType.BYTES,
+# }
+
+
+# This AnyArrayType-map is used until the logical-array-type is properly
+# implemented for the open-etp-server. In this case we
+_ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
+    np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
+    np.dtype(np.int8): AnyArrayType.BYTES,
+    np.dtype("<i4"): AnyArrayType.ARRAY_OF_INT,
+    np.dtype("<i8"): AnyArrayType.ARRAY_OF_LONG,
+    np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
+    np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
+}
+valid_dtypes = list(_ANY_ARRAY_TYPE_MAP)
+
+_INV_ANY_ARRAY_TYPE_MAP: dict[AnyArrayType, npt.DTypeLike] = {
+    AnyArrayType.ARRAY_OF_BOOLEAN: np.dtype(np.bool_),
+    # The BYTES-arrays are converted to the proper dtype using the logical
+    # array type. We can therefore interpret the bytes as np.int8, before we
+    # combine the byte strings to the proper type.
+    AnyArrayType.BYTES: np.dtype(np.int8),
+    AnyArrayType.ARRAY_OF_INT: np.dtype("<i4"),
+    AnyArrayType.ARRAY_OF_LONG: np.dtype("<i8"),
+    AnyArrayType.ARRAY_OF_FLOAT: np.dtype("<f4"),
+    AnyArrayType.ARRAY_OF_DOUBLE: np.dtype("<f8"),
+}
+
+
+_ANY_ARRAY_MAP: dict[AnyArrayType, SUPPORTED_ARRAY_TYPES] = {
     AnyArrayType.ARRAY_OF_FLOAT: ArrayOfFloat,
     AnyArrayType.ARRAY_OF_DOUBLE: ArrayOfDouble,
     AnyArrayType.ARRAY_OF_INT: ArrayOfInt,
     AnyArrayType.ARRAY_OF_LONG: ArrayOfLong,
     AnyArrayType.ARRAY_OF_BOOLEAN: ArrayOfBoolean,
+    AnyArrayType.BYTES: bytes,
+}
+
+_INV_ANY_ARRAY_MAP: dict[SUPPORTED_ARRAY_TYPES, AnyArrayType] = {
+    v: k for k, v in _ANY_ARRAY_MAP.items()
 }
 
 
-def get_transport_from_name(k: str):
-    return AnyArrayType(k[0].lower() + k[1:])
+def check_if_array_is_valid_dtype(array: npt.NDArray[T.Any]) -> bool:
+    return array.dtype in valid_dtypes
 
 
-def get_transport(dtype: np.dtype):
-    arraytype = [item[0] for item in _ARRAY_MAP_TYPES.items() if item[1] == dtype]
-    if not len(arraytype):
-        raise TypeError(f"Not {type(dtype)} supported")
+def get_valid_dtype_cast(array: npt.NDArray[T.Any]) -> npt.DTypeLike:
+    if check_if_array_is_valid_dtype(array):
+        return array.dtype
 
-    return arraytype[0]
+    if array.dtype == np.dtype(np.uint8):
+        return np.dtype(np.int8)
+    elif array.dtype == np.dtype("<u2"):
+        return np.dtype("<i2")
+    elif array.dtype == np.dtype(">u2"):
+        return np.dtype("<i2")
+    elif array.dtype == np.dtype("<u4"):
+        return np.dtype("<i4")
+    elif array.dtype == np.dtype(">u4"):
+        return np.dtype("<i4")
+    elif array.dtype == np.dtype("<u8"):
+        return np.dtype("<i8")
+    elif array.dtype == np.dtype(">u8"):
+        return np.dtype("<i8")
+
+    raise TypeError(f"Dtype {array.dtype} does not have a valid cast")
 
 
-def get_cls(dtype: np.dtype):
-    return _ARRAY_MAP[get_transport(dtype)]
+def get_logical_array_type(dtype: npt.DTypeLike) -> AnyLogicalArrayType:
+    logical_array_type = _ANY_LOGICAL_ARRAY_TYPE_MAP.get(dtype)
+
+    if logical_array_type is not None:
+        return logical_array_type
+
+    # Here we might be taking a chance by not caring about the endianess of the
+    # string.
+    if dtype.type == np.str_:
+        return AnyLogicalArrayType.ARRAY_OF_STRING
+
+    # We ignore the AnyLogicalArrayType.ARRAY_OF_CUSTOM for now.
+    raise KeyError(f"Data type {dtype} is not a valid ETP v1.2 logical array type")
 
 
-def get_dtype(item: T.Union[AnyArray, AnyArrayType]):
-    atype = (
-        item
-        if isinstance(item, AnyArrayType)
-        else get_transport_from_name(item.item.__class__.__name__)
+def get_transport_array_type(dtype: npt.DTypeLike) -> AnyArrayType:
+    transport_array_type = _ANY_ARRAY_TYPE_MAP.get(dtype)
+
+    if transport_array_type is not None:
+        return transport_array_type
+
+    # Here we might be taking a chance by not caring about the endianess of the
+    # string.
+    if dtype.type == np.str_:
+        return AnyArrayType.ARRAY_OF_STRING
+
+    raise KeyError(
+        f"Data type {dtype} does not have a valid map to an ETP v1.2 transport array "
+        f"type. Valid types are: {list(_ANY_ARRAY_TYPE_MAP)}"
     )
 
-    if atype not in _ARRAY_MAP_TYPES:
-        raise TypeError(f"Not {atype} supported")
 
-    return _ARRAY_MAP_TYPES[atype]
+def get_logical_and_transport_array_types(
+    dtype: npt.DTypeLike,
+) -> tuple[AnyLogicalArrayType, AnyArrayType]:
+    # See section 13.2.2.1 in the ETP v1.2 specification for the allowed
+    # mappings between the logical and transport types.
+    # Using this function ensures that the combination of the logical and
+    # transport array types are valid (it is set up in valid combinations in
+    # the mapping dictionaries at the top).
 
-
-def get_nbytes(md: DataArrayMetadata):
-    dtype = get_dtype(md.transport_array_type)
-    return int(np.prod(np.array(md.dimensions)) * dtype.itemsize)
-
-
-def to_numpy(data_array: DataArray):
-    dims: T.Tuple[int, ...] = tuple(map(int, data_array.dimensions))
-    return np.asarray(
-        data_array.data.item.values,  # type: ignore
-        dtype=get_dtype(data_array.data),
-    ).reshape(dims)
+    return get_logical_array_type(dtype), get_transport_array_type(dtype)
 
 
-def to_data_array(data: np.ndarray):
-    cls = get_cls(data.dtype)
+def get_etp_data_array_from_numpy(data: npt.NDArray) -> DataArray:
+    transport_array_type = get_transport_array_type(data.dtype)
+    cls = _ANY_ARRAY_MAP[transport_array_type]
+
+    if cls is bytes:
+        # In the current implementation we only support 1-byte sized dtype's
+        # when using "bytes". In the future, with logical array types, this can
+        # cover multiple dtypes, but then the dimensions must be adjusted.
+        itemsize = data.dtype.itemsize
+        item = np.ravel(data).tobytes()
+        dimensions = list(data.shape)
+        dimensions[-1] = dimensions[-1] * itemsize
+
+        return DataArray(dimensions=dimensions, data=AnyArray(item=item))
+
     return DataArray(
-        dimensions=data.shape,  # type: ignore
-        data=AnyArray(item=cls(values=data.flatten().tolist())),
+        dimensions=data.shape, data=AnyArray(item=cls(values=np.ravel(data).tolist()))
     )
 
 
-def mid_point_rectangle(arr: np.ndarray):
-    all_x = arr[:, 0]
-    all_y = arr[:, 1]
-    min_x = np.min(all_x)
-    min_y = np.min(all_y)
-    mid_x = ((np.max(all_x) - min_x) / 2) + min_x
-    mid_y = ((np.max(all_y) - min_y) / 2) + min_y
-    return np.array([mid_x, mid_y])
+def get_transport_array_size(metadata: DataArrayMetadata) -> int:
+    dtype = _INV_ANY_ARRAY_TYPE_MAP[metadata.transport_array_type]
+    return int(np.prod(metadata.dimensions) * dtype.itemsize)
 
 
-def grid_xtgeo(data: np.ndarray):
-    max_x = np.nanmax(data[:, 0])
-    max_y = np.nanmax(data[:, 1])
-    min_x = np.nanmin(data[:, 0])
-    min_y = np.nanmin(data[:, 1])
-    u_x = np.sort(np.unique(data[:, 0]))
-    u_y = np.sort(np.unique(data[:, 1]))
-    xinc = u_x[1] - u_x[0]
-    yinc = u_y[1] - u_y[0]
-    grid_x, grid_y = np.mgrid[
-        min_x : max_x + xinc : xinc,
-        min_y : max_y + yinc : yinc,
-    ]
+def get_dtype_from_any_array_class(cls: AnyArray) -> npt.DTypeLike:
+    if cls is bytes:
+        return np.dtype(np.int8)
+    elif cls is ArrayOfBoolean:
+        return np.dtype(np.bool_)
+    elif cls is ArrayOfInt:
+        return np.dtype("<i4")
+    elif cls is ArrayOfLong:
+        return np.dtype("<i8")
+    elif cls is ArrayOfFloat:
+        return np.dtype("<f4")
+    elif cls is ArrayOfDouble:
+        return np.dtype("<f8")
+    # TODO: Update NumPy to >= 2.0, and import the ArrayOfString-class
+    # elif cls == ArrayOfString:
+    #     return np.StringDType()
 
-    interp = interpolate.LinearNDInterpolator(
-        data[:, :-1], data[:, -1], fill_value=np.nan, rescale=False
+    raise TypeError(f"Class {cls} is not a valid array class")
+
+
+def get_dtype_from_any_array_type(_type: T.Union[AnyArrayType | str]) -> npt.DTypeLike:
+    enum_name = AnyArrayType(_type)
+    return _INV_ANY_ARRAY_TYPE_MAP[enum_name]
+
+
+def get_numpy_array_from_etp_data_array(
+    data_array: DataArray,
+) -> npt.NDArray[
+    # The types used here do not tell which endianess is used for the returned
+    # arrays, but until we can use np.dtype("<f4")-like syntax (Python > 3.10),
+    # this will do.
+    np.int8 | np.bool_ | np.int32 | np.int64 | np.float32 | np.float64
+]:
+    dtype = get_dtype_from_any_array_class(type(data_array.data.item))
+
+    if type(data_array.data.item) is bytes:
+        return np.array(np.frombuffer(data_array.data.item, dtype=dtype)).reshape(
+            data_array.dimensions
+        )
+
+    return np.array(data_array.data.item.values, dtype=dtype).reshape(
+        data_array.dimensions
     )
-    z = interp(np.array([grid_x.flatten(), grid_y.flatten()]).T)
-    zz = np.reshape(z, grid_x.shape)
-
-    return RegularSurface(
-        ncol=grid_x.shape[0],
-        nrow=grid_x.shape[1],
-        xori=min_x,
-        yori=min_y,
-        xinc=xinc,
-        yinc=yinc,
-        rotation=0.0,
-        values=zz,
-    )
-
-
-def get_cells_positions(
-    points: np.ndarray,
-    n_cells: int,
-    n_cell_per_pos: int,
-    layers_per_sediment_unit: int,
-    n_node_per_pos: int,
-    node_index: int,
-):
-    results = np.zeros((int(n_cells / n_cell_per_pos), 3), dtype=np.float64)
-    grid_x_pos = np.unique(points[:, 0])
-    grid_y_pos = np.unique(points[:, 1])
-    counter = 0
-    # find cell index and location
-
-    for y_ind in range(0, len(grid_y_pos) - 1):
-        for x_ind in range(0, len(grid_x_pos) - 1):
-            top_depth = []
-            for corner_x in range(layers_per_sediment_unit):
-                for corner_y in range(layers_per_sediment_unit):
-                    node_indx = (
-                        ((y_ind + corner_y) * len(grid_x_pos) + (x_ind + corner_x))
-                        * n_node_per_pos
-                    ) + node_index
-                    top_depth.append(points[node_indx])
-            results[counter, 0:2] = mid_point_rectangle(np.array(top_depth))
-            counter += 1
-    return results
