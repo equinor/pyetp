@@ -54,4 +54,4 @@ ignore = [
 ]
 
 [tool.ruff]
-exclude = ["*.ipynb", "venv", ".venv"]
+exclude = ["*.ipynb", "venv", ".venv", "src/pyetp/types.py"]
