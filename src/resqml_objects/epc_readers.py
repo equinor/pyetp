@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import sys
 import zipfile
 
 import h5py
@@ -42,6 +43,13 @@ def get_resqml_v201_objects(
     --------
     get_arrays_and_paths_in_hdf_file
     """
+
+    if sys.version_info.major == 3 and sys.version_info.minor == 10:
+        raise NotImplementedError(
+            "The epc-reader 'get_resqml_v201_objects'-function does not work for "
+            "Python 3.10. Consider switching to Python 3.11 or up."
+        )
+
     robjs = []
     fail = {}
 
