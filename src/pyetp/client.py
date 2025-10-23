@@ -145,7 +145,6 @@ import resqml_objects.v201 as ro
 from pyetp import utils_arrays, utils_xml
 from pyetp.config import SETTINGS
 from pyetp.uri import DataObjectURI, DataspaceURI
-from pyetp.utils import short_id
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 
 # from asyncio import timeout
@@ -566,13 +565,13 @@ class ETPClient(ETPConnection):
     async def put_data_objects(self, *objs: DataObject):
         response = await self.send(
             PutDataObjects(
-                dataObjects={f"{p.resource.name}_{short_id()}": p for p in objs}
+                data_objects={f"{p.resource.name} - {p.resource.uri}": p for p in objs},
             )
         )
+
         assert isinstance(response, PutDataObjectsResponse), (
             "Expected PutDataObjectsResponse"
         )
-        # assert len(response.success) == len(objs)  # might be 0 if objects exists
 
         return response.success
 
