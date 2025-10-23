@@ -184,7 +184,7 @@ async def test_arraymeta_not_found(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "dtype", [np.float32, np.float64, np.int32, np.int64, np.bool_, np.int8]
+    "dtype", [np.float32, np.float64, np.int32, np.int64, np.bool_, np.int8, str]
 )
 async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
     shape = (100, 50)

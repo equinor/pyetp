@@ -12,6 +12,7 @@ from etptypes.energistics.etp.v12.datatypes.array_of_double import ArrayOfDouble
 from etptypes.energistics.etp.v12.datatypes.array_of_float import ArrayOfFloat
 from etptypes.energistics.etp.v12.datatypes.array_of_int import ArrayOfInt
 from etptypes.energistics.etp.v12.datatypes.array_of_long import ArrayOfLong
+from etptypes.energistics.etp.v12.datatypes.array_of_string import ArrayOfString
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array import (
     DataArray,
 )
@@ -20,7 +21,12 @@ from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata
 )
 
 SUPPORTED_ARRAY_TYPES: T.TypeAlias = (
-    ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
+    ArrayOfFloat
+    | ArrayOfBoolean
+    | ArrayOfInt
+    | ArrayOfLong
+    | ArrayOfDouble
+    | ArrayOfString
 )
 
 
@@ -49,6 +55,7 @@ _ANY_LOGICAL_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyLogicalArrayType] = {
     np.dtype(">u8"): AnyLogicalArrayType.ARRAY_OF_UINT64_BE,
     np.dtype(">f4"): AnyLogicalArrayType.ARRAY_OF_FLOAT32_BE,
     np.dtype(">f8"): AnyLogicalArrayType.ARRAY_OF_DOUBLE64_BE,
+    np.dtypes.StringDType(): AnyLogicalArrayType.ARRAY_OF_STRING,
 }
 
 _INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
@@ -78,6 +85,7 @@ _INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
 #     np.dtype(">u8"): AnyArrayType.BYTES,
 #     np.dtype(">f4"): AnyArrayType.BYTES,
 #     np.dtype(">f8"): AnyArrayType.BYTES,
+#     np.dtypes.StringDType(): AnyArrayType.STRING
 # }
 
 
@@ -90,6 +98,7 @@ _ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
     np.dtype("<i8"): AnyArrayType.ARRAY_OF_LONG,
     np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
     np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
+    np.dtypes.StringDType(): AnyArrayType.ARRAY_OF_STRING,
 }
 valid_dtypes = list(_ANY_ARRAY_TYPE_MAP)
 
@@ -103,6 +112,7 @@ _INV_ANY_ARRAY_TYPE_MAP: dict[AnyArrayType, npt.DTypeLike] = {
     AnyArrayType.ARRAY_OF_LONG: np.dtype("<i8"),
     AnyArrayType.ARRAY_OF_FLOAT: np.dtype("<f4"),
     AnyArrayType.ARRAY_OF_DOUBLE: np.dtype("<f8"),
+    AnyArrayType.ARRAY_OF_STRING: np.dtypes.StringDType(),
 }
 
 
@@ -113,6 +123,7 @@ _ANY_ARRAY_MAP: dict[AnyArrayType, SUPPORTED_ARRAY_TYPES] = {
     AnyArrayType.ARRAY_OF_LONG: ArrayOfLong,
     AnyArrayType.ARRAY_OF_BOOLEAN: ArrayOfBoolean,
     AnyArrayType.BYTES: bytes,
+    AnyArrayType.ARRAY_OF_STRING: ArrayOfString,
 }
 
 _INV_ANY_ARRAY_MAP: dict[SUPPORTED_ARRAY_TYPES, AnyArrayType] = {
@@ -152,8 +163,7 @@ def get_logical_array_type(dtype: npt.DTypeLike) -> AnyLogicalArrayType:
     if logical_array_type is not None:
         return logical_array_type
 
-    # Here we might be taking a chance by not caring about the endianess of the
-    # string.
+    # Check if we are dealing with a fixed-width string.
     if dtype.type == np.str_:
         return AnyLogicalArrayType.ARRAY_OF_STRING
 
@@ -167,8 +177,7 @@ def get_transport_array_type(dtype: npt.DTypeLike) -> AnyArrayType:
     if transport_array_type is not None:
         return transport_array_type
 
-    # Here we might be taking a chance by not caring about the endianess of the
-    # string.
+    # Check if dtype is a fixed-width string.
     if dtype.type == np.str_:
         return AnyArrayType.ARRAY_OF_STRING
 
@@ -228,9 +237,8 @@ def get_dtype_from_any_array_class(cls: AnyArray) -> npt.DTypeLike:
         return np.dtype("<f4")
     elif cls is ArrayOfDouble:
         return np.dtype("<f8")
-    # TODO: Update NumPy to >= 2.0, and import the ArrayOfString-class
-    # elif cls == ArrayOfString:
-    #     return np.StringDType()
+    elif cls == ArrayOfString:
+        return np.dtypes.StringDType()
 
     raise TypeError(f"Class {cls} is not a valid array class")
 
@@ -243,10 +251,7 @@ def get_dtype_from_any_array_type(_type: T.Union[AnyArrayType | str]) -> npt.DTy
 def get_numpy_array_from_etp_data_array(
     data_array: DataArray,
 ) -> npt.NDArray[
-    # The types used here do not tell which endianess is used for the returned
-    # arrays, but until we can use np.dtype("<f4")-like syntax (Python > 3.10),
-    # this will do.
-    np.int8 | np.bool_ | np.int32 | np.int64 | np.float32 | np.float64
+    np.int8 | np.bool_ | np.int32 | np.int64 | np.float32 | np.float64 | str
 ]:
     dtype = get_dtype_from_any_array_class(type(data_array.data.item))
 
