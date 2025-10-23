@@ -153,14 +153,16 @@ try:
     # for py >3.11, we can raise grouped exceptions
     from builtins import ExceptionGroup  # type: ignore
 except ImportError:
-
+    # Python 3.10
     def ExceptionGroup(msg, errors):
         return errors[0]
 
 
 try:
+    # Python >= 3.11
     from asyncio import timeout
 except ImportError:
+    # Python 3.10
     from contextlib import asynccontextmanager
 
     import async_timeout
