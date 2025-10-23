@@ -147,7 +147,7 @@ from pyetp.config import SETTINGS
 from pyetp.uri import DataObjectURI, DataspaceURI
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 
-# from asyncio import timeout
+logger = logging.getLogger(__name__)
 
 try:
     # for py >3.11, we can raise grouped exceptions
@@ -237,7 +237,7 @@ class ETPClient(ETPConnection):
             raise TypeError(f"{type(body)} not valid etp protocol")
 
         msg.header.message_id = self.consume_msg_id()
-        logging.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
+        logger.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
 
         # create future recv event
         self._recv_events[msg.header.message_id] = asyncio.Event()
@@ -269,7 +269,7 @@ class ETPClient(ETPConnection):
             )
 
         if len(bodies) > 1:
-            logging.warning(f"Recived {len(bodies)} messages, but only expected one")
+            logger.warning(f"Recived {len(bodies)} messages, but only expected one")
 
         # ok
         return bodies[0]
@@ -289,7 +289,7 @@ class ETPClient(ETPConnection):
         try:
             await self._send(CloseSession(reason=reason))
         except websockets.ConnectionClosed:
-            logging.error(
+            logger.error(
                 "Websockets connection is closed, unable to send a CloseSession-message"
                 " to the server"
             )
@@ -309,13 +309,13 @@ class ETPClient(ETPConnection):
             pass
         except websockets.ConnectionClosed as e:
             # The receive task errored on a closed websockets connection.
-            logging.error(
+            logger.error(
                 "The receiver task errored on a closed websockets connection. The "
                 f"message was: {e.__class__.__name__}: {e}"
             )
 
         if len(self._recv_buffer) > 0:
-            logging.error(
+            logger.error(
                 f"Connection is closed, but there are {len(self._recv_buffer)} "
                 "messages left in the buffer"
             )
@@ -332,12 +332,12 @@ class ETPClient(ETPConnection):
             pass
 
         if counter > 0:
-            logging.error(
+            logger.error(
                 f"There were {counter} unread messages in the websockets connection "
                 "after the session was closed"
             )
 
-        logging.debug("Client closed")
+        logger.debug("Client closed")
 
     #
     #
@@ -356,7 +356,7 @@ class ETPClient(ETPConnection):
             self._recv_events[msg.header.correlation_id].set()
 
     async def __recv__(self):
-        logging.debug("starting recv loop")
+        logger.debug("starting recv loop")
 
         while True:
             msg_data = await self.ws.recv()
@@ -365,10 +365,10 @@ class ETPClient(ETPConnection):
             )
 
             if msg is None:
-                logging.error(f"Could not parse {msg_data}")
+                logger.error(f"Could not parse {msg_data}")
                 continue
 
-            logging.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
+            logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
             self._add_msg_to_buffer(msg)
 
     #
@@ -824,7 +824,7 @@ class ETPClient(ETPConnection):
         starts = np.array(starts).astype(np.int64)
         counts = np.array(counts).astype(np.int64)
 
-        logging.debug(f"get_subarray {starts=:} {counts=:}")
+        logger.debug(f"get_subarray {starts=:} {counts=:}")
 
         payload = GetDataSubarraysType(
             uid=uid,
@@ -867,7 +867,7 @@ class ETPClient(ETPConnection):
             counts=counts.tolist(),
         )
 
-        logging.debug(
+        logger.debug(
             f"put_subarray {data.shape=:} {starts=:} {counts=:} "
             f"{dataarray.data.item.__class__.__name__}"
         )

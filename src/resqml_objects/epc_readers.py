@@ -11,6 +11,8 @@ import resqml_objects.v201 as ro_201
 
 from .parsers import parse_resqml_v201_object
 
+logger = logging.getLogger(__name__)
+
 
 def get_resqml_v201_objects(
     epc_filename: str | pathlib.Path, log_failed_objects: bool = False
@@ -64,7 +66,7 @@ def get_resqml_v201_objects(
                     fail[zi.filename] = e
 
     if log_failed_objects:
-        logging.info(f"Failed to parse: {fail}")
+        logger.info(f"Failed to parse: {fail}")
 
     return robjs
 
