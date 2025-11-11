@@ -9,12 +9,12 @@ on:
       - '.devcontainer/**'
       - '.github/**'
 
-permissions:
-  contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     strategy:
       matrix:
