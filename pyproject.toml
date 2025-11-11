@@ -38,6 +38,9 @@ dev = [
     "ruff>=0.13.2",
 ]
 
+[tool.setuptools.packages.find]
+exclude = ["tests", "examples", "data" ".github", ".devcontainer"]
+
 [tool.pytest.ini_options]
 addopts = "-ra -v --color=yes"
 testpaths = ["tests"]
