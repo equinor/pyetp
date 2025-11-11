@@ -7,10 +7,6 @@ on:
   push:
     tags:
     - '*'
-    
-permissions:
-  id-token: write
-  contents: read
 
 jobs:
   test:
@@ -18,16 +14,15 @@ jobs:
     with:
       event_type: ${{ github.event_name}}
       action_type: ${{ github.event.action}}
-  snyk:
-    uses: equinor/pyetp/.github/workflows/snyk.yml@main
-    secrets:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      GITHUB_TOKEN_WORKFLOW: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
-    needs: [test, snyk]
+    needs: [test]
     environment: deploy
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v2
