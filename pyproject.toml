@@ -39,7 +39,8 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "examples", "data" ".github", ".devcontainer"]
+where = ["src"]
+exclude = ["tests", "examples", "data", ".github", ".devcontainer"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -v --color=yes"
