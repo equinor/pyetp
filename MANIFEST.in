@@ -1,0 +1,1 @@
+exclude data/* tests/* examples/* .devcontainer/* .github/workflows/* .gitattributes .gitignore
