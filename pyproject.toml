@@ -9,6 +9,7 @@ description = "Interface with OSDU RDDMS using ETP protocol"
 authors = [
     {name = "Adam Cheng", email = "52572642+adamchengtkc@users.noreply.github.com"}
 ]
+requires-python = ">=3.10"
 readme = "README.md"
 license = "Apache-2.0"
 classifiers = [
