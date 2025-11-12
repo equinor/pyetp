@@ -41,6 +41,25 @@ jobs:
           name: pyetp-release-dists
           path: dist/
 
-      - name: Publish the package with poetry
-        run: |
-          poetry publish -u __token__ -p '${{ steps.mint.outputs.api-token }}'
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - release-build
+
+    permissions:
+      id-token: write
+
+    environment:
+      name: deploy
+
+    steps:
+      - name: Download the distribution packages
+        uses: actions/download-artifact@v4
+        with:
+          name: pyetp-release-dists
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
