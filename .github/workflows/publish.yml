@@ -6,6 +6,9 @@ on:
 
 jobs:
   test:
+    permissions:
+      contents: read
+
     uses: equinor/pyetp/.github/workflows/ci.yml@main
     with:
       event_type: ${{ github.event_name}}
