@@ -11,39 +11,35 @@ jobs:
       event_type: ${{ github.event_name}}
       action_type: ${{ github.event.action}}
 
-  deploy:
-    needs: [test]
-    environment: deploy
-    runs-on: ubuntu-latest
+  release-build:
+    needs:
+      - test
 
+    runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
-            ref: 'main'
-            fetch-depth: 0
+          python-version: "3.13"
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Install pip and pypa/build
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build distribution
+        run: |
+          python -m build
+
+      - name: Upload the distribution
+        uses: actions/upload-artifact@v4
         with:
-            python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-            curl -sSL https://install.python-poetry.org | python3
-            poetry install --with dev --no-interaction
-
-      - name: Update version (kept at 0.0.0) in pyproject.toml and build
-        run: |
-            poetry version ${{ github.ref_name }}
-            poetry build
-
-      - name: Mint token
-        id: mint
-        uses: tschm/token-mint-action@v1.0.3
+          name: pyetp-release-dists
+          path: dist/
 
       - name: Publish the package with poetry
         run: |
