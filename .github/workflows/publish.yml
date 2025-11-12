@@ -10,9 +10,6 @@ jobs:
       contents: read
 
     uses: equinor/pyetp/.github/workflows/ci.yml@main
-    with:
-      event_type: ${{ github.event_name}}
-      action_type: ${{ github.event.action}}
 
   release-build:
     needs:
