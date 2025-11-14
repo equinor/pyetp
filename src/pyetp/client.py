@@ -455,12 +455,12 @@ class ETPClient(ETPConnection):
             raise Exception("Max one / in dataspace name")
         return DataspaceURI.from_name(ds)
 
-    def list_objects(self, dataspace_uri: DataspaceURI, depth: int = 1) -> list:
+    def list_objects(self, dataspace_uri: DataspaceURI | str, depth: int = 1) -> list:
         return self.send(
             GetResources(
                 scope=ContextScopeKind.TARGETS_OR_SELF,
                 context=ContextInfo(
-                    uri=dataspace_uri.raw_uri,
+                    uri=str(dataspace_uri),
                     depth=depth,
                     dataObjectTypes=[],
                     navigableEdges=RelationshipKind.PRIMARY,
