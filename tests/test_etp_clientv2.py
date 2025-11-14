@@ -354,6 +354,8 @@ async def test_resqml_objects(eclient: ETPClient, duri: DataspaceURI):
     _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
 
     grr = await eclient.list_objects(duri)
+    # Test that both DataspaceURI-objects and strings are supported
+    assert grr == await eclient.list_objects(str(duri))
     uris = [r.uri for r in grr.resources]
 
     assert len(uris) == 5
