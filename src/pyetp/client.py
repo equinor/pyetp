@@ -362,6 +362,12 @@ class ETPClient(ETPConnection):
         logger.debug("starting recv loop")
 
         while True:
+            # We use this way of receiving messages, instead of the `async
+            # for`-pattern, in order to raise all
+            # `websockets.exceptions.ConnectionClosed`-errors (including the
+            # `websockets.exceptions.ConnectionClosedOK` error). In the `async
+            # for`-case a closing code of `1000` (normal closing) just exits
+            # the loop.
             msg_data = await self.ws.recv()
             msg = Message.decode_binary_message(
                 T.cast(bytes, msg_data), ETPClient.generic_transition_table
