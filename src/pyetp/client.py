@@ -211,13 +211,16 @@ class ETPClient(ETPConnection):
     _recv_events: T.Dict[int, asyncio.Event]
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
-    def __init__(self, ws: websockets.ClientConnection, timeout=10.0):
+    def __init__(
+        self, ws: websockets.ClientConnection, timeout: float | None = 10.0
+    ) -> None:
         super().__init__(connection_type=ConnectionType.CLIENT)
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
         self.ws = ws
 
-        self.timeout = timeout
+        # Ensure a minimum timeout of 10 seconds.
+        self.timeout = timeout if timeout is None or timeout > 10.0 else 10.0
         self.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
             SETTINGS.MaxWebSocketMessagePayloadSize
         )
