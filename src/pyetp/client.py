@@ -289,8 +289,10 @@ class ETPClient(ETPConnection):
         return errors
 
     async def close(self, reason=""):
+        close_session_sent = False
         try:
             await self._send(CloseSession(reason=reason))
+            close_session_sent = True
         except websockets.ConnectionClosed:
             logger.error(
                 "Websockets connection is closed, unable to send a CloseSession-message"
@@ -327,12 +329,22 @@ class ETPClient(ETPConnection):
         # Reading them will speed up the closing of the connection.
         counter = 0
         try:
-            async for msg in self.ws:
-                counter += 1
+            # In some cases the server does not drop the connection after we
+            # have sent the `CloseSession`-message. We therefore add a timeout
+            # to the reading of possibly lost messages.
+            async with timeout(self.timeout or 10):
+                async for msg in self.ws:
+                    counter += 1
         except websockets.ConnectionClosed:
-            # The websockets connection had already closed. Either successfully
+            # The websockets connection has already closed. Either successfully
             # or with an error, but we ignore both cases.
             pass
+        except TimeoutError:
+            if close_session_sent:
+                logger.error(
+                    f"Websockets connection was not closed within {self.timeout or 10}"
+                    " seconds after the `CloseSession`-message was sent"
+                )
 
         if counter > 0:
             logger.error(
