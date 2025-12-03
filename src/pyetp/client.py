@@ -224,7 +224,7 @@ class ETPClient(ETPConnection):
         self.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
             SETTINGS.MaxWebSocketMessagePayloadSize
         )
-        self.__recvtask = asyncio.create_task(self.__recv__())
+        self.__recvtask = asyncio.create_task(self.__recv())
 
     #
     # client
@@ -258,12 +258,16 @@ class ETPClient(ETPConnection):
         async with timeout(self.timeout):
             await self._recv_events[correlation_id].wait()
 
-        # cleanup
-        bodies = self._clear_msg_on_buffer(correlation_id)
 
-        # error handling
+        # Remove event from list of events
+        del self._recv_events[correlation_id]
+        # Read message bodies from buffer.
+        bodies = self._recv_buffer.pop(correlation_id)
+
+        # Check if there are errors in the received messages.
         errors = self._parse_error_info(bodies)
 
+        # Raise errors in case there are any.
         if len(errors) == 1:
             raise ETPError.from_proto(errors.pop())
         elif len(errors) > 1:
@@ -354,24 +358,8 @@ class ETPClient(ETPConnection):
 
         logger.debug("Client closed")
 
-    #
-    #
-    #
-
-    def _clear_msg_on_buffer(self, correlation_id: int):
-        del self._recv_events[correlation_id]
-        return self._recv_buffer.pop(correlation_id)
-
-    def _add_msg_to_buffer(self, msg: Message):
-        self._recv_buffer[msg.header.correlation_id].append(msg.body)
-
-        # NOTE: should we add task to autoclear buffer message if never waited on ?
-        if msg.is_final_msg():
-            # set response on send event
-            self._recv_events[msg.header.correlation_id].set()
-
-    async def __recv__(self):
-        logger.debug("starting recv loop")
+    async def __recv(self):
+        logger.debug("Starting receiver loop")
 
         while True:
             # We use this way of receiving messages, instead of the `async
@@ -390,7 +378,11 @@ class ETPClient(ETPConnection):
                 continue
 
             logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
-            self._add_msg_to_buffer(msg)
+            self._recv_buffer[msg.header.correlation_id].append(msg.body)
+
+            if msg.is_final_msg():
+                # set response on send event
+                self._recv_events[msg.header.correlation_id].set()
 
     #
     # session related
