@@ -245,8 +245,11 @@ class ETPClient(ETPConnection):
         # create future recv event
         self._recv_events[msg.header.message_id] = asyncio.Event()
 
+        tasks = []
         for msg_part in msg.encode_message_generator(self.max_size, self):
-            await self.ws.send(msg_part)
+            tasks.append(self.ws.send(msg_part))
+
+        await asyncio.gather(*tasks)
 
         return msg.header.message_id
 
