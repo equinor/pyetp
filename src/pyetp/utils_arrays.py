@@ -15,9 +15,6 @@ from etptypes.energistics.etp.v12.datatypes.array_of_long import ArrayOfLong
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array import (
     DataArray,
 )
-from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_metadata import (
-    DataArrayMetadata,
-)
 
 SUPPORTED_ARRAY_TYPES: T.TypeAlias = (
     ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
@@ -213,9 +210,11 @@ def get_etp_data_array_from_numpy(data: npt.NDArray) -> DataArray:
     )
 
 
-def get_transport_array_size(metadata: DataArrayMetadata) -> int:
-    dtype = _INV_ANY_ARRAY_TYPE_MAP[metadata.transport_array_type]
-    return int(np.prod(metadata.dimensions) * dtype.itemsize)
+def get_transport_array_size(
+    transport_array_type: AnyArrayType, dimensions: list[int] | tuple[int]
+) -> int:
+    dtype = _INV_ANY_ARRAY_TYPE_MAP[transport_array_type]
+    return int(np.prod(dimensions) * dtype.itemsize)
 
 
 def get_dtype_from_any_array_class(cls: AnyArray) -> npt.DTypeLike:
