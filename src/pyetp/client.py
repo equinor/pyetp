@@ -823,7 +823,12 @@ class ETPClient(ETPConnection):
     async def get_array(self, uid: DataArrayIdentifier):
         # Check if we can download the full array in one go.
         (meta,) = await self.get_array_metadata(uid)
-        if utils_arrays.get_transport_array_size(meta) > self.max_array_size:
+        if (
+            utils_arrays.get_transport_array_size(
+                meta.transport_array_type, meta.dimensions
+            )
+            > self.max_array_size
+        ):
             return await self._get_array_chunked(uid)
 
         response = await self.send(
