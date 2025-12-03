@@ -255,7 +255,7 @@ class ETPClient(ETPConnection):
 
     async def _recv(self, correlation_id: int) -> ETPModel:
         assert correlation_id in self._recv_events, (
-            "trying to recv response on non-existing message"
+            "Trying to receive a response on non-existing message"
         )
 
         async with timeout(self.timeout):
@@ -897,17 +897,12 @@ class ETPClient(ETPConnection):
         assert len(response.success) == 1, "expected one success"
         return response.success
 
-    #
-    # chunked get array - ETP will not chunk response - so we need to do it manually
-    #
-
     def _get_chunk_sizes(
         self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0
     ):
         shape = np.array(shape)
 
         # capsize blocksize
-        # remove 512 bytes for headers and body
         max_items = self.max_array_size / dtype.itemsize
         block_size = np.power(max_items, 1.0 / len(shape))
         block_size = min(2048, int(block_size // 2) * 2)
