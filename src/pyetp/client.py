@@ -459,8 +459,7 @@ class ETPClient(ETPConnection):
 
     @property
     def max_size(self):
-        return SETTINGS.MaxWebSocketMessagePayloadSize
-        # return self.client_info.getCapability("MaxWebSocketMessagePayloadSize")
+        return self.client_info.getCapability("MaxWebSocketMessagePayloadSize")
 
     @property
     def max_array_size(self):
