@@ -451,7 +451,11 @@ class ETPClient(ETPConnection):
 
         return msg
 
-    #
+    @staticmethod
+    def assert_response(response: ETPModel, expected_type: T.Type[ETPModel]) -> None:
+        assert isinstance(response, expected_type), (
+            f"Expected {expected_type}, got {type(response)} with content {response}"
+        )
 
     @property
     def max_size(self):
