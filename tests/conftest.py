@@ -14,6 +14,8 @@ from pyetp.config import SETTINGS
 SETTINGS.application_name = "geomin_testing"
 SETTINGS.etp_url = "ws://localhost:9100"
 SETTINGS.etp_timeout = 30
+# The max size comes from the websockets library on received messages!
+SETTINGS.MaxWebSocketMessagePayloadSize = 2**20
 dataspace = "test/test"
 
 
