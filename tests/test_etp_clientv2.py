@@ -213,6 +213,7 @@ async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
     epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
         epc, crs, gri, dataspace_uri=duri
     )
+
     uid = DataArrayIdentifier(
         uri=str(epc_uri),
         path_in_resource=(
@@ -220,8 +221,8 @@ async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
         ),
     )
     resp = await eclient.put_array(uid, data)
-    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
     assert len(resp) == 1
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
 
     arr = await eclient.get_array(uid)
 
