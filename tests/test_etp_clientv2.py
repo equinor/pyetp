@@ -58,7 +58,7 @@ def temp_maxsize(eclient: ETPClient, maxsize=10000):
         eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
             maxsize
         )
-        # assert eclient.max_size == maxsize
+        assert eclient.max_size == maxsize
         yield eclient
     finally:
         eclient.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
