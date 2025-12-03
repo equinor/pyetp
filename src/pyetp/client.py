@@ -463,7 +463,11 @@ class ETPClient(ETPConnection):
 
     @property
     def max_array_size(self):
-        return self.max_size - 512  # maxsize - 512 bytes for header and body
+        if self.max_size <= 3000:
+            raise AttributeError(
+                "The maximum size of a websocket message must be greater than 3000"
+            )
+        return self.max_size - 3000  # maxsize - 3000 bytes for header and body
 
     @property
     def timestamp(self):
