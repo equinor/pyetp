@@ -1,3 +1,4 @@
+import sys
 import typing as T
 
 import numpy as np
@@ -49,7 +50,12 @@ _ANY_LOGICAL_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyLogicalArrayType] = {
 }
 
 valid_logical_array_dtypes = list(_ANY_LOGICAL_ARRAY_TYPE_MAP)
-LogicalArrayDTypes: T.TypeAlias = T.Union[tuple(valid_logical_array_dtypes)]
+if (sys.version_info.major, sys.version_info.minor) == (3, 10):
+    LogicalArrayDTypes: T.TypeAlias = T.Union[
+        tuple(v.type for v in valid_logical_array_dtypes)
+    ]
+else:
+    LogicalArrayDTypes: T.TypeAlias = T.Union[tuple(valid_logical_array_dtypes)]
 
 _INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
     v: k for k, v in _ANY_LOGICAL_ARRAY_TYPE_MAP.items()

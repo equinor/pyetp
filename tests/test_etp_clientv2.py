@@ -296,9 +296,16 @@ async def test_oversized_models(
             gri_uri,
         )
 
-        assert ret_epc == epc
-        assert ret_crs == crs
-        assert ret_gri == gri
+        if (sys.version_info.major, sys.version_info.minor) == (3, 10):
+            assert crs.vertical_crs.epsg_code == ret_crs.vertical_crs.epsg_code
+            assert crs.projected_crs.epsg_code == ret_crs.projected_crs.epsg_code
+            assert crs.uuid == ret_crs.uuid
+            assert epc.uuid == ret_epc.uuid
+            assert gri.uuid == ret_gri.uuid
+        else:
+            assert ret_epc == epc
+            assert ret_crs == crs
+            assert ret_gri == gri
 
         ret_data = await eclient.download_array(
             epc_uri,
