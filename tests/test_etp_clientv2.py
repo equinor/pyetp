@@ -231,6 +231,84 @@ async def test_get_array(eclient: ETPClient, duri: DataspaceURI, dtype):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "dtype", [np.float32, np.float64, np.int32, np.int64, np.bool_, np.int8]
+)
+async def test_download_array(eclient: ETPClient, duri: DataspaceURI, dtype):
+    shape = (100, 50)
+    scaling = 100.0
+    data = (np.random.rand(*shape) * scaling).astype(dtype)
+    epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
+
+    transaction_uuid = await eclient.start_transaction(
+        dataspace_uri=duri, read_only=False
+    )
+    epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+        epc, crs, gri, dataspace_uri=duri
+    )
+    await eclient.upload_array(
+        epc_uri=epc_uri,
+        path_in_resource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,
+        data=data,
+    )
+    _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
+
+    arr = await eclient.download_array(
+        epc_uri, gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+    )
+
+    np.testing.assert_equal(arr, data)
+    assert arr.dtype == dtype
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("dtype", [np.float64, np.int64])
+@pytest.mark.parametrize(
+    "shape",
+    [(256, 302), (150, 55)],
+)
+async def test_oversized_models(
+    eclient: ETPClient,
+    duri: DataspaceURI,
+    dtype: npt.DTypeLike,
+    shape: tuple[int],
+) -> None:
+    data = (np.random.rand(*shape) * 100.0).astype(dtype)
+    epc, crs, gri, data = construct_2d_resqml_grid_from_array(data)
+
+    with temp_maxsize(eclient, maxsize=10_000):
+        transaction_uuid = await eclient.start_transaction(
+            dataspace_uri=duri, read_only=False
+        )
+        epc_uri, crs_uri, gri_uri = await eclient.put_resqml_objects(
+            epc, crs, gri, dataspace_uri=duri
+        )
+        await eclient.upload_array(
+            epc_uri=epc_uri,
+            path_in_resource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,
+            data=data,
+        )
+        _ = await eclient.commit_transaction(transaction_uuid=transaction_uuid)
+
+        ret_epc, ret_crs, ret_gri = await eclient.get_resqml_objects(
+            epc_uri,
+            crs_uri,
+            gri_uri,
+        )
+
+        assert ret_epc == epc
+        assert ret_crs == crs
+        assert ret_gri == gri
+
+        ret_data = await eclient.download_array(
+            epc_uri,
+            ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,
+        )
+
+        np.testing.assert_equal(data, ret_data)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("dtype", [np.float32, np.int32])
 @pytest.mark.parametrize("shape", [(256, 300), (10, 10, 10)])
 async def test_get_array_chunked(
