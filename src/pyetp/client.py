@@ -920,7 +920,7 @@ class ETPClient(ETPConnection):
         counts = np.array(counts).astype(np.int64)  # len = 2
         ends = starts + counts  # len = 2
 
-        slices = tuple(map(lambda se: slice(se[0], se[1]), zip(starts, ends)))
+        slices = tuple(map(lambda s, e: slice(s, e), starts, ends))
         dataarray = utils_arrays.get_etp_data_array_from_numpy(data[slices])
         payload = PutDataSubarraysType(
             uid=uid,
