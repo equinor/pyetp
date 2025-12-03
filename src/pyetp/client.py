@@ -572,33 +572,67 @@ class ETPClient(ETPConnection):
         )
         return response.success
 
-    #
-    # data objects
-    #
-
     async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
-        _uris = list(map(str, uris))
+        tasks = []
+        for uri in uris:
+            task = self.send(GetDataObjects(uris={str(uri): str(uri)}))
+            tasks.append(task)
 
-        msg = await self.send(GetDataObjects(uris=dict(zip(_uris, _uris))))
-        assert isinstance(msg, GetDataObjectsResponse), "Expected dataobjectsresponse"
-        assert len(msg.data_objects) == len(_uris), (
-            "Here we assume that all three objects fit in a single record"
-        )
+        responses = await asyncio.gather(*tasks)
+        assert len(responses) == len(uris)
 
-        return [msg.data_objects[u] for u in _uris]
+        data_objects = []
+        errors = []
+        for uri, response in zip(uris, responses):
+            if not isinstance(response, GetDataObjectsResponse):
+                errors.append(
+                    TypeError(
+                        "Expected GetDataObjectsResponse, got "
+                        f"{response.__class__.__name} with content: {response}",
+                    )
+                )
+            data_objects.append(response.data_objects[str(uri)])
+
+        if len(errors) > 0:
+            raise ExceptionGroup(
+                f"There were {len(errors)} errors in ETPClient.get_data_objects",
+                errors,
+            )
+
+        return data_objects
 
     async def put_data_objects(self, *objs: DataObject):
-        response = await self.send(
-            PutDataObjects(
-                data_objects={f"{p.resource.name} - {p.resource.uri}": p for p in objs},
+        tasks = []
+        for obj in objs:
+            task = self.send(
+                PutDataObjects(
+                    data_objects={f"{obj.resource.name} - {obj.resource.uri}": obj},
+                ),
             )
-        )
+            tasks.append(task)
 
-        assert isinstance(response, PutDataObjectsResponse), (
-            "Expected PutDataObjectsResponse"
-        )
+        responses = await asyncio.gather(*tasks)
 
-        return response.success
+        errors = []
+        for response in responses:
+            if not isinstance(response, PutDataObjectsResponse):
+                errors.append(
+                    TypeError(
+                        "Expected PutDataObjectsResponse, got "
+                        f"{response.__class__.__name} with content: {response}",
+                    )
+                )
+        if len(errors) > 0:
+            raise ExceptionGroup(
+                f"There were {len(errors)} errors in ETPClient.put_data_objects",
+                errors,
+            )
+
+        sucesses = {}
+        for response in responses:
+            sucesses = {**sucesses, **response.success}
+
+        return sucesses
 
     async def get_resqml_objects(
         self, *uris: T.Union[DataObjectURI, str]
