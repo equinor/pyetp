@@ -1,14 +1,14 @@
 import random
-import pytest
+
 import numpy as np
 import numpy.typing as npt
-
-import pyetp.utils_arrays
-
+import pytest
+from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
 from etptypes.energistics.etp.v12.datatypes.any_logical_array_type import (
     AnyLogicalArrayType,
 )
-from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
+
+import pyetp.utils_arrays
 
 
 @pytest.mark.parametrize(
@@ -89,3 +89,70 @@ def test_transport_array_size(dtype: npt.DTypeLike) -> None:
         )
 
         assert data.nbytes == transport_array_size
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        # We only add the supported dtypes for now. See comments in
+        # pyetp.utils_arrays.py.
+        np.dtype(np.bool_),
+        np.dtype(np.int8),
+        np.dtype("<i4"),
+        np.dtype("<i8"),
+        np.dtype("<f4"),
+        np.dtype("<f8"),
+    ],
+)
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (10, 21),
+        (2563, 302),
+        (150, 550),
+        (123, 234),
+        (234, 39, 104),
+    ],
+)
+def test_array_block_sizes(dtype: npt.DTypeLike, shape: tuple[int]) -> None:
+    max_array_size = 10_000 - 512
+
+    data = np.random.random(shape).astype(dtype)
+    data_buffer = np.zeros_like(data)
+
+    block_starts, block_counts = pyetp.utils_arrays.get_array_block_sizes(
+        data.shape,
+        data.dtype,
+        max_array_size,
+    )
+
+    # This number is only achievable if the array is flat, or we can use a
+    # single block.
+    optimal_number_of_blocks = int(np.ceil(data.nbytes / max_array_size))
+
+    # This test might be too optimistic, but we have yet to encounter a case
+    # where it breaks.
+    assert optimal_number_of_blocks <= len(block_starts)
+    assert optimal_number_of_blocks > len(block_starts) / 2
+
+    total_size = 0
+    for starts, counts in zip(block_starts, block_counts):
+        slices = tuple(
+            map(
+                lambda s, c: slice(s, s + c),
+                np.array(starts).astype(int),
+                np.array(counts).astype(int),
+            )
+        )
+
+        data_buffer[slices] = data[slices]
+
+        slice_size = data[slices].nbytes
+
+        assert slice_size == int(np.prod(counts) * dtype.itemsize)
+        assert slice_size <= max_array_size
+
+        total_size += data[slices].nbytes
+
+    assert total_size == data.nbytes
+    np.testing.assert_equal(data, data_buffer)
