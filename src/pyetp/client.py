@@ -177,6 +177,8 @@ except ImportError:
         except asyncio.CancelledError as e:
             raise asyncio.TimeoutError(f"Timeout ({delay}s)") from e
 
+    TimeoutError = asyncio.TimeoutError
+
 
 class ETPError(Exception):
     def __init__(self, message: str, code: int):
