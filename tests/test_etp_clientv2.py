@@ -151,10 +151,25 @@ async def test_arraymeta(
 
 
 @pytest.mark.asyncio
-async def test_disconnect_error(eclient: ETPClient):
-    await eclient.ws.close()
+@pytest.mark.parametrize(
+    "code_and_error",
+    [
+        (1000, websockets.exceptions.ConnectionClosedOK),
+        (1002, websockets.exceptions.ConnectionClosedError),
+    ],
+)
+async def test_disconnect_error(
+    eclient: ETPClient,
+    code_and_error: tuple[int, websockets.exceptions.ConnectionClosed],
+):
+    code, error = code_and_error
+    # Websockets closing code 1000 corresponds to a normal closure and
+    # websockets closing code 1002 corresponds to an endpoint terminating the
+    # connection due to a protocol error (see:
+    # https://datatracker.ietf.org/doc/html/rfc6455.html#section-7.4.1).
+    await eclient.ws.close(code=code)
 
-    with pytest.raises(websockets.exceptions.ConnectionClosed):
+    with pytest.raises(error):
         await eclient.put_dataspaces_no_raise(
             [""], [""], [""], [""], eclient.dataspace_uri("doesnt matter")
         )
