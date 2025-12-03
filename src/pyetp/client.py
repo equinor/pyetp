@@ -896,6 +896,250 @@ class ETPClient(ETPConnection):
         arrays = list(response.data_arrays.values())
         return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
 
+    async def download_array(
+        self,
+        epc_uri: str | DataObjectURI,
+        path_in_resource: str,
+    ) -> npt.NDArray[utils_arrays.LogicalArrayDTypes]:
+        # Create identifier for the data.
+        dai = DataArrayIdentifier(
+            uri=str(epc_uri),
+            path_in_resource=path_in_resource,
+        )
+
+        response = await self.send(
+            GetDataArrayMetadata(data_arrays={dai.path_in_resource: dai}),
+        )
+
+        self.assert_response(response, GetDataArrayMetadataResponse)
+        assert (
+            len(response.array_metadata) == 1
+            and dai.path_in_resource in response.array_metadata
+        )
+
+        metadata = response.array_metadata[dai.path_in_resource]
+
+        # Check if we can download the full array in a single message.
+        if (
+            utils_arrays.get_transport_array_size(
+                metadata.transport_array_type, metadata.dimensions
+            )
+            >= self.max_array_size
+        ):
+            transport_dtype = utils_arrays.get_dtype_from_any_array_type(
+                metadata.transport_array_type,
+            )
+            # NOTE: The logical array type is not yet supported by the
+            # open-etp-server. As such the transport array type will be actual
+            # array type used. We only add this call to prepare for when it
+            # will be used.
+            logical_dtype = utils_arrays.get_dtype_from_any_logical_array_type(
+                metadata.logical_array_type,
+            )
+            if logical_dtype != np.dtype(np.bool_):
+                # If this debug message is triggered we should test the
+                # mapping.
+                logger.debug(
+                    "Logical array type has changed: "
+                    f"{metadata.logical_array_type = }, with {logical_dtype = }"
+                )
+
+            # Create a buffer for the data.
+            data = np.zeros(metadata.dimensions, dtype=transport_dtype)
+
+            # Get list with starting indices in each block, and a list with the
+            # number of elements along each axis for each block.
+            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+                data.shape, data.dtype, self.max_array_size
+            )
+
+            def data_subarrays_key(pir: str, i: int) -> str:
+                return pir + f" ({i})"
+
+            tasks = []
+            for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
+                task = self.send(
+                    GetDataSubarrays(
+                        data_subarrays={
+                            data_subarrays_key(
+                                dai.path_in_resource, i
+                            ): GetDataSubarraysType(
+                                uid=dai,
+                                starts=starts,
+                                counts=counts,
+                            ),
+                        },
+                    ),
+                )
+                tasks.append(task)
+
+            responses = await asyncio.gather(*tasks)
+
+            data_blocks = []
+            for i, response in enumerate(responses):
+                self.assert_response(response, GetDataSubarraysResponse)
+                assert (
+                    len(response.data_subarrays) == 1
+                    and data_subarrays_key(dai.path_in_resource, i)
+                    in response.data_subarrays
+                )
+
+                data_block = utils_arrays.get_numpy_array_from_etp_data_array(
+                    response.data_subarrays[
+                        data_subarrays_key(dai.path_in_resource, i)
+                    ],
+                )
+                data_blocks.append(data_block)
+
+            for data_block, starts, counts in zip(
+                data_blocks, block_starts, block_counts
+            ):
+                # Create slice-objects for each block.
+                slices = tuple(
+                    map(
+                        lambda s, c: slice(s, s + c),
+                        np.array(starts).astype(int),
+                        np.array(counts).astype(int),
+                    )
+                )
+                data[slices] = data_block
+
+            # Return after fetching all sub arrays.
+            return data
+
+        # Download the full array in one go.
+        response = await self.send(
+            GetDataArrays(data_arrays={dai.path_in_resource: dai}),
+        )
+
+        self.assert_response(response, GetDataArraysResponse)
+        assert (
+            len(response.data_arrays) == 1
+            and dai.path_in_resource in response.data_arrays
+        )
+
+        return utils_arrays.get_numpy_array_from_etp_data_array(
+            response.data_arrays[dai.path_in_resource]
+        )
+
+    async def upload_array(
+        self,
+        epc_uri: str | DataObjectURI,
+        path_in_resource: str,
+        data: npt.NDArray[utils_arrays.LogicalArrayDTypes],
+    ) -> None:
+        # Fetch ETP logical and transport array types
+        logical_array_type, transport_array_type = (
+            utils_arrays.get_logical_and_transport_array_types(data.dtype)
+        )
+
+        # Create identifier for the data.
+        dai = DataArrayIdentifier(
+            uri=str(epc_uri),
+            path_in_resource=path_in_resource,
+        )
+
+        # Get current time as a UTC-timestamp.
+        now = self.timestamp
+
+        # Allocate space on server for the array.
+        response = await self.send(
+            PutUninitializedDataArrays(
+                data_arrays={
+                    dai.path_in_resource: PutUninitializedDataArrayType(
+                        uid=dai,
+                        metadata=DataArrayMetadata(
+                            dimensions=list(data.shape),
+                            transport_array_type=transport_array_type,
+                            logical_array_type=logical_array_type,
+                            store_last_write=now,
+                            store_created=now,
+                        ),
+                    ),
+                },
+            ),
+        )
+
+        self.assert_response(response, PutUninitializedDataArraysResponse)
+        assert len(response.success) == 1 and dai.path_in_resource in response.success
+
+        # Check if we can upload the entire array in go, or if we need to
+        # upload it in smaller blocks.
+        if data.nbytes > self.max_array_size:
+            tasks = []
+
+            # Get list with starting indices in each block, and a list with the
+            # number of elements along each axis for each block.
+            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+                data.shape, data.dtype, self.max_array_size
+            )
+
+            for starts, counts in zip(block_starts, block_counts):
+                # Create slice-objects for each block.
+                slices = tuple(
+                    map(
+                        lambda s, c: slice(s, s + c),
+                        np.array(starts).astype(int),
+                        np.array(counts).astype(int),
+                    )
+                )
+
+                # Slice the array, and convert to the relevant ETP-array type.
+                # Note in the particular the extra `.data`-after the call. The
+                # data should not be of type `DataArray`, but `AnyArray`, so we
+                # need to fetch it from the `DataArray`.
+                etp_subarray_data = utils_arrays.get_etp_data_array_from_numpy(
+                    data[slices]
+                ).data
+
+                # Create an asynchronous task to upload a block to the
+                # ETP-server.
+                task = self.send(
+                    PutDataSubarrays(
+                        data_subarrays={
+                            dai.path_in_resource: PutDataSubarraysType(
+                                uid=dai,
+                                data=etp_subarray_data,
+                                starts=starts,
+                                counts=counts,
+                            ),
+                        },
+                    ),
+                )
+                tasks.append(task)
+
+            # Upload all blocks.
+            responses = await asyncio.gather(*tasks)
+
+            # Check for successful responses.
+            for response in responses:
+                self.assert_response(response, PutDataSubarraysResponse)
+                assert (
+                    len(response.success) == 1
+                    and dai.path_in_resource in response.success
+                )
+
+            # Return after uploading all sub arrays.
+            return
+
+        # Convert NumPy data-array to an ETP-transport array.
+        etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
+
+        # Pass entire array in one message.
+        response = await self.send(
+            PutDataArrays(
+                data_arrays={
+                    dai.path_in_resource: PutDataArraysType(
+                        uid=dai,
+                        array=etp_array_data,
+                    ),
+                }
+            )
+        )
+
+        self.assert_response(response, PutDataArraysResponse)
+        assert len(response.success) == 1 and dai.path_in_resource in response.success
+
     async def put_array(
         self,
         uid: DataArrayIdentifier,
@@ -1001,6 +1245,13 @@ class ETPClient(ETPConnection):
     def _get_chunk_sizes(
         self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0
     ):
+        warnings.warn(
+            "This function is deprecated and will be removed in a later version of "
+            "pyetp. The replacement is located via the import "
+            "`from pyetp.utils_arrays import get_array_block_sizes`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         shape = np.array(shape)
 
         # capsize blocksize
