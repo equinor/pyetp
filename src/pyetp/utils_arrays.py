@@ -51,6 +51,9 @@ _ANY_LOGICAL_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyLogicalArrayType] = {
     np.dtype(">f8"): AnyLogicalArrayType.ARRAY_OF_DOUBLE64_BE,
 }
 
+valid_logical_array_dtypes = list(_ANY_LOGICAL_ARRAY_TYPE_MAP)
+LogicalArrayDTypes: T.TypeAlias = T.Union[tuple(valid_logical_array_dtypes)]
+
 _INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
     v: k for k, v in _ANY_LOGICAL_ARRAY_TYPE_MAP.items()
 }
@@ -91,7 +94,7 @@ _ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
     np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
     np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
 }
-valid_dtypes = list(_ANY_ARRAY_TYPE_MAP)
+valid_any_array_dtypes = list(_ANY_ARRAY_TYPE_MAP)
 
 _INV_ANY_ARRAY_TYPE_MAP: dict[AnyArrayType, npt.DTypeLike] = {
     AnyArrayType.ARRAY_OF_BOOLEAN: np.dtype(np.bool_),
@@ -121,7 +124,7 @@ _INV_ANY_ARRAY_MAP: dict[SUPPORTED_ARRAY_TYPES, AnyArrayType] = {
 
 
 def check_if_array_is_valid_dtype(array: npt.NDArray[T.Any]) -> bool:
-    return array.dtype in valid_dtypes
+    return array.dtype in valid_any_array_dtypes
 
 
 def get_valid_dtype_cast(array: npt.NDArray[T.Any]) -> npt.DTypeLike:
@@ -235,9 +238,16 @@ def get_dtype_from_any_array_class(cls: AnyArray) -> npt.DTypeLike:
     raise TypeError(f"Class {cls} is not a valid array class")
 
 
-def get_dtype_from_any_array_type(_type: T.Union[AnyArrayType | str]) -> npt.DTypeLike:
+def get_dtype_from_any_array_type(_type: AnyArrayType | str) -> npt.DTypeLike:
     enum_name = AnyArrayType(_type)
     return _INV_ANY_ARRAY_TYPE_MAP[enum_name]
+
+
+def get_dtype_from_any_logical_array_type(
+    _type: AnyLogicalArrayType | str,
+) -> npt.DTypeLike:
+    enum_name = AnyLogicalArrayType(_type)
+    return _INV_ANY_LOGICAL_ARRAY_TYPE_MAP[enum_name]
 
 
 def get_numpy_array_from_etp_data_array(
