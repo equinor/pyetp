@@ -9,7 +9,9 @@ from collections import defaultdict
 from types import TracebackType
 
 import numpy as np
+import numpy.typing as npt
 import websockets
+import websockets.client
 from etpproto.connection import CommunicationProtocol, ConnectionType, ETPConnection
 from etpproto.messages import Message, MessageFlags
 from etptypes import ETPModel
@@ -192,6 +194,10 @@ class ETPError(Exception):
         return list(map(cls.from_proto, errors))
 
 
+class ReceiveWorkerExited(Exception):
+    pass
+
+
 def get_all_etp_protocol_classes():
     """Update protocol - all exception protocols are now per message"""
 
@@ -258,9 +264,58 @@ class ETPClient(ETPConnection):
             "Trying to receive a response on non-existing message"
         )
 
-        async with timeout(self.timeout):
-            await self._recv_events[correlation_id].wait()
+        def timeout_intervals(timeout):
+            # Local function generating progressively longer timeout intervals.
 
+            # Use the timeout-interval generator from the Python websockets
+            # library.
+            backoff_generator = websockets.client.backoff(
+                initial_delay=5.0, min_delay=5.0, max_delay=20.0
+            )
+
+            # Check if we should never time out.
+            if timeout is None:
+                # This is an infinite generator, so it should never exit.
+                yield from backoff_generator
+                return
+
+            # Generate timeout intervals until we have reached the
+            # `timeout`-threshold.
+            csum = 0.0
+            for d in backoff_generator:
+                yield d
+
+                csum += d
+
+                if csum >= timeout:
+                    break
+
+        for ti in timeout_intervals(self.timeout):
+            try:
+                # Wait for an event for `ti` seconds.
+                async with timeout(ti):
+                    await self._recv_events[correlation_id].wait()
+            except TimeoutError:
+                # Check if the receiver task is still running.
+                if self.__recvtask.done():
+                    # Raise any errors by waiting for the task to finish.
+                    await self.__recvtask
+
+                    logger.error(
+                        "Receiver task terminated without errors. This should not happen"
+                    )
+
+                    raise ReceiveWorkerExited
+            else:
+                # Break out of for-loop, and start processing message.
+                break
+        else:
+            # The for-loop finished without breaking. In other words, we have
+            # timed out.
+            assert self.timeout is not None
+            raise TimeoutError(
+                f"Receiver task did not set event within {self.timeout} seconds"
+            )
 
         # Remove event from list of events
         del self._recv_events[correlation_id]
