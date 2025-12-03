@@ -5,9 +5,6 @@ import sys
 
 import numpy as np
 import pytest
-from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
-    DataArrayIdentifier,
-)
 
 import pyetp.utils_arrays
 from pyetp.client import ETPClient
@@ -56,8 +53,9 @@ async def test_mesh_raw(
 
     tasks = []
     for pir, data in casted_arr_data.items():
-        uid = DataArrayIdentifier(uri=epc_uri, path_in_resource=pir)
-        tasks.append(eclient.put_array(uid=uid, data=data))
+        tasks.append(
+            eclient.upload_array(epc_uri=epc_uri, path_in_resource=pir, data=data)
+        )
 
     await asyncio.gather(*tasks)
 
@@ -80,14 +78,7 @@ async def test_mesh_raw(
 
     tasks = []
     for ret_pir in ret_paths:
-        tasks.append(
-            eclient.get_array(
-                uid=DataArrayIdentifier(
-                    uri=epc_uri,
-                    path_in_resource=ret_pir,
-                )
-            )
-        )
+        tasks.append(eclient.download_array(epc_uri=epc_uri, path_in_resource=ret_pir))
 
     ret_arrays = await asyncio.gather(*tasks)
     ret_arr = dict(zip(ret_paths, ret_arrays))
