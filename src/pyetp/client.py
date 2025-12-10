@@ -364,6 +364,9 @@ class ETPClient(ETPConnection):
                 errors.extend(body.errors.values())
         return errors
 
+    async def __aexit__(self, *exc_details) -> None:
+        await self.close(reason="Client exiting")
+
     async def close(self, reason=""):
         close_session_sent = False
         try:
@@ -460,6 +463,9 @@ class ETPClient(ETPConnection):
     #
     # session related
     #
+
+    async def __aenter__(self) -> T.Self:
+        return await self.request_session()
 
     async def request_session(self):
         # Handshake protocol
