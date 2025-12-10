@@ -7,6 +7,7 @@ import typing as T
 import uuid
 import warnings
 from collections import defaultdict
+from collections.abc import AsyncGenerator
 from types import TracebackType
 
 import numpy as np
@@ -180,6 +181,12 @@ except ImportError:
             raise asyncio.TimeoutError(f"Timeout ({delay}s)") from e
 
     TimeoutError = asyncio.TimeoutError
+
+try:
+    # Python >= 3.11
+    from typing import Self
+except ImportError:
+    Self = "ETPClient"
 
 
 class ETPError(Exception):
@@ -465,7 +472,7 @@ class ETPClient(ETPConnection):
     # session related
     #
 
-    async def __aenter__(self) -> T.Self:
+    async def __aenter__(self) -> Self:
         return await self.request_session()
 
     async def request_session(self):
@@ -1484,7 +1491,7 @@ async def etp_persistent_connect(
     authorization: str | None = None,
     etp_timeout: float = 10.0,
     max_message_size: float = 2**20,
-) -> T.AsyncGenerator[ETPClient]:
+) -> AsyncGenerator[ETPClient]:
     additional_headers = {}
 
     if authorization is not None:
