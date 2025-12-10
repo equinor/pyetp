@@ -16,13 +16,13 @@ classifiers = [
   "Development Status :: 3 - Alpha",
 ]
 dependencies = [
-    "numpy >= 1.26.3",
+    "numpy >= 2.0",
     "websockets >= 15.0",
     "lxml >=4.9.4",
     "pydantic >= 1.10",
     "async-timeout >= 5.0",
     "xtgeo >= 4.0.0",
-    "xsdata >= 24.3.1",
+    "xsdata >= 25.4",
     "etpproto >= 1.0.7",
 ]
 
