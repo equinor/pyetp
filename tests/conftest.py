@@ -1,4 +1,6 @@
 import datetime
+import socket
+import urllib.parse
 import uuid
 
 import numpy as np
@@ -11,8 +13,10 @@ import resqml_objects.v201 as resqml_objects
 from pyetp.client import ETPClient, connect
 from pyetp.config import SETTINGS
 
+etp_server_url = "ws://localhost:9100"
+
 SETTINGS.application_name = "geomin_testing"
-SETTINGS.etp_url = "ws://localhost:9100"
+SETTINGS.etp_url = etp_server_url
 SETTINGS.etp_timeout = 30
 # The max size comes from the websockets library on received messages!
 SETTINGS.MaxWebSocketMessagePayloadSize = 2**20
@@ -23,14 +27,15 @@ async def get_app_token(rc=None):
     return None
 
 
-@pytest_asyncio.fixture
-async def eclient():
-    import socket
-
+def check_if_server_is_accesible() -> bool:
+    parsed_url = urllib.parse.urlparse(etp_server_url)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ws_open = sock.connect_ex(("127.0.0.1", 9100)) == 0
+    return sock.connect_ex((parsed_url.hostname, parsed_url.port)) == 0
 
-    if not ws_open:
+
+@pytest_asyncio.fixture
+async def etp_client():
+    if not check_if_server_is_accesible():
         pytest.skip(
             reason="websocket for test server not open", allow_module_level=True
         )
@@ -40,14 +45,14 @@ async def eclient():
 
 
 @pytest_asyncio.fixture
-async def duri(eclient: ETPClient):
-    uri = eclient.dataspace_uri("test/test")
+async def dataspace_uri(etp_client: ETPClient):
+    uri = etp_client.dataspace_uri("test/test")
     try:
-        resp = await eclient.put_dataspaces_no_raise([""], [""], [""], [""], uri)
-        # assert len(resp) == 1, "created one dataspace"
+        resp = await etp_client.put_dataspaces_no_raise([""], [""], [""], [""], uri)
+        assert len(resp) == 1, "created one dataspace"
         yield uri
     finally:
-        resp = await eclient.delete_dataspaces(uri)
+        resp = await etp_client.delete_dataspaces(uri)
         assert len(resp) == 1, "should cleanup our test dataspace"
 
 
