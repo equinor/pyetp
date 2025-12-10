@@ -30,7 +30,7 @@ data_path = pathlib.Path("data")
 )
 @pytest.mark.asyncio
 async def test_mesh_raw(
-    eclient: ETPClient, duri: DataspaceURI, input_mesh_file: pathlib.Path
+    etp_client: ETPClient, dataspace_uri: DataspaceURI, input_mesh_file: pathlib.Path
 ):
     robjs = get_resqml_v201_objects(input_mesh_file)
     input_hdf_file = input_mesh_file.with_suffix(".h5")
@@ -42,11 +42,11 @@ async def test_mesh_raw(
         original_dtypes[k] = v.dtype
         casted_arr_data[k] = v.astype(pyetp.utils_arrays.get_valid_dtype_cast(v))
 
-    transaction_uuid = await eclient.start_transaction(
-        dataspace_uri=duri, read_only=False
+    transaction_uuid = await etp_client.start_transaction(
+        dataspace_uri=dataspace_uri, read_only=False
     )
 
-    uris = await eclient.put_resqml_objects(*robjs, dataspace_uri=duri)
+    uris = await etp_client.put_resqml_objects(*robjs, dataspace_uri=dataspace_uri)
     epc_uris = list(filter(lambda u: "EpcExternalPartReference" in str(u), uris))
     assert len(epc_uris) == 1
     epc_uri = str(epc_uris[0])
@@ -54,14 +54,14 @@ async def test_mesh_raw(
     tasks = []
     for pir, data in casted_arr_data.items():
         tasks.append(
-            eclient.upload_array(epc_uri=epc_uri, path_in_resource=pir, data=data)
+            etp_client.upload_array(epc_uri=epc_uri, path_in_resource=pir, data=data)
         )
 
     await asyncio.gather(*tasks)
 
-    await eclient.commit_transaction(transaction_uuid=transaction_uuid)
+    await etp_client.commit_transaction(transaction_uuid=transaction_uuid)
 
-    ret_robjs = await eclient.get_resqml_objects(*uris)
+    ret_robjs = await etp_client.get_resqml_objects(*uris)
 
     for robj, ret_robj in zip(robjs, ret_robjs):
         assert robj == ret_robj
@@ -78,7 +78,9 @@ async def test_mesh_raw(
 
     tasks = []
     for ret_pir in ret_paths:
-        tasks.append(eclient.download_array(epc_uri=epc_uri, path_in_resource=ret_pir))
+        tasks.append(
+            etp_client.download_array(epc_uri=epc_uri, path_in_resource=ret_pir)
+        )
 
     ret_arrays = await asyncio.gather(*tasks)
     ret_arr = dict(zip(ret_paths, ret_arrays))
