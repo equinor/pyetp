@@ -131,6 +131,27 @@ async def test_persistent_connect_ws_closing() -> None:
     reason="websocket for test server not open",
 )
 @pytest.mark.asyncio
+async def test_persistent_connect_ws_closing_operations() -> None:
+    counter = 0
+    async for etp_client in etp_persistent_connect(uri=etp_server_url):
+        if counter == 10:
+            break
+
+        counter += 1
+
+        await etp_client.ws.close(1009)
+
+        with pytest.raises(websockets.ConnectionClosed):
+            await etp_client.get_dataspaces()
+
+    assert counter == 10
+
+
+@pytest.mark.skipif(
+    not check_if_server_is_accesible(),
+    reason="websocket for test server not open",
+)
+@pytest.mark.asyncio
 async def test_persistent_connect_etp_closing() -> None:
     async for etp_client in etp_persistent_connect(uri=etp_server_url):
         break
