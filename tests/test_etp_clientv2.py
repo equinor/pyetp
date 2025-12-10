@@ -29,7 +29,7 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
 )
 
 import resqml_objects.v201 as ro
-from pyetp import utils_arrays
+from pyetp import etp_persistent_connect, utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils_xml import (
@@ -109,6 +109,33 @@ def uid_not_exists():
     )
 
 
+@pytest.mark.skipif(
+    not check_if_server_is_accesible(),
+    reason="websocket for test server not open",
+)
+@pytest.mark.asyncio
+async def test_persistent_connect_ws_closing() -> None:
+    counter = 0
+    async for etp_client in etp_persistent_connect(uri=etp_server_url):
+        if counter == 10:
+            break
+
+        counter += 1
+        await etp_client.ws.close()
+
+    assert counter == 10
+
+
+@pytest.mark.skipif(
+    not check_if_server_is_accesible(),
+    reason="websocket for test server not open",
+)
+@pytest.mark.asyncio
+async def test_persistent_connect_etp_closing() -> None:
+    async for etp_client in etp_persistent_connect(uri=etp_server_url):
+        break
+
+    assert True
 
 
 @pytest.mark.skipif(

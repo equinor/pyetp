@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import datetime
 import logging
 import sys
@@ -1442,3 +1443,72 @@ class connect:
     async def __aexit__(self, exc_type, exc: Exception, tb: TracebackType):
         await self.client.close()
         await self.ws.close()
+
+
+@contextlib.asynccontextmanager
+async def etp_connect(
+    uri: str,
+    data_partition_id: str | None = None,
+    authorization: str | None = None,
+    etp_timeout: float = 10.0,
+    max_message_size: float = 2**20,
+) -> ETPClient:
+    additional_headers = {}
+
+    if authorization is not None:
+        additional_headers["Authorization"] = authorization
+    if data_partition_id is not None:
+        additional_headers["data-partition-id"] = data_partition_id
+
+    subprotocols = ["etp12.energistics.org"]
+
+    async with (
+        websockets.connect(
+            uri=uri,
+            subprotocols=subprotocols,
+            max_size=max_message_size,
+            additional_headers=additional_headers,
+        ) as ws,
+        ETPClient(
+            ws=ws,
+            etp_timeout=etp_timeout,
+            max_message_size=max_message_size,
+        ) as etp_client,
+    ):
+        yield etp_client
+
+
+async def etp_persistent_connect(
+    uri: str,
+    data_partition_id: str | None = None,
+    authorization: str | None = None,
+    etp_timeout: float = 10.0,
+    max_message_size: float = 2**20,
+) -> T.AsyncGenerator[ETPClient]:
+    additional_headers = {}
+
+    if authorization is not None:
+        additional_headers["Authorization"] = authorization
+    if data_partition_id is not None:
+        additional_headers["data-partition-id"] = data_partition_id
+
+    subprotocols = ["etp12.energistics.org"]
+    async for ws in websockets.connect(
+        uri=uri,
+        subprotocols=subprotocols,
+        max_size=max_message_size,
+        additional_headers=additional_headers,
+    ):
+        try:
+            async with ETPClient(
+                ws=ws,
+                etp_timeout=etp_timeout,
+                max_message_size=max_message_size,
+            ) as etp_client:
+                yield etp_client
+        except websockets.ConnectionClosed as e:
+            logger.info(
+                f"Websockets connection closed with message '{e}'. Starting new "
+                "connection"
+            )
+            continue
