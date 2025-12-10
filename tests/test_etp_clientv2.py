@@ -143,6 +143,26 @@ async def test_persistent_connect_etp_closing() -> None:
     reason="websocket for test server not open",
 )
 @pytest.mark.asyncio
+async def test_persistent_connect_broken_receiver_task() -> None:
+    counter = 0
+    with pytest.raises(asyncio.CancelledError):
+        async for etp_client in etp_persistent_connect(uri=etp_server_url):
+            counter += 1
+            etp_client._ETPClient__recvtask.cancel("stop")
+
+            # NOTE: This test can take a variable number of seconds to complete
+            # due to the adaptive timeout when waiting for a message.
+            await etp_client.get_dataspaces()
+
+    # Check that the for-loop only iterates once.
+    assert counter == 1
+
+
+@pytest.mark.skipif(
+    not check_if_server_is_accesible(),
+    reason="websocket for test server not open",
+)
+@pytest.mark.asyncio
 async def test_open_close(monkeypatch: pytest.MonkeyPatch):
     mock_close = AsyncMock()
 
