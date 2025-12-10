@@ -145,6 +145,7 @@ from xtgeo import RegularSurface
 
 import resqml_objects.v201 as ro
 from pyetp import utils_arrays, utils_xml
+from pyetp._version import version
 from pyetp.config import SETTINGS
 from pyetp.uri import DataObjectURI, DataspaceURI
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
@@ -220,17 +221,28 @@ class ETPClient(ETPConnection):
     _recv_buffer: T.Dict[int, T.List[ETPModel]]
 
     def __init__(
-        self, ws: websockets.ClientConnection, timeout: float | None = 10.0
+        self,
+        ws: websockets.ClientConnection,
+        etp_timeout: float | None = 10.0,
+        max_message_size: float = 2**20,
+        application_name: str = "pyetp",
+        application_version: str = version,
     ) -> None:
         super().__init__(connection_type=ConnectionType.CLIENT)
+
+        self.application_name = application_name
+        self.application_version = application_version
+
         self._recv_events = {}
         self._recv_buffer = defaultdict(lambda: list())  # type: ignore
         self.ws = ws
 
         # Ensure a minimum timeout of 10 seconds.
-        self.timeout = timeout if timeout is None or timeout > 10.0 else 10.0
+        self.etp_timeout = (
+            etp_timeout if etp_timeout is None or etp_timeout > 10.0 else 10.0
+        )
         self.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
-            SETTINGS.MaxWebSocketMessagePayloadSize
+            max_message_size
         )
         self.__recvtask = asyncio.create_task(self.__recv())
 
@@ -266,7 +278,7 @@ class ETPClient(ETPConnection):
             "Trying to receive a response on non-existing message"
         )
 
-        def timeout_intervals(timeout):
+        def timeout_intervals(etp_timeout):
             # Local function generating progressively longer timeout intervals.
 
             # Use the timeout-interval generator from the Python websockets
@@ -276,23 +288,23 @@ class ETPClient(ETPConnection):
             )
 
             # Check if we should never time out.
-            if timeout is None:
+            if etp_timeout is None:
                 # This is an infinite generator, so it should never exit.
                 yield from backoff_generator
                 return
 
             # Generate timeout intervals until we have reached the
-            # `timeout`-threshold.
+            # `etp_timeout`-threshold.
             csum = 0.0
             for d in backoff_generator:
                 yield d
 
                 csum += d
 
-                if csum >= timeout:
+                if csum >= etp_timeout:
                     break
 
-        for ti in timeout_intervals(self.timeout):
+        for ti in timeout_intervals(self.etp_timeout):
             try:
                 # Wait for an event for `ti` seconds.
                 async with timeout(ti):
@@ -314,9 +326,9 @@ class ETPClient(ETPConnection):
         else:
             # The for-loop finished without breaking. In other words, we have
             # timed out.
-            assert self.timeout is not None
+            assert self.etp_timeout is not None
             raise TimeoutError(
-                f"Receiver task did not set event within {self.timeout} seconds"
+                f"Receiver task did not set event within {self.etp_timeout} seconds"
             )
 
         # Remove event from list of events
@@ -396,7 +408,7 @@ class ETPClient(ETPConnection):
             # In some cases the server does not drop the connection after we
             # have sent the `CloseSession`-message. We therefore add a timeout
             # to the reading of possibly lost messages.
-            async with timeout(self.timeout or 10):
+            async with timeout(self.etp_timeout or 10):
                 async for msg in self.ws:
                     counter += 1
         except websockets.ConnectionClosed:
@@ -406,8 +418,9 @@ class ETPClient(ETPConnection):
         except TimeoutError:
             if close_session_sent:
                 logger.error(
-                    f"Websockets connection was not closed within {self.timeout or 10}"
-                    " seconds after the `CloseSession`-message was sent"
+                    "Websockets connection was not closed within "
+                    f"{self.etp_timeout or 10} seconds after the "
+                    "`CloseSession`-message was sent"
                 )
 
         if counter > 0:
@@ -463,8 +476,8 @@ class ETPClient(ETPConnection):
 
         msg = await self.send(
             RequestSession(
-                applicationName=SETTINGS.application_name,
-                applicationVersion=SETTINGS.application_version,
+                applicationName=self.application_name,
+                applicationVersion=self.application_version,
                 clientInstanceId=uuid.uuid4(),  # type: ignore
                 requestedProtocols=[
                     SupportedProtocol(
@@ -1402,7 +1415,13 @@ class connect:
             open_timeout=None,
         )
 
-        self.client = ETPClient(self.ws, timeout=self.timeout)
+        self.client = ETPClient(
+            self.ws,
+            etp_timeout=self.timeout,
+            max_message_size=SETTINGS.MaxWebSocketMessagePayloadSize,
+            application_name=SETTINGS.application_name,
+            application_version=SETTINGS.application_version,
+        )
 
         try:
             await self.client.request_session()
