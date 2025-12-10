@@ -1452,63 +1452,97 @@ class connect:
         await self.ws.close()
 
 
-@contextlib.asynccontextmanager
-async def etp_connect(
-    uri: str,
-    data_partition_id: str | None = None,
-    authorization: str | None = None,
-    etp_timeout: float = 10.0,
-    max_message_size: float = 2**20,
-) -> ETPClient:
-    additional_headers = {}
+class etp_connect:
+    """Context manager establishing a connection to an ETP server via websockets.
 
-    if authorization is not None:
-        additional_headers["Authorization"] = authorization
-    if data_partition_id is not None:
-        additional_headers["data-partition-id"] = data_partition_id
+    Parameters
+    ----------
+    uri: str
+        The uri to the ETP server. This should be the uri to a websockets
+        endpoint.
+    data_partition_id: str | None
+        The data partition id used when connecting to the OSDU open-etp-server
+        in multi-partition mode. Default is `None`.
+    authorization: str | SecretStr | None
+        Bearer token used for authenticating to the ETP server. This token
+        should be on the form `"Bearer 1234..."`. Default is `None`.
+    etp_timeout: float | None
+        The timeout in seconds for when to stop waiting for a message from the
+        ETP server. Setting it to `None` will persist the connection
+        indefinetly. Default is `None`.
+    """
 
-    subprotocols = ["etp12.energistics.org"]
+    def __init__(
+        self,
+        uri: str,
+        data_partition_id: str | None = None,
+        authorization: str | SecretStr | None = None,
+        etp_timeout: float | None = None,
+        max_message_size: float = 2**20,
+    ) -> None:
+        self.uri = uri
+        self.data_partition_id = data_partition_id
+        self.authorization = SecretStr(authorization)
+        self.etp_timeout = etp_timeout
+        self.max_message_size = max_message_size
+        self.subprotocols = ["etp12.energistics.org"]
 
-    async with (
-        websockets.connect(
-            uri=uri,
-            subprotocols=subprotocols,
-            max_size=max_message_size,
-            additional_headers=additional_headers,
-        ) as ws,
-        ETPClient(
-            ws=ws,
-            etp_timeout=etp_timeout,
-            max_message_size=max_message_size,
-        ) as etp_client,
-    ):
-        yield etp_client
+    def __await__(self) -> ETPClient:
+        return self.__aenter__().__await__()
 
+    def get_additional_headers(self) -> dict[str, str]:
+        additional_headers = {}
 
-async def etp_persistent_connect(
-    uri: str,
-    data_partition_id: str | None = None,
-    authorization: str | None = None,
-    etp_timeout: float = 10.0,
-    max_message_size: float = 2**20,
-) -> AsyncGenerator[ETPClient]:
-    additional_headers = {}
+        if self.authorization.get_secret_value() is not None:
+            additional_headers["Authorization"] = self.authorization.get_secret_value()
 
-    if authorization is not None:
-        additional_headers["Authorization"] = authorization
-    if data_partition_id is not None:
-        additional_headers["data-partition-id"] = data_partition_id
+        if self.data_partition_id is not None:
+            additional_headers["data-partition-id"] = self.data_partition_id
 
-    subprotocols = ["etp12.energistics.org"]
-    async for ws in websockets.connect(
-        uri=uri,
-        subprotocols=subprotocols,
-        max_size=max_message_size,
-        additional_headers=additional_headers,
-    ):
-        async with ETPClient(
-            ws=ws,
-            etp_timeout=etp_timeout,
-            max_message_size=max_message_size,
-        ) as etp_client:
-            yield etp_client
+        return additional_headers
+
+    async def __aenter__(self) -> ETPClient:
+        self.stack = await contextlib.AsyncExitStack().__aenter__()
+        try:
+            ws = await self.stack.enter_async_context(
+                websockets.connect(
+                    uri=self.uri,
+                    subprotocols=self.subprotocols,
+                    max_size=self.max_message_size,
+                    additional_headers=self.get_additional_headers(),
+                )
+            )
+            etp_client = await self.stack.enter_async_context(
+                ETPClient(
+                    ws=ws,
+                    etp_timeout=self.etp_timeout,
+                    max_message_size=self.max_message_size,
+                )
+            )
+        except BaseException:
+            await self.stack.aclose()
+            raise
+
+        return etp_client
+
+    async def __aexit__(
+        self,
+        exc_type: T.Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        return await self.stack.__aexit__(exc_type, exc_value, traceback)
+
+    async def __aiter__(self) -> AsyncGenerator[ETPClient]:
+        async for ws in websockets.connect(
+            uri=self.uri,
+            subprotocols=self.subprotocols,
+            max_size=self.max_message_size,
+            additional_headers=self.get_additional_headers(),
+        ):
+            async with ETPClient(
+                ws=ws,
+                etp_timeout=self.etp_timeout,
+                max_message_size=self.max_message_size,
+            ) as etp_client:
+                yield etp_client
