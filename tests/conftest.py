@@ -10,7 +10,7 @@ import pytest_asyncio
 from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as resqml_objects
-from pyetp.client import ETPClient, connect
+from pyetp.client import ETPClient, etp_connect
 from pyetp.config import SETTINGS
 
 etp_server_url = "ws://localhost:9100"
@@ -40,8 +40,8 @@ async def etp_client():
             reason="websocket for test server not open", allow_module_level=True
         )
 
-    async with connect() as client:
-        yield client
+    async with etp_connect(uri=etp_server_url) as etp_client:
+        yield etp_client
 
 
 @pytest_asyncio.fixture
