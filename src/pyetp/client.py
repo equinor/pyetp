@@ -1506,16 +1506,9 @@ async def etp_persistent_connect(
         max_size=max_message_size,
         additional_headers=additional_headers,
     ):
-        try:
-            async with ETPClient(
-                ws=ws,
-                etp_timeout=etp_timeout,
-                max_message_size=max_message_size,
-            ) as etp_client:
-                yield etp_client
-        except websockets.ConnectionClosed as e:
-            logger.info(
-                f"Websockets connection closed with message '{e}'. Starting new "
-                "connection"
-            )
-            continue
+        async with ETPClient(
+            ws=ws,
+            etp_timeout=etp_timeout,
+            max_message_size=max_message_size,
+        ) as etp_client:
+            yield etp_client
