@@ -29,7 +29,7 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
 )
 
 import resqml_objects.v201 as ro
-from pyetp import etp_persistent_connect, utils_arrays
+from pyetp import etp_connect, utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataObjectURI, DataspaceURI
 from pyetp.utils_xml import (
@@ -116,7 +116,7 @@ def uid_not_exists():
 @pytest.mark.asyncio
 async def test_persistent_connect_ws_closing() -> None:
     counter = 0
-    async for etp_client in etp_persistent_connect(uri=etp_server_url):
+    async for etp_client in etp_connect(uri=etp_server_url):
         if counter == 10:
             break
 
@@ -133,7 +133,7 @@ async def test_persistent_connect_ws_closing() -> None:
 @pytest.mark.asyncio
 async def test_persistent_connect_ws_closing_operations() -> None:
     counter = 0
-    async for etp_client in etp_persistent_connect(uri=etp_server_url):
+    async for etp_client in etp_connect(uri=etp_server_url):
         if counter == 10:
             break
 
@@ -153,7 +153,7 @@ async def test_persistent_connect_ws_closing_operations() -> None:
 )
 @pytest.mark.asyncio
 async def test_persistent_connect_etp_closing() -> None:
-    async for etp_client in etp_persistent_connect(uri=etp_server_url):
+    async for etp_client in etp_connect(uri=etp_server_url):
         break
 
     assert True
@@ -167,7 +167,7 @@ async def test_persistent_connect_etp_closing() -> None:
 async def test_persistent_connect_broken_receiver_task() -> None:
     counter = 0
     with pytest.raises(asyncio.CancelledError):
-        async for etp_client in etp_persistent_connect(uri=etp_server_url):
+        async for etp_client in etp_connect(uri=etp_server_url):
             counter += 1
             etp_client._ETPClient__recvtask.cancel("stop")
 

@@ -1,5 +1,5 @@
 from ._version import __version__
-from .client import ETPClient, ETPError, connect, etp_connect, etp_persistent_connect
+from .client import ETPClient, ETPError, connect, etp_connect
 from .uri import DataObjectURI, DataspaceURI
 
 __all__ = [
@@ -8,7 +8,6 @@ __all__ = [
     "ETPError",
     "connect",
     "etp_connect",
-    "etp_persistent_connect",
     "DataObjectURI",
     "DataspaceURI",
 ]
