@@ -373,12 +373,9 @@ class ETPClient(ETPConnection):
         return errors
 
     async def __aexit__(self, *exc_details) -> None:
-        await self.close(reason="Client exiting")
-
-    async def close(self, reason=""):
         close_session_sent = False
         try:
-            await self._send(CloseSession(reason=reason))
+            await self._send(CloseSession(reason="Client exiting"))
             close_session_sent = True
         except websockets.ConnectionClosed:
             logger.error(
@@ -441,6 +438,22 @@ class ETPClient(ETPConnection):
             )
 
         logger.debug("Client closed")
+
+    async def close(self):
+        """Closing method that tears down the ETP-connection via the
+        `ETPClient.__aexit__`-method, and closes the websockets connection.
+        This method should _only_ be used if the user has set up a connection
+        via `etp_client = await connect(...)` or `etp_client = await
+        etp_connect(...)` and will handle the closing of the connection
+        manually.
+        """
+
+        await self.__aexit__(None, None, None)
+        # The websockets connection should be closed from the ETP-server once
+        # it has received a `CloseSession`-message. However, calling close on
+        # the websockets connection does not do anything if it is already
+        # closed.
+        await self.ws.close()
 
     async def __recv(self):
         logger.debug("Starting receiver loop")
@@ -1407,6 +1420,7 @@ class connect:
     # ... = await connect(...)
 
     def __await__(self):
+        # The caller is response for calling `close()` on the client.
         return self.__aenter__().__await__()
 
     # async with connect(...) as ...:
@@ -1420,7 +1434,7 @@ class connect:
         if self.data_partition is not None:
             headers["data-partition-id"] = self.data_partition
 
-        self.ws = await websockets.connect(
+        ws = await websockets.connect(
             self.server_url,
             subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
             additional_headers=headers,
@@ -1430,7 +1444,7 @@ class connect:
         )
 
         self.client = ETPClient(
-            self.ws,
+            ws=ws,
             etp_timeout=self.timeout,
             max_message_size=SETTINGS.MaxWebSocketMessagePayloadSize,
             application_name=SETTINGS.application_name,
@@ -1448,8 +1462,8 @@ class connect:
 
     # exit the async context manager
     async def __aexit__(self, exc_type, exc: Exception, tb: TracebackType):
+        # The `ETPClient.close`-method also closes the websockets connection.
         await self.client.close()
-        await self.ws.close()
 
 
 class etp_connect:
@@ -1488,6 +1502,7 @@ class etp_connect:
         self.subprotocols = ["etp12.energistics.org"]
 
     def __await__(self) -> ETPClient:
+        # The caller is responsible for calling `close()` on the client.
         return self.__aenter__().__await__()
 
     def get_additional_headers(self) -> dict[str, str]:
