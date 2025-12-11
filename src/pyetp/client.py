@@ -1467,7 +1467,17 @@ class connect:
 
 
 class etp_connect:
-    """Context manager establishing a connection to an ETP server via websockets.
+    """
+    Connect to an ETP server via websockets.
+
+    This class can act as:
+
+    1. A context manager handling setup and tear-down of the connection.
+    2. An asynchronous iterator which can be used to persistently retry to
+    connect if the websockets connection drops.
+    3. An awaitable connection that must be manually closed by the user.
+
+    See below for examples of all three cases.
 
     Parameters
     ----------
@@ -1484,6 +1494,49 @@ class etp_connect:
         The timeout in seconds for when to stop waiting for a message from the
         ETP server. Setting it to `None` will persist the connection
         indefinetly. Default is `None`.
+    max_message_size: float
+        The maximum number of bytes for a single websockets message. Default is
+        `2**20` corresponding to `1` MiB.
+
+
+    Examples
+    --------
+    An example of connecting to the ETP server using :func:`etp_connect` as a
+    context manager is:
+
+        async with etp_connect(...) as etp_client:
+            ...
+
+    In this case the closing message and the websockets connection is closed
+    once the program exits the context manager.
+
+
+    To persist a connection if the websockets connection is dropped (for any
+    reason), use :func:`etp_connect` as an asynchronous generator, viz.:
+
+        import websockets
+
+        async for etp_client in etp_connect(...):
+            try:
+                ...
+                # Include `break` to avoid re-running the whole block if the
+                # iteration runs without any errors.
+                break
+            except websockets.ConnectionClosed:
+                continue
+
+    Note that in this case the whole program under the `try`-block is re-run
+    from the start if the iteration completes normally, or if the websockets
+    connection is dropped. Therefore, make sure to include a `break` at the end
+    of the `try`-block (as in the example above).
+
+
+    The third option is to set up a connection via `await` and then manually
+    close the connection once done:
+
+        etp_client = await etp_connect(...)
+        ...
+        await etp_client.close()
     """
 
     def __init__(
