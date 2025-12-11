@@ -200,12 +200,29 @@ async def test_open_close(monkeypatch: pytest.MonkeyPatch):
     reason="websocket for test server not open",
 )
 @pytest.mark.asyncio
-async def test_manual_open_close():
+async def test_manual_open_close_old():
     client = await connect()
     assert client.is_connected, "should be connected"
     await client.close()  # close
 
     assert not client.is_connected, "should be disconnected"
+    with pytest.raises(websockets.ConnectionClosedOK):
+        await client.ws.ping()
+
+
+@pytest.mark.skipif(
+    not check_if_server_is_accesible(),
+    reason="websocket for test server not open",
+)
+@pytest.mark.asyncio
+async def test_manual_open_close():
+    etp_client = await etp_connect(uri=etp_server_url)
+    assert etp_client.is_connected, "should be connected"
+    await etp_client.close()  # close
+
+    assert not etp_client.is_connected, "should be disconnected"
+    with pytest.raises(websockets.ConnectionClosedOK):
+        await etp_client.ws.ping()
 
 
 @pytest.mark.asyncio
