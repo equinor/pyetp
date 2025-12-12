@@ -1570,7 +1570,7 @@ class etp_connect:
         return additional_headers
 
     async def __aenter__(self) -> ETPClient:
-        self.stack = await contextlib.AsyncExitStack().__aenter__()
+        self.stack = contextlib.AsyncExitStack()
         try:
             ws = await self.stack.enter_async_context(
                 websockets.connect(
@@ -1599,7 +1599,7 @@ class etp_connect:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        return await self.stack.__aexit__(exc_type, exc_value, traceback)
+        return await self.stack.aclose()
 
     async def __aiter__(self) -> AsyncGenerator[ETPClient]:
         async for ws in websockets.connect(
