@@ -323,11 +323,18 @@ class ETPClient(ETPConnection):
                     # Raise any errors by waiting for the task to finish.
                     await self.__recvtask
 
-                    logger.error(
-                        "Receiver task terminated without errors. This should not happen"
-                    )
+                    # Check that the receiver task stopped due to a
+                    # (successfully) closed websockets connection.
+                    try:
+                        await self.ws.recv()
+                    except websockets.ConnectionClosedOK:
+                        pass
 
-                    raise ReceiveWorkerExited
+                    # Terminate client with an error.
+                    raise ReceiveWorkerExited(
+                        "Receiver task terminated prematurely due to a closed "
+                        "websockets connection"
+                    )
             else:
                 # Break out of for-loop, and start processing message.
                 break
@@ -458,14 +465,11 @@ class ETPClient(ETPConnection):
     async def __recv(self):
         logger.debug("Starting receiver loop")
 
-        while True:
-            # We use this way of receiving messages, instead of the `async
-            # for`-pattern, in order to raise all
-            # `websockets.exceptions.ConnectionClosed`-errors (including the
-            # `websockets.exceptions.ConnectionClosedOK` error). In the `async
-            # for`-case a closing code of `1000` (normal closing) just exits
-            # the loop.
-            msg_data = await self.ws.recv()
+        # Using `async for` makes the receiver task exit without errors on a
+        # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
+        # smoother clean-up in case the main-task errors resulting in a closed
+        # websockets connection down the line.
+        async for msg_data in self.ws:
             msg = Message.decode_binary_message(
                 T.cast(bytes, msg_data), ETPClient.generic_transition_table
             )
@@ -481,9 +485,7 @@ class ETPClient(ETPConnection):
                 # set response on send event
                 self._recv_events[msg.header.correlation_id].set()
 
-    #
-    # session related
-    #
+        logger.info("Websockets connection closed and receiver task stopped")
 
     async def __aenter__(self) -> Self:
         return await self.request_session()
