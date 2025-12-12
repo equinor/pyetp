@@ -1526,11 +1526,12 @@ class etp_connect:
         async for etp_client in etp_connect(...):
             try:
                 ...
-                # Include `break` to avoid re-running the whole block if the
-                # iteration runs without any errors.
-                break
             except websockets.ConnectionClosed:
                 continue
+
+            # Include `break` to avoid re-running the whole block if the
+            # iteration runs without any errors.
+            break
 
     Note that in this case the whole program under the `try`-block is re-run
     from the start if the iteration completes normally, or if the websockets
