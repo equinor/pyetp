@@ -379,7 +379,12 @@ class ETPClient(ETPConnection):
                 errors.extend(body.errors.values())
         return errors
 
-    async def __aexit__(self, *exc_details) -> None:
+    async def __aexit__(
+        self,
+        exc_type: T.Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         close_session_sent = False
         try:
             await self._send(CloseSession(reason="Client exiting"))
