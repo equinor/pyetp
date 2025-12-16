@@ -6,6 +6,7 @@ import zipfile
 import h5py
 import numpy as np
 import numpy.typing as npt
+from xsdata.exceptions import ParserError
 
 import resqml_objects.v201 as ro_201
 
@@ -63,6 +64,8 @@ def get_resqml_v201_objects(
                 try:
                     robjs.append(parse_resqml_v201_object(c))
                 except AttributeError as e:
+                    fail[zi.filename] = e
+                except ParserError as e:
                     fail[zi.filename] = e
 
     if log_failed_objects:
