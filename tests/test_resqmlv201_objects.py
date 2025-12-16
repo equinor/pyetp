@@ -1,38 +1,31 @@
-import datetime
-import uuid
 
 from lxml import etree
-from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
 from resqml_objects.parsers import parse_resqml_v201_object
 from resqml_objects.serializers import serialize_resqml_v201_object
 
 
-def test_epc_external_part_reference() -> None:
-    epc = ro.EpcExternalPartReference(
-        schema_version="2.0",
-        uuid=str(uuid.uuid4()),
-        citation=ro.Citation(
-            title="foo",
-            originator="bar",
-            format="baz",
-            creation=XmlDateTime.from_datetime(datetime.datetime.now()),
-        ),
-        mime_type="application/x-hdf5",
-    )
+def test_default_citation() -> None:
+    cit = ro.Citation.init_default(title="foo", originator="pyetp-tester")
+    cit_b = serialize_resqml_v201_object(cit)
+    ret_cit = parse_resqml_v201_object(cit_b)
+    assert cit == ret_cit
 
-    obj_epc = ro.obj_EpcExternalPartReference(
-        schema_version="2.0",
-        uuid=str(uuid.uuid4()),
-        citation=ro.Citation(
-            title="foo",
-            originator="bar",
-            format="baz",
-            creation=XmlDateTime.from_datetime(datetime.datetime.now()),
-        ),
-        mime_type="application/x-hdf5",
-    )
+
+def test_default_hdf5_epc_external_part_reference() -> None:
+    cit = ro.Citation.init_default(title="foo", originator="pyetp-tester")
+
+    epc = ro.EpcExternalPartReference.init_default_hdf5(citation=cit)
+
+    assert epc.schema_version == "2.0"
+    assert epc.mime_type == "application/x-hdf5"
+
+    obj_epc = ro.obj_EpcExternalPartReference.init_default_hdf5(citation=cit)
+
+    assert epc.schema_version == obj_epc.schema_version
+    assert epc.mime_type == obj_epc.mime_type
+    assert epc.citation == obj_epc.citation
 
     epc_b = serialize_resqml_v201_object(epc)
     obj_epc_b = serialize_resqml_v201_object(obj_epc)
