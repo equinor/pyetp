@@ -912,9 +912,6 @@ class DataObjectReference:
         },
     )
 
-    def __post_init__(self):
-        self.content_type = self.content_type.replace("type=obj_", "type=")
-
 
 class DataTransferSpeedUom(Enum):
     """
