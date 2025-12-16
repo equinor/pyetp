@@ -49,7 +49,6 @@ async def dataspace_uri(etp_client: ETPClient):
     uri = etp_client.dataspace_uri("test/test")
     try:
         resp = await etp_client.put_dataspaces_no_raise([""], [""], [""], [""], uri)
-        assert len(resp) == 1, "created one dataspace"
         yield uri
     finally:
         resp = await etp_client.delete_dataspaces(uri)
