@@ -6,11 +6,16 @@ See: https://xsdata.readthedocs.io/
 
 from __future__ import annotations
 
+import datetime
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
+
+resqml_schema_version = "2.0.1"
+common_schema_version = "2.0"
 
 
 class APIGammaRayUom(Enum):
@@ -815,6 +820,23 @@ class Citation:
             "white_space": "collapse",
         },
     )
+
+    @classmethod
+    def init_default(
+        cls,
+        title: str,
+        originator: str,
+    ) -> Citation:
+        # Delayed to avoid circular import. Fix once the ETP-client is made
+        # indepent of the RESQML-objects.
+        from pyetp._version import version
+
+        return cls(
+            title=title,
+            originator=originator,
+            creation=XmlDateTime.from_datetime(datetime.datetime.now()),
+            format=f"equinor:pyetp:{version}",
+        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -17962,6 +17984,19 @@ class obj_EpcExternalPartReference(AbstractCitedDataObject):
             "required": True,
         }
     )
+
+    @classmethod
+    def init_default_hdf5(
+        cls,
+        citation: Citation,
+        uuid: str | uuid.UUID = uuid.uuid4(),
+    ):
+        return cls(
+            citation=citation,
+            schema_version=common_schema_version,
+            uuid=str(uuid),
+            mime_type="application/x-hdf5",
+        )
 
 
 @dataclass(slots=True, kw_only=True)
