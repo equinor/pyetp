@@ -7,15 +7,17 @@ See: https://xsdata.readthedocs.io/
 from __future__ import annotations
 
 import datetime
+import re
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 resqml_schema_version = "2.0.1"
 common_schema_version = "2.0"
+OBJ_TYPE_PATTERN = re.compile(r"type=(?P<obj_type>\w+)$")
 
 
 class APIGammaRayUom(Enum):
@@ -752,15 +754,17 @@ class Citation:
             "white_space": "collapse",
         }
     )
-    creation: XmlDateTime = field(
+    creation: XmlDateTime | datetime.datetime = field(
+        default_factory=lambda: XmlDateTime.from_datetime(datetime.datetime.now()),
         metadata={
             "name": "Creation",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
     format: str = field(
+        default="",
         metadata={
             "name": "Format",
             "type": "Element",
@@ -769,7 +773,7 @@ class Citation:
             "min_length": 1,
             "max_length": 256,
             "white_space": "collapse",
-        }
+        },
     )
     editor: None | str = field(
         default=None,
@@ -782,7 +786,7 @@ class Citation:
             "white_space": "collapse",
         },
     )
-    last_update: None | XmlDateTime = field(
+    last_update: None | XmlDateTime | datetime.datetime = field(
         default=None,
         metadata={
             "name": "LastUpdate",
@@ -821,22 +825,20 @@ class Citation:
         },
     )
 
-    @classmethod
-    def init_default(
-        cls,
-        title: str,
-        originator: str,
-    ) -> Citation:
+    def __post_init__(self) -> None:
         # Delayed to avoid circular import. Fix once the ETP-client is made
         # indepent of the RESQML-objects.
         from pyetp._version import version
 
-        return cls(
-            title=title,
-            originator=originator,
-            creation=XmlDateTime.from_datetime(datetime.datetime.now()),
-            format=f"equinor:pyetp:{version}",
-        )
+        if not self.format:
+            self.format = f"equinor:pyetp:{version}"
+
+        # Let the user pass in the creation time as a Python datetime-object
+        if isinstance(self.creation, datetime.datetime):
+            self.creation = XmlDateTime.from_datetime(self.creation)
+
+        if isinstance(self.last_update, datetime.datetime):
+            self.last_update = XmlDateTime.from_datetime(self.last_update)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -933,6 +935,83 @@ class DataObjectReference:
             "white_space": "collapse",
         },
     )
+
+    @staticmethod
+    def get_content_type_string(obj: AbstractResqmlDataObject) -> str:
+        # See Energistics Identifier Specification 4.0 (it is downloaded
+        # alongside the RESQML v2.0.1 standard) section 4.1 for an explanation
+        # on the format of content_type.
+
+        namespace = getattr(obj.Meta, "namespace", None) or getattr(
+            obj.Meta, "target_namespace"
+        )
+
+        if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
+            return (
+                f"application/x-resqml+xml;version={resqml_schema_version};"
+                f"type={obj.__class__.__name__}"
+            )
+        elif namespace == "http://www.energistics.org/energyml/data/commonv2":
+            return (
+                f"application/x-eml+xml;version={common_schema_version};"
+                f"type={obj.__class__.__name__}"
+            )
+
+        raise NotImplementedError(
+            f"Namespace {namespace} from object {obj} is not supported"
+        )
+
+    @classmethod
+    def from_object(
+        cls,
+        obj: AbstractResqmlDataObject,
+        uuid_authority: None | str = None,
+        version_string: None | str = None,
+    ) -> Self:
+        content_type = DataObjectReference.get_content_type_string(obj)
+
+        return cls(
+            content_type=content_type,
+            title=obj.citation.title,
+            uuid=obj.uuid,
+            uuid_authority=uuid_authority,
+            version_string=version_string,
+        )
+
+    def to_etp_data_object_uri(self, dataspace_path: str) -> str:
+        domain_version = ""
+
+        if self.content_type.startswith("application/x-resqml+xml"):
+            domain_version = "resqml20"
+        elif self.content_type.startswith("application/x-eml+xml"):
+            domain_version = "eml20"
+        else:
+            raise NotImplementedError(
+                f"Qualified type for '{self.content_type}' is not implemented"
+            )
+
+        m = re.match(OBJ_TYPE_PATTERN, self.content_type)
+
+        if m is None:
+            raise ValueError(
+                "Content type string does not contain a valid object name"
+            )
+
+        obj_type = m.group("obj_type")
+
+        if dataspace_path.startswith("eml:///"):
+            raise ValueError(
+                "The dataspace path can either be empty (for the default dataspace) "
+                "or is the part between the angle brackets: "
+                "'eml:///dataspace('<dataspace-path>')'."
+            )
+
+        data_object_part = f"{domain_version}.{obj_type}({self.uuid})"
+
+        if not dataspace_path:
+            return f"eml:///{data_object_part}"
+
+        return f"eml:///dataspace('{dataspace_path}')/{data_object_part}"
 
 
 class DataTransferSpeedUom(Enum):
@@ -9564,7 +9643,7 @@ class Timestamp:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    date_time: XmlDateTime = field(
+    date_time: XmlDateTime | datetime.datetime = field(
         metadata={
             "name": "DateTime",
             "type": "Element",
@@ -9580,6 +9659,10 @@ class Timestamp:
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
+
+    def __post_init__(self) -> None:
+        if isinstance(self.date_time, datetime.datetime):
+            self.date_time = XmlDateTime.from_datetime(self.date_time)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -9678,11 +9761,15 @@ class DateTime:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gco"
 
-    value: XmlDateTime = field(
+    value: XmlDateTime | datetime.datetime = field(
         metadata={
             "required": True,
         }
     )
+
+    def __post_init__(self) -> None:
+        if isinstance(self.value, datetime.datetime):
+            self.value = XmlDateTime.from_datetime(self.value)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -10062,18 +10149,23 @@ class AbstractObject_1:
         },
     )
     schema_version: str = field(
+        # We set the schema_version in the __post_init__ if it is empty by
+        # default.
+        default="",
         metadata={
             "name": "schemaVersion",
             "type": "Attribute",
             "required": True,
-        }
+        },
     )
     uuid: str = field(
+        # We add a uuid by default, if it is not provided.
+        default_factory=lambda: str(uuid.uuid4()),
         metadata={
             "type": "Attribute",
             "required": True,
             "pattern": r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
-        }
+        },
     )
     object_version: None | str = field(
         default=None,
@@ -10085,6 +10177,23 @@ class AbstractObject_1:
             "white_space": "collapse",
         },
     )
+
+    def __post_init__(self) -> None:
+        if not self.schema_version:
+            namespace = getattr(self.Meta, "namespace", None) or getattr(
+                self.Meta, "target_namespace"
+            )
+
+            if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
+                self.schema_version = resqml_schema_version
+            elif namespace == "http://www.energistics.org/energyml/data/commonv2":
+                self.schema_version = common_schema_version
+            else:
+                raise NotImplementedError(
+                    f"Namespace {namespace} from object {self} has no default schema "
+                    "version. Provide this manually as keyword argument when "
+                    "constructing the object."
+                )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -16966,6 +17075,19 @@ class Point3dZValueArray(AbstractPoint3dArray):
         }
     )
 
+    @classmethod
+    def from_regular_surface(
+        cls,
+        epc_external_part_reference: obj_EpcExternalPartReference
+        | EpcExternalPartReference,
+        path_in_hdf_file: str,
+        shape: tuple[int, int],
+        origin: tuple[float, float],
+        dr: tuple[float, float],
+        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+    ) -> Self:
+        pass
+
 
 @dataclass(slots=True, kw_only=True)
 class ResqmlJaggedArray:
@@ -17977,26 +18099,14 @@ class obj_EpcExternalPartReference(AbstractCitedDataObject):
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
     mime_type: str = field(
+        default="application/x-hdf5",
         metadata={
             "name": "MimeType",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
-
-    @classmethod
-    def init_default_hdf5(
-        cls,
-        citation: Citation,
-        uuid: str | uuid.UUID = uuid.uuid4(),
-    ):
-        return cls(
-            citation=citation,
-            schema_version=common_schema_version,
-            uuid=str(uuid),
-            mime_type="application/x-hdf5",
-        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -18615,6 +18725,31 @@ class PointGeometry(AbstractGeometry):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
+
+    @classmethod
+    def from_regular_surface(
+        cls,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference
+        | EpcExternalPartReference,
+        path_in_hdf_file: str,
+        shape: tuple[int, int],
+        origin: tuple[float, float],
+        dr: tuple[float, float],
+        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+    ) -> Self:
+        local_crs = DataObjectReference.from_object(crs)
+
+        points = Point3dZValueArray.from_regular_surface(
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=path_in_hdf_file,
+            shape=shape,
+            origin=origin,
+            dr=dr,
+            unit_vectors=unit_vectors,
+        )
+
+        return cls(local_crs=local_crs, points=points)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -19459,44 +19594,49 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     yoffset: float = field(
+        default=0.0,
         metadata={
             "name": "YOffset",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     zoffset: float = field(
+        default=0.0,
         metadata={
             "name": "ZOffset",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     areal_rotation: PlaneAngleMeasure = field(
+        default_factory=lambda: PlaneAngleMeasure(value=0.0, uom=PlaneAngleUom.RAD),
         metadata={
             "name": "ArealRotation",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_axis_order: AxisOrder2d = field(
+        default=AxisOrder2d.EASTING_NORTHING,
         metadata={
             "name": "ProjectedAxisOrder",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_uom: LengthUom = field(
+        default=LengthUom.M,
         metadata={
             "name": "ProjectedUom",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     vertical_uom: LengthUom = field(
         metadata={
@@ -19507,20 +19647,22 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         }
     )
     xoffset: float = field(
+        default=0.0,
         metadata={
             "name": "XOffset",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     zincreasing_downward: bool = field(
+        default=True,
         metadata={
             "name": "ZIncreasingDownward",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     vertical_crs: AbstractVerticalCrs = field(
         metadata={
@@ -19767,6 +19909,36 @@ class Grid2dPatch(Patch):
             "required": True,
         }
     )
+
+    @classmethod
+    def from_regular_surface(
+        cls,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference
+        | EpcExternalPartReference,
+        path_in_hdf_file: str,
+        shape: tuple[int, int],
+        origin: tuple[float, float],
+        dr: tuple[float, float],
+        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+        patch_index: int = 0,
+    ) -> Self:
+        geometry = PointGeometry.from_regular_surface(
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=path_in_hdf_file,
+            shape=shape,
+            origin=origin,
+            dr=dr,
+            unit_vectors=unit_vectors,
+        )
+
+        return cls(
+            patch_index=patch_index,
+            fastest_axis_count=shape[0],
+            slowest_axis_count=shape[1],
+            geometry=geometry,
+        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -21814,6 +21986,17 @@ class obj_LocalDepth3dCrs(AbstractLocal3dCrs):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
+    # Overwriting the super-field to set a default.
+    vertical_uom: LengthUom = field(
+        default=LengthUom.M,
+        metadata={
+            "name": "VerticalUom",
+            "type": "Element",
+            "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
+            "required": True,
+        },
+    )
+
 
 @dataclass(slots=True, kw_only=True)
 class obj_LocalTime3dCrs(AbstractLocal3dCrs):
@@ -23670,6 +23853,71 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             "required": True,
         }
     )
+
+    @classmethod
+    def from_regular_surface(
+        cls,
+        citation: Citation,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: (
+            obj_EpcExternalPartReference | EpcExternalPartReference
+        ),
+        shape: tuple[int, int],
+        origin: tuple[float, float],
+        dr: tuple[float, float],
+        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+        patch_index: int = 0,
+        path_in_hdf_file: str = "",
+        uuid: str | uuid.UUID = uuid.uuid4(),
+        surface_role: SurfaceRole | str = SurfaceRole.MAP,
+        boundaries: list[PatchBoundaries] | None = None,
+        represented_interpretation: AbstractFeatureInterpretation | None = None,
+        extra_metadata: list[NameValuePair] | None = None,
+        custom_data: CustomData | None = None,
+        object_version: str | None = None,
+        aliases: list[ObjectAlias] | None = None,
+    ) -> Self:
+        """
+        Classmethod that sets up a `obj_Grid2dRepresentation`-object (or
+        subclass thereof) for a regular surface described by the eight
+        parameters (seven free parameters) `shape`, `origin`, `dr` and
+        `unit_vectors`, and the necessary and/or optional metadata from RESQML.
+        """
+        uuid = str(uuid)
+        surface_role = SurfaceRole(surface_role)
+        boundaries = boundaries or []
+        extra_metadata = extra_metadata or []
+        aliases = aliases or []
+        path_in_hdf_file = path_in_hdf_file or f"/RESQML/{uuid}/zvalues"
+
+        if represented_interpretation is not None:
+            represented_interpretation = DataObjectReference.from_object(
+                represented_interpretation
+            )
+
+        grid2d_patch = Grid2dPatch.from_regular_surface(
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=path_in_hdf_file,
+            shape=shape,
+            origin=origin,
+            dr=dr,
+            unit_vectors=unit_vectors,
+            patch_index=patch_index,
+        )
+
+        return cls(
+            citation=citation,
+            aliases=aliases,
+            custom_data=custom_data,
+            uuid=uuid,
+            object_version=object_version,
+            surface_role=surface_role,
+            grid2d_patch=grid2d_patch,
+            boundaries=boundaries,
+            represented_interpretation=represented_interpretation,
+            extra_metadata=extra_metadata,
+        )
 
 
 @dataclass(slots=True, kw_only=True)
