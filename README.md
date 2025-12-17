@@ -4,6 +4,12 @@
 [![PyPI version](https://badge.fury.io/py/pyetp.svg)](https://badge.fury.io/py/pyetp)
 ![License](https://img.shields.io/github/license/equinor/pyetp)
 
+Pyetp is a library implementing an ETP v1.2 client with utilities and support
+for working with RESQML v2.0.1 models.
+
+> The following Energistics (c) products were used in the creation of this work:
+> Energistics Transfer Protocol (ETP) v1.2 and RESQML v2.0.1
+
 # Installing the library
 This package is published to PyPI, and can be installed via:
 ```bash
