@@ -21,11 +21,12 @@ def test_default_hdf5_epc_external_part_reference() -> None:
     assert epc.schema_version == "2.0"
     assert epc.mime_type == "application/x-hdf5"
 
-    obj_epc = ro.obj_EpcExternalPartReference.init_default_hdf5(citation=cit)
+    obj_epc = ro.obj_EpcExternalPartReference.init_default_hdf5(citation=cit, uuid=epc.uuid)
 
     assert epc.schema_version == obj_epc.schema_version
     assert epc.mime_type == obj_epc.mime_type
     assert epc.citation == obj_epc.citation
+    assert epc.uuid == obj_epc.uuid
 
     epc_b = serialize_resqml_v201_object(epc)
     obj_epc_b = serialize_resqml_v201_object(obj_epc)
