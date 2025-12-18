@@ -978,7 +978,7 @@ class DataObjectReference:
             version_string=version_string,
         )
 
-    def to_etp_data_object_uri(self, dataspace_path: str) -> str:
+    def get_etp_data_object_uri(self, dataspace_path: str) -> str:
         domain_version = ""
 
         if self.content_type.startswith("application/x-resqml+xml"):
@@ -990,12 +990,10 @@ class DataObjectReference:
                 f"Qualified type for '{self.content_type}' is not implemented"
             )
 
-        m = re.match(OBJ_TYPE_PATTERN, self.content_type)
+        m = re.search(OBJ_TYPE_PATTERN, self.content_type)
 
         if m is None:
-            raise ValueError(
-                "Content type string does not contain a valid object name"
-            )
+            raise ValueError("Content type string does not contain a valid object name")
 
         obj_type = m.group("obj_type")
 
@@ -17084,9 +17082,52 @@ class Point3dZValueArray(AbstractPoint3dArray):
         shape: tuple[int, int],
         origin: tuple[float, float],
         dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
     ) -> Self:
-        pass
+        supporting_geometry = Point3dLatticeArray(
+            origin=Point3d(
+                coordinate1=float(origin[0]),
+                coordinate2=float(origin[1]),
+                coordinate3=0.0,
+            ),
+            offset=[
+                Point3dOffset(
+                    offset=Point3d(
+                        coordinate1=float(unit_vectors[0][0]),
+                        coordinate2=float(unit_vectors[0][1]),
+                        coordinate3=0.0,
+                    ),
+                    spacing=DoubleConstantArray(
+                        value=float(dr[0]),
+                        # TODO: Figure out how we should treat the spacing! The
+                        # documentation states that it should be N - 1 for an
+                        # array of N elements (that is, it counts the number of
+                        # spaces between elements). However, we have seen cases
+                        # where this is instead set to N.
+                        count=int(shape[0]) - 1,
+                    ),
+                ),
+                Point3dOffset(
+                    offset=Point3d(
+                        coordinate1=float(unit_vectors[1][0]),
+                        coordinate2=float(unit_vectors[1][1]),
+                        coordinate3=0.0,
+                    ),
+                    spacing=DoubleConstantArray(
+                        value=float(dr[1]),
+                        count=int(shape[1]) - 1,
+                    ),
+                ),
+            ],
+        )
+        zvalues = DoubleHdf5Array(
+            values=Hdf5Dataset(
+                path_in_hdf_file=path_in_hdf_file,
+                hdf_proxy=DataObjectReference.from_object(epc_external_part_reference),
+            ),
+        )
+
+        return cls(supporting_geometry=supporting_geometry, zvalues=zvalues)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -18736,7 +18777,7 @@ class PointGeometry(AbstractGeometry):
         shape: tuple[int, int],
         origin: tuple[float, float],
         dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
     ) -> Self:
         local_crs = DataObjectReference.from_object(crs)
 
@@ -19920,7 +19961,7 @@ class Grid2dPatch(Patch):
         shape: tuple[int, int],
         origin: tuple[float, float],
         dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
         patch_index: int = 0,
     ) -> Self:
         geometry = PointGeometry.from_regular_surface(
@@ -23865,7 +23906,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         shape: tuple[int, int],
         origin: tuple[float, float],
         dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float, float], tuple[float, float, float]],
+        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
         patch_index: int = 0,
         path_in_hdf_file: str = "",
         uuid: str | uuid.UUID = uuid.uuid4(),

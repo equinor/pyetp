@@ -2,6 +2,7 @@ import dataclasses
 import datetime
 import typing
 
+import numpy as np
 from lxml import etree
 
 import resqml_objects.v201 as ro
@@ -55,6 +56,31 @@ def test_default_hdf5_epc_external_part_reference() -> None:
 
     assert xml_obj.get(xsi_type_key) == "eml:obj_EpcExternalPartReference"
 
+    dor = ro.DataObjectReference.from_object(epc)
+    obj_dor = ro.DataObjectReference.from_object(obj_epc)
+
+    assert dor.uuid == epc.uuid == obj_dor.uuid
+    assert dor.title == epc.citation.title == obj_dor.title
+    assert (
+        dor.content_type
+        == "application/x-eml+xml;version=2.0;type=EpcExternalPartReference"
+    )
+    assert (
+        obj_dor.content_type
+        == "application/x-eml+xml;version=2.0;type=obj_EpcExternalPartReference"
+    )
+
+    dataspace_path = "bar/baz"
+
+    assert dor.get_etp_data_object_uri(dataspace_path) == (
+        f"eml:///dataspace('{dataspace_path}')/eml20.EpcExternalPartReference("
+        f"{dor.uuid})"
+    )
+    assert obj_dor.get_etp_data_object_uri(dataspace_path) == (
+        f"eml:///dataspace('{dataspace_path}')/eml20.obj_EpcExternalPartReference("
+        f"{obj_dor.uuid})"
+    )
+
 
 def test_timestamp() -> None:
     now = datetime.datetime.now()
@@ -100,3 +126,112 @@ def test_local_depth_3d_crs() -> None:
     _, _ = compare_serialization_parsing_roundtrip(crs2)
 
     assert dataclasses.asdict(crs) == dataclasses.asdict(crs2)
+
+
+def test_regular_grid_2d_representation() -> None:
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(0, 1, shape[0])
+    y = np.linspace(1, 2, shape[1])
+
+    origin = (float(x[0]), float(y[0]), 0.0)
+    dr = (float(x[1] - x[0]), float(y[1] - y[0]))
+    unit_vectors = (
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+    )
+
+    X, Y = np.meshgrid(x, y, indexing="ij", sparse=True)
+
+    Z = np.exp(-0.5 * (X**2 + Y**2))
+
+    crs = ro.LocalDepth3dCrs(
+        citation=ro.Citation(title="Grid CRS", originator="pyetp-tester"),
+        vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=1234),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Grid epc", originator="pyetp-tester"),
+    )
+
+    gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Grid", originator="pyetp-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        dr=dr,
+        unit_vectors=unit_vectors,
+        patch_index=1,
+    )
+
+    ret_gri, _ = compare_serialization_parsing_roundtrip(gri)
+
+    dor = ro.DataObjectReference.from_object(gri)
+    assert (
+        dor.content_type
+        == "application/x-resqml+xml;version=2.0.1;type=obj_Grid2dRepresentation"
+    )
+    assert dor.uuid == gri.uuid
+    assert dor.title == gri.citation.title
+    assert (
+        dor.get_etp_data_object_uri("")
+        == f"eml:///resqml20.obj_Grid2dRepresentation({gri.uuid})"
+    )
+
+    ret_shape = (
+        ret_gri.grid2d_patch.fastest_axis_count,
+        ret_gri.grid2d_patch.slowest_axis_count,
+    )
+
+    assert ret_shape == shape
+
+    sg = ret_gri.grid2d_patch.geometry.points.supporting_geometry
+
+    ret_origin = (
+        sg.origin.coordinate1,
+        sg.origin.coordinate2,
+        sg.origin.coordinate3,
+    )
+
+    assert ret_origin == origin
+
+    ret_dr = (
+        sg.offset[0].spacing.value,
+        sg.offset[1].spacing.value,
+    )
+
+    assert ret_dr == dr
+
+    ret_spacing_count = (
+        sg.offset[0].spacing.count,
+        sg.offset[1].spacing.count,
+    )
+
+    assert tuple(rsc + 1 for rsc in ret_spacing_count) == shape
+
+    ret_unit_vectors = (
+        (
+            sg.offset[0].offset.coordinate1,
+            sg.offset[0].offset.coordinate2,
+            sg.offset[0].offset.coordinate3,
+        ),
+        (
+            sg.offset[1].offset.coordinate1,
+            sg.offset[1].offset.coordinate2,
+            sg.offset[1].offset.coordinate3,
+        ),
+    )
+
+    assert ret_unit_vectors == unit_vectors
+
+
+def test_rotated_regular_grid_2d_representation() -> None:
+    pass
+
+
+def test_double_rotated_regular_grid_2d_representation() -> None:
+    # This test should test a grid that is rotated in both the CRS and the
+    # grid.
+    pass
