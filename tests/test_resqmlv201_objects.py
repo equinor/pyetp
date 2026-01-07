@@ -134,18 +134,11 @@ def test_regular_grid_2d_representation() -> None:
     x = np.linspace(0, 1, shape[0])
     y = np.linspace(1, 2, shape[1])
 
-    origin = (float(x[0]), float(y[0]), 0.0)
-    dr = (float(x[1] - x[0]), float(y[1] - y[0]))
-    unit_vectors = (
-        (1.0, 0.0, 0.0),
-        (0.0, 1.0, 0.0),
-    )
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    unit_vectors = np.eye(2)
 
-    X, Y = np.meshgrid(x, y, indexing="ij", sparse=True)
-
-    Z = np.exp(-0.5 * (X**2 + Y**2))
-
-    crs = ro.LocalDepth3dCrs(
+    crs = ro.obj_LocalDepth3dCrs(
         citation=ro.Citation(title="Grid CRS", originator="pyetp-tester"),
         vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=1234),
         projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
@@ -161,9 +154,9 @@ def test_regular_grid_2d_representation() -> None:
         epc_external_part_reference=epc,
         shape=shape,
         origin=origin,
-        dr=dr,
-        unit_vectors=unit_vectors,
-        patch_index=1,
+        spacing=spacing,
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
     )
 
     ret_gri, _ = compare_serialization_parsing_roundtrip(gri)
@@ -189,20 +182,25 @@ def test_regular_grid_2d_representation() -> None:
 
     sg = ret_gri.grid2d_patch.geometry.points.supporting_geometry
 
-    ret_origin = (
-        sg.origin.coordinate1,
-        sg.origin.coordinate2,
-        sg.origin.coordinate3,
+    ret_origin = np.array(
+        [
+            sg.origin.coordinate1,
+            sg.origin.coordinate2,
+            sg.origin.coordinate3,
+        ],
     )
 
-    assert ret_origin == origin
+    np.testing.assert_equal(ret_origin[:2], origin)
+    np.testing.assert_equal(ret_origin[2], 0.0)
 
-    ret_dr = (
-        sg.offset[0].spacing.value,
-        sg.offset[1].spacing.value,
+    ret_spacing = np.array(
+        [
+            sg.offset[0].spacing.value,
+            sg.offset[1].spacing.value,
+        ]
     )
 
-    assert ret_dr == dr
+    np.testing.assert_equal(ret_spacing, spacing)
 
     ret_spacing_count = (
         sg.offset[0].spacing.count,
@@ -211,11 +209,32 @@ def test_regular_grid_2d_representation() -> None:
 
     assert tuple(rsc + 1 for rsc in ret_spacing_count) == shape
 
-    ret_unit_vectors = (
-        (
-            sg.offset[0].offset.coordinate1,
-            sg.offset[0].offset.coordinate2,
-            sg.offset[0].offset.coordinate3,
+    assert sg.offset[0].offset.coordinate3 == 0.0
+    assert sg.offset[1].offset.coordinate3 == 0.0
+
+    ret_unit_vectors = np.array(
+        [
+            [sg.offset[0].offset.coordinate1, sg.offset[1].offset.coordinate1],
+            [sg.offset[0].offset.coordinate2, sg.offset[1].offset.coordinate2],
+        ],
+    )
+
+    np.testing.assert_equal(ret_unit_vectors, unit_vectors)
+
+    X, Y = gri.get_xy_grid()
+
+    assert X.shape == shape == Y.shape
+
+    _X, _Y = np.meshgrid(x, y, indexing="ij")
+    np.testing.assert_allclose(X, _X)
+    np.testing.assert_allclose(Y, _Y)
+
+    _X, _Y = gri.get_xy_grid(crs=crs)
+
+    np.testing.assert_allclose(X, _X)
+    np.testing.assert_allclose(Y, _Y)
+
+
         ),
         (
             sg.offset[1].offset.coordinate1,
