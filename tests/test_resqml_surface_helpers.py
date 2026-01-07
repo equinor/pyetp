@@ -12,7 +12,7 @@ def test_2d_rotation() -> None:
     angle = np.pi / 4.0
 
     r_r = RegularGridParameters.rotate_2d_vector(r, angle=angle)
-    # Here we fetch each rotated unit vector, and we therefore index each
+    # Here we fetch each rotated unit vectors, and we therefore index each
     # column.
     a_r, b_r, c_r = r_r[:, 0], r_r[:, 1], r_r[:, 2]
 
@@ -54,23 +54,31 @@ def test_regular_grid_parameters() -> None:
     y = np.linspace(1, 2, 103)
 
     X, Y = np.meshgrid(x, y, indexing="ij")
-    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
 
-    rgp_1 = RegularGridParameters.from_xy_grid(X, Y, crs_angle=crs_angle)
-    rgp_2 = RegularGridParameters.from_xy_grid_vectors(x, y, crs_angle=crs_angle)
+    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
+    crs_offset = 2 * (np.random.random(2) - 0.5) * 10
+
+    rgp_1 = RegularGridParameters.from_xy_grid(
+        X, Y, crs_angle=crs_angle, crs_offset=crs_offset
+    )
+    rgp_2 = RegularGridParameters.from_xy_grid_vectors(
+        x, y, crs_angle=crs_angle, crs_offset=crs_offset
+    )
 
     np.testing.assert_equal(rgp_1.shape, rgp_2.shape)
     np.testing.assert_equal(rgp_1.origin, rgp_2.origin)
     np.testing.assert_equal(rgp_1.spacing, rgp_2.spacing)
     np.testing.assert_equal(rgp_1.unit_vectors, rgp_2.unit_vectors)
     np.testing.assert_equal(rgp_1.crs_angle, rgp_2.crs_angle)
+    assert rgp_1.crs_offset is not None
+    np.testing.assert_equal(rgp_1.crs_offset, rgp_2.crs_offset)
 
-    X_u, Y_u = rgp_1.to_xy_grid(with_crs_angle=False)
+    X_u, Y_u = rgp_1.to_xy_grid(to_global_crs=False)
     np.testing.assert_allclose(X_u, X)
     np.testing.assert_allclose(Y_u, Y)
 
-    X_1, Y_1 = rgp_1.to_xy_grid()
-    X_2, Y_2 = rgp_2.to_xy_grid()
+    X_1, Y_1 = rgp_1.to_xy_grid(to_global_crs=True)
+    X_2, Y_2 = rgp_2.to_xy_grid(to_global_crs=True)
     np.testing.assert_equal(X_1, X_2)
     np.testing.assert_equal(Y_1, Y_2)
 
@@ -79,10 +87,12 @@ def test_regular_grid_parameters() -> None:
         angle=crs_angle,
     )
 
-    # In this case fetch the `x` and `y` components separately, instead of
-    # fetching each point. Hence, we index the rows.
-    X_r = r_r[0].reshape(X.shape) + X[0, 0]
-    Y_r = r_r[1].reshape(Y.shape) + Y[0, 0]
+    # In this case we fetch the `x` and `y` components separately, instead of
+    # fetching each point, and we therefore index the rows.
+    # The origin of the grid, and the local CRS, is added after the rotation.
+    X_r = r_r[0].reshape(X.shape) + X[0, 0] + crs_offset[0]
+    Y_r = r_r[1].reshape(Y.shape) + Y[0, 0] + crs_offset[1]
+
     np.testing.assert_allclose(X_r, X_1, atol=1e-14)
     np.testing.assert_allclose(Y_r, Y_1, atol=1e-14)
 
@@ -93,6 +103,7 @@ def test_regular_grid_parameters_rotated() -> None:
 
     X, Y = np.meshgrid(x, y, indexing="ij")
     crs_angle = 2 * np.pi * (np.random.random() - 0.5)
+    crs_offset = 2 * (np.random.random(2) - 0.5) * 10
 
     r_r = RegularGridParameters.rotate_2d_vector(
         np.vstack([np.ravel(X) - X[0, 0], np.ravel(Y) - Y[0, 0]]),
@@ -102,15 +113,19 @@ def test_regular_grid_parameters_rotated() -> None:
     X_r = r_r[0].reshape(X.shape) + X[0, 0]
     Y_r = r_r[1].reshape(Y.shape) + Y[0, 0]
 
-    rgp_1 = RegularGridParameters.from_xy_grid(X_r, Y_r, crs_angle=0.0)
-    rgp_2 = RegularGridParameters.from_xy_grid_vectors(x, y, crs_angle=crs_angle)
+    rgp_1 = RegularGridParameters.from_xy_grid(
+        X_r, Y_r, crs_angle=0.0, crs_offset=np.zeros_like(crs_offset)
+    )
+    rgp_2 = RegularGridParameters.from_xy_grid_vectors(
+        x - crs_offset[0], y - crs_offset[1], crs_angle=crs_angle, crs_offset=crs_offset
+    )
 
     np.testing.assert_allclose(rgp_1.shape, rgp_2.shape)
-    np.testing.assert_allclose(rgp_1.origin, rgp_2.origin)
+    np.testing.assert_allclose(rgp_1.origin, rgp_2.origin + rgp_2.crs_offset)
     np.testing.assert_allclose(rgp_1.spacing, rgp_2.spacing)
 
-    X_1, Y_1 = rgp_1.to_xy_grid()
-    X_2, Y_2 = rgp_2.to_xy_grid()
+    X_1, Y_1 = rgp_1.to_xy_grid(to_global_crs=True)
+    X_2, Y_2 = rgp_2.to_xy_grid(to_global_crs=True)
     np.testing.assert_allclose(X_1, X_2)
     np.testing.assert_allclose(Y_1, Y_2)
 
@@ -118,43 +133,115 @@ def test_regular_grid_parameters_rotated() -> None:
     np.testing.assert_allclose(Y_r, Y_1, atol=1e-14)
 
 
-def test_regular_grid_parameters_double_rotated() -> None:
+def test_surface_aligned_crs() -> None:
+    origin = 2 * 10 * (np.random.random(2) - 0.5)
     x = np.linspace(0, 1, 101)
-    y = np.linspace(1, 2, 103)
+    y = np.linspace(0, 2, 103)
 
     X, Y = np.meshgrid(x, y, indexing="ij")
+
     grid_angle = 2 * np.pi * (np.random.random() - 0.5)
-    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
 
     r = RegularGridParameters.rotate_2d_vector(
-        np.vstack([np.ravel(X) - X[0, 0], np.ravel(Y) - Y[0, 0]]),
+        np.vstack([np.ravel(X), np.ravel(Y)]),
         angle=grid_angle,
     )
 
-    X_r = r[0].reshape(X.shape) + X[0, 0]
-    Y_r = r[1].reshape(Y.shape) + Y[0, 0]
+    X_r = r[0].reshape(X.shape) + origin[0]
+    Y_r = r[1].reshape(Y.shape) + origin[1]
 
-    r_r = RegularGridParameters.rotate_2d_vector(
-        np.vstack([np.ravel(X_r) - X_r[0, 0], np.ravel(Y_r) - Y_r[0, 0]]),
-        angle=crs_angle,
+    rgp_1 = RegularGridParameters.from_xy_grid(X_r, Y_r)
+    rgp_2 = RegularGridParameters.from_xy_grid_vectors(
+        # TODO: Ponder the sign of the angle here
+        x,
+        y,
+        crs_angle=grid_angle,
+        crs_offset=origin,
     )
-    X_rr = r_r[0].reshape(X.shape) + X[0, 0]
-    Y_rr = r_r[1].reshape(Y.shape) + Y[0, 0]
-
-    rgp_1 = RegularGridParameters.from_xy_grid(X_r, Y_r, crs_angle=crs_angle)
-    rgp_2 = RegularGridParameters.from_xy_grid(X_rr, Y_rr, crs_angle=0.0)
 
     X_1, Y_1 = rgp_1.to_xy_grid()
+    _X_1, _Y_1 = rgp_1.to_xy_grid(to_global_crs=False)
+
+    np.testing.assert_equal(X_1, _X_1)
+    np.testing.assert_equal(Y_1, _Y_1)
+
     X_2, Y_2 = rgp_2.to_xy_grid()
+
     np.testing.assert_allclose(X_1, X_2)
     np.testing.assert_allclose(Y_1, Y_2)
 
-    r_u = RegularGridParameters.rotate_2d_vector(
-        np.vstack([np.ravel(X_1) - X_1[0, 0], np.ravel(Y_1) - Y_1[0, 0]]),
-        angle=-crs_angle - grid_angle,
-    )
-    X_u = r_u[0].reshape(X_1.shape) + X_1[0, 0]
-    Y_u = r_u[1].reshape(Y_1.shape) + Y_1[0, 0]
 
-    np.testing.assert_allclose(X_u, X, atol=1e-14)
-    np.testing.assert_allclose(Y_u, Y, atol=1e-14)
+def test_regular_grid_parameters_three() -> None:
+    # Here we compare the results of a rotated surface in three different
+    # CRS's:
+    #
+    #  1. The surface in the global CRS.
+    #  2. The surface in a rotated and shifted local CRS.
+    #  3. The surface in a surface aligned local CRS.
+    #
+    # All three cases should return the same surface when constructing the grid
+    # in the global CRS.
+
+    x = np.linspace(0, 1, 101)
+    y = np.linspace(0, 2, 103)
+
+    origin = 2 * 20 * (np.random.random(2) - 0.5)
+    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
+
+    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
+    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
+
+    X, Y = np.meshgrid(x, y, indexing="ij")
+
+    # Set up the surface in the global CRS (case 1).
+    r = RegularGridParameters.rotate_2d_vector(
+        np.vstack([np.ravel(X), np.ravel(Y)]),
+        angle=grid_angle,
+    )
+
+    X_gr = r[0].reshape(X.shape) + origin[0]
+    Y_gr = r[1].reshape(Y.shape) + origin[1]
+
+    # Set up the surface in an arbitrary local CRS.
+    r = RegularGridParameters.rotate_2d_vector(
+        np.vstack([np.ravel(X), np.ravel(Y)]),
+        # The total rotation angle in this case is the difference between the
+        # local CRS and the surface rotation in the global CRS.
+        angle=grid_angle - crs_angle,
+    )
+
+    # Similarly, the new origin should be the difference in origin and CRS
+    # offset.
+    X_gcr = r[0].reshape(X.shape) + origin[0] - crs_offset[0]
+    Y_gcr = r[1].reshape(Y.shape) + origin[1] - crs_offset[1]
+
+    # Surface in global CRS.
+    rgp_1 = RegularGridParameters.from_xy_grid(
+        X_gr,
+        Y_gr,
+        crs_angle=0,
+        crs_offset=None,
+    )
+    # Surface in arbitrary local CRS.
+    rgp_2 = RegularGridParameters.from_xy_grid(
+        X_gcr,
+        Y_gcr,
+        crs_angle=crs_angle,
+        crs_offset=crs_offset,
+    )
+    # Surface in surface-aligned local CRS.
+    rgp_3 = RegularGridParameters.from_xy_grid_vectors(
+        x,
+        y,
+        crs_angle=grid_angle,
+        crs_offset=origin,
+    )
+
+    X_1, Y_1 = rgp_1.to_xy_grid(to_global_crs=True)
+    X_2, Y_2 = rgp_2.to_xy_grid(to_global_crs=True)
+    X_3, Y_3 = rgp_3.to_xy_grid(to_global_crs=True)
+
+    np.testing.assert_allclose(X_1, X_2)
+    np.testing.assert_allclose(X_1, X_3)
+    np.testing.assert_allclose(Y_1, Y_2)
+    np.testing.assert_allclose(Y_1, Y_3)

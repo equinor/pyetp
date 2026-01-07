@@ -130,6 +130,10 @@ class RegularGridParameters(typing.Generic[DType]):
     crs_angle: float
         The rotation of the local coordinate reference system, if applicable.
         The default is `0.0`, i.e., an urotated coordinate system is used.
+    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))] | None
+        The offset of the origin of the local coordinate reference system, if
+        applicable. The default is `None` which gets defaulted to `array([0.0,
+        0.0])` of type `DType`.
 
     Note that we construct the edge of `X` from `shape[0]`, `origin[0]`,
     `spacing[0]`, and `unit_vectors[:, 0]`, and the edge of `Y` from the second
@@ -141,6 +145,7 @@ class RegularGridParameters(typing.Generic[DType]):
     spacing: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
     unit_vectors: typing.Annotated[npt.NDArray[DType], dict(shape=(2, 2))]
     crs_angle: float = 0.0
+    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))] | None = None
 
     # Attaching the helper functions to this class to avoid doing extra
     # imports.
@@ -148,20 +153,45 @@ class RegularGridParameters(typing.Generic[DType]):
     angle_to_unit_vectors = staticmethod(angle_to_unit_vectors)
     unit_vectors_to_angle = staticmethod(unit_vectors_to_angle)
 
+    def __post_init__(self) -> None:
+        if self.crs_offset is None:
+            self.crs_offset = np.zeros_like(self.origin)
+
     def to_xy_grid(
-        self, with_crs_angle: bool = True
+        self, to_global_crs: bool = True
     ) -> tuple[
         npt.NDArray[DType],
         npt.NDArray[DType],
     ]:
         vec_1 = self.unit_vectors[:, 0]
         vec_2 = self.unit_vectors[:, 1]
+        origin = self.origin
 
-        if with_crs_angle:
-            vec_angle = self.unit_vectors_to_angle(np.column_stack([vec_1, vec_2]))
-            unit_vectors = self.angle_to_unit_vectors(self.crs_angle + vec_angle)
-            vec_1 = unit_vectors[:, 0]
-            vec_2 = unit_vectors[:, 1]
+        if to_global_crs:
+            # Here we construct the unit vectors of the global CRS as seen from
+            # the local CRS (global-in-local -> ginl). Hence, the negative sign
+            # on the rotation. The global unit vectors are in the columns (axis
+            # 1) of the 2 x 2 matrix.
+            ginl_unit_vectors = self.angle_to_unit_vectors(-self.crs_angle)
+            # Next, we find the elements of the grid unit vectors in the global
+            # coordinate system.
+            #
+            #   (new_vec_i)_k = (vec_i)_k @ e_k,
+            #
+            # where `e_k` is the `k`'th column of `ginl_unit_vectors` and
+            # `(vec_i)_k` is the `k`'th element of `vec_i` (with `i` being
+            # either `1` or `2`). Below we do the full transformation in a
+            # single call.
+            new_unit_vectors = np.einsum(
+                "ij, kj -> ik", self.unit_vectors, ginl_unit_vectors
+            )
+
+            vec_1 = new_unit_vectors[:, 0]
+            vec_2 = new_unit_vectors[:, 1]
+
+            # Computing the origin of the surface in the global CRS by adding
+            # in the offset of the local CRS.
+            origin = origin + self.crs_offset
 
         edge_1 = vec_1 * self.spacing[0] * np.arange(self.shape[0]).reshape(-1, 1)
         edge_2 = vec_2 * self.spacing[1] * np.arange(self.shape[1]).reshape(-1, 1)
@@ -169,7 +199,7 @@ class RegularGridParameters(typing.Generic[DType]):
         X = edge_1[:, 0].reshape(-1, 1) + edge_2[:, 0]
         Y = edge_1[:, 1].reshape(-1, 1) + edge_2[:, 1]
 
-        return X + self.origin[0], Y + self.origin[1]
+        return X + origin[0], Y + origin[1]
 
     @classmethod
     def from_xy_grid(
@@ -177,9 +207,12 @@ class RegularGridParameters(typing.Generic[DType]):
         X: npt.NDArray[DType],
         Y: npt.NDArray[DType],
         crs_angle: float = 0.0,
+        crs_offset: npt.NDArray[DType] | None = None,
     ) -> typing.Self:
         if len(np.shape(np.squeeze(X))) == 1 and len(np.shape(np.squeeze(Y))) == 1:
-            return cls.from_xy_grid_vectors(X, Y, crs_angle=crs_angle)
+            return cls.from_xy_grid_vectors(
+                X, Y, crs_angle=crs_angle, crs_offset=crs_offset
+            )
 
         assert len(np.shape(X)) == 2
         assert np.shape(X) == np.shape(Y)
@@ -218,6 +251,7 @@ class RegularGridParameters(typing.Generic[DType]):
             spacing=spacing,
             unit_vectors=unit_vectors,
             crs_angle=crs_angle,
+            crs_offset=crs_offset,
         )
 
     @classmethod
@@ -226,6 +260,7 @@ class RegularGridParameters(typing.Generic[DType]):
         x: npt.NDArray[DType],
         y: npt.NDArray[DType],
         crs_angle: float = 0.0,
+        crs_offset: npt.NDArray[DType] | None = None,
     ) -> typing.Self:
         x = np.squeeze(x)
         y = np.squeeze(y)
@@ -256,4 +291,5 @@ class RegularGridParameters(typing.Generic[DType]):
             spacing=np.array([x_spacing[0], y_spacing[0]]),
             unit_vectors=unit_vectors,
             crs_angle=crs_angle,
+            crs_offset=crs_offset,
         )
