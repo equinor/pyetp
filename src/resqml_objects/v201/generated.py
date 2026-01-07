@@ -23902,6 +23902,81 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         }
     )
 
+    def get_xy_grid(
+        self, crs: AbstractLocal3dCrs | None = None
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+    ]:
+        points = self.grid2d_patch.geometry.points
+
+        if not isinstance(points, Point3dZValueArray):
+            raise NotImplementedError(
+                "We do not support constructing the X, Y grid for points of type "
+                f"{points.__class__.__name__}"
+            )
+
+        from resqml_objects.surface_helpers import RegularGridParameters
+
+        shape = (
+            self.grid2d_patch.fastest_axis_count,
+            self.grid2d_patch.slowest_axis_count,
+        )
+        origin = points.supporting_geometry.origin
+        offsets = points.supporting_geometry.offset
+
+        ori = np.array(
+            [
+                origin.coordinate1,
+                origin.coordinate2,
+            ]
+        )
+        dr = np.array(
+            [
+                offsets[0].spacing.value,
+                offsets[1].spacing.value,
+            ]
+        )
+
+        unit_vectors = np.array(
+            [
+                [offsets[0].offset.coordinate1, offsets[1].offset.coordinate1],
+                [offsets[0].offset.coordinate2, offsets[1].offset.coordinate2],
+            ]
+        )
+
+        crs_angle = 0.0
+        crs_offset = np.array([0.0, 0.0])
+
+        if crs is not None:
+            # NOTE: We assume that coordinate1 (coordinate2) corresponds to
+            # xoffset (yoffset) in the CRS, and that they share the same units.
+            crs_offset[0] = crs.xoffset
+            crs_offset[1] = crs.yoffset
+
+            crs_angle_unit = PlaneAngleUom(crs.areal_rotation.uom)
+
+            match crs_angle_unit:
+                case PlaneAngleUom.RAD:
+                    crs_angle = crs.areal_rotation.value
+                case PlaneAngleUom.DEGA:
+                    crs_angle = np.deg2rad(crs.areal_rotation.value)
+                case _:
+                    raise NotImplementedError(
+                        f"No conversion from {crs_angle_unit} to radians implemented"
+                    )
+
+        rgp = RegularGridParameters(
+            shape=shape,
+            origin=ori,
+            spacing=dr,
+            unit_vectors=unit_vectors,
+            crs_angle=crs_angle,
+            crs_offset=crs_offset,
+        )
+
+        return rgp.to_xy_grid(to_global_crs=True)
+
     @classmethod
     def from_regular_surface(
         cls,

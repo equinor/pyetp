@@ -9,6 +9,7 @@ import resqml_objects.v201 as ro
 from pyetp._version import version
 from resqml_objects.parsers import parse_resqml_v201_object
 from resqml_objects.serializers import serialize_resqml_v201_object
+from resqml_objects.surface_helpers import RegularGridParameters
 
 R = typing.TypeVar(
     "R", bound=ro.AbstractObject | ro.AbstractObject_1 | ro.AbstractObject_Type
@@ -235,22 +236,168 @@ def test_regular_grid_2d_representation() -> None:
     np.testing.assert_allclose(Y, _Y)
 
 
+def test_rotated_regular_grid_2d_representation() -> None:
+    # Here we compare the results of a rotated surface in three different
+    # CRS's:
+    #
+    #  1. The surface in the global CRS.
+    #  2. The surface in a rotated and shifted local CRS.
+    #  3. The surface in a surface aligned local CRS.
+    #
+    # All three cases should return the same surface when constructing the grid
+    # in the global CRS.
+
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(0, 1, shape[0])
+    y = np.linspace(0, 2, shape[1])
+
+    origin = 2 * 20 * (np.random.random(2) - 0.5)
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+
+    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
+
+    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
+
+    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
+    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
+
+    rt_origin = origin - crs_offset
+    rt_angle = grid_angle - crs_angle
+
+    rt_grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(rt_angle)
+
+    # Case 1: An untransformed local CRS on top of the global CRS.
+    uu_crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(
+            title="Unrotated and untranslated CRS", originator="pyetp-tester"
         ),
-        (
-            sg.offset[1].offset.coordinate1,
-            sg.offset[1].offset.coordinate2,
-            sg.offset[1].offset.coordinate3,
-        ),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=12345),
     )
 
-    assert ret_unit_vectors == unit_vectors
+    # Case 2: An arbitrarily transformed local CRS on top of the global CRS.
+    rt_crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(
+            title="Rotated and translated CRS", originator="pyetp-tester"
+        ),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=12345),
+        areal_rotation=ro.PlaneAngleMeasure(
+            value=crs_angle,
+            uom=ro.PlaneAngleUom.RAD,
+        ),
+        xoffset=float(crs_offset[0]),
+        yoffset=float(crs_offset[1]),
+    )
 
+    # Case 3: A surface-aligned local CRS on top of the global CRS.
+    aligned_crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Surface-aligned CRS", originator="pyetp-tester"),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=12345),
+        areal_rotation=ro.PlaneAngleMeasure(
+            value=grid_angle,
+            uom=ro.PlaneAngleUom.RAD,
+        ),
+        xoffset=float(origin[0]),
+        yoffset=float(origin[1]),
+    )
 
-def test_rotated_regular_grid_2d_representation() -> None:
-    pass
+    # We share the same epc-object across all grids.
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Grid epc", originator="pyetp-tester"),
+    )
 
+    uu_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(
+            title="Grid in untransformed CRS", originator="pyetp-tester"
+        ),
+        crs=uu_crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=grid_unit_vectors[:, 0],
+        unit_vec_2=grid_unit_vectors[:, 1],
+    )
 
-def test_double_rotated_regular_grid_2d_representation() -> None:
-    # This test should test a grid that is rotated in both the CRS and the
-    # grid.
-    pass
+    rt_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(
+            title="Grid in transformed local CRS", originator="pyetp-tester"
+        ),
+        crs=rt_crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=rt_origin,
+        spacing=spacing,
+        unit_vec_1=rt_grid_unit_vectors[:, 0],
+        unit_vec_2=rt_grid_unit_vectors[:, 1],
+    )
+
+    aligned_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(
+            title="Grid in surface-aligned local CRS", originator="pyetp-tester"
+        ),
+        crs=aligned_crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=np.zeros_like(origin),
+        spacing=spacing,
+        unit_vec_1=np.array([1.0, 0.0]),
+        unit_vec_2=np.array([0.0, 1.0]),
+    )
+
+    dor = ro.DataObjectReference.from_object(epc)
+
+    assert uu_gri.grid2d_patch.geometry.points.zvalues.values.hdf_proxy == dor
+    assert rt_gri.grid2d_patch.geometry.points.zvalues.values.hdf_proxy == dor
+    assert aligned_gri.grid2d_patch.geometry.points.zvalues.values.hdf_proxy == dor
+
+    # Check that all grids evaulate to the same global points, irrespective of
+    # their local CRS.
+    uu_X, uu_Y = uu_gri.get_xy_grid(crs=uu_crs)
+    rt_X, rt_Y = rt_gri.get_xy_grid(crs=rt_crs)
+    aligned_X, aligned_Y = aligned_gri.get_xy_grid(crs=aligned_crs)
+
+    np.testing.assert_allclose(uu_X, rt_X)
+    np.testing.assert_allclose(uu_X, aligned_X)
+    np.testing.assert_allclose(uu_Y, rt_Y)
+    np.testing.assert_allclose(uu_Y, aligned_Y)
+
+    # Test that the untransformed crs does not alter the grid.
+    _uu_X, _uu_Y = uu_gri.get_xy_grid()
+    np.testing.assert_equal(uu_X, _uu_X)
+    np.testing.assert_equal(uu_Y, _uu_Y)
+
+    # Test that the grids from the transformed local CRS (in the local
+    # reference system) have the expected origin and angle on the surface.
+    rt_X, rt_Y = rt_gri.get_xy_grid()
+
+    np.testing.assert_equal(np.array([rt_X[0, 0], rt_Y[0, 0]]), rt_origin)
+
+    vec_1 = np.array([rt_X[1, 0] - rt_X[0, 0], rt_Y[1, 0] - rt_Y[0, 0]])
+    vec_2 = np.array([rt_X[0, 1] - rt_X[0, 0], rt_Y[0, 1] - rt_Y[0, 0]])
+
+    unit_vectors = np.column_stack([vec_1, vec_2])
+
+    tot_angle = rt_angle
+
+    # Force angle to be in the range [-pi, pi]
+    if tot_angle < -np.pi:
+        tot_angle += 2 * np.pi
+    elif tot_angle > np.pi:
+        tot_angle -= 2 * np.pi
+
+    np.testing.assert_allclose(
+        RegularGridParameters.unit_vectors_to_angle(unit_vectors), tot_angle
+    )
+
+    # Test that the grids in the surface-aligned local CRS correspond to
+    # meshgrids from the `x` and `y` edges.
+    aligned_X, aligned_Y = aligned_gri.get_xy_grid()
+
+    X, Y = np.meshgrid(x, y, indexing="ij")
+
+    np.testing.assert_allclose(aligned_X, X)
+    np.testing.assert_allclose(aligned_Y, Y)
