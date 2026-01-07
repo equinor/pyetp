@@ -11,8 +11,10 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Self
+from typing import Annotated, Any, Self
 
+import numpy as np
+import numpy.typing as npt
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 resqml_schema_version = "2.0.1"
@@ -17080,9 +17082,10 @@ class Point3dZValueArray(AbstractPoint3dArray):
         | EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
-        origin: tuple[float, float],
-        dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
     ) -> Self:
         supporting_geometry = Point3dLatticeArray(
             origin=Point3d(
@@ -17093,12 +17096,12 @@ class Point3dZValueArray(AbstractPoint3dArray):
             offset=[
                 Point3dOffset(
                     offset=Point3d(
-                        coordinate1=float(unit_vectors[0][0]),
-                        coordinate2=float(unit_vectors[0][1]),
+                        coordinate1=float(unit_vec_1[0]),
+                        coordinate2=float(unit_vec_1[1]),
                         coordinate3=0.0,
                     ),
                     spacing=DoubleConstantArray(
-                        value=float(dr[0]),
+                        value=float(spacing[0]),
                         # TODO: Figure out how we should treat the spacing! The
                         # documentation states that it should be N - 1 for an
                         # array of N elements (that is, it counts the number of
@@ -17109,12 +17112,12 @@ class Point3dZValueArray(AbstractPoint3dArray):
                 ),
                 Point3dOffset(
                     offset=Point3d(
-                        coordinate1=float(unit_vectors[1][0]),
-                        coordinate2=float(unit_vectors[1][1]),
+                        coordinate1=float(unit_vec_2[0]),
+                        coordinate2=float(unit_vec_2[1]),
                         coordinate3=0.0,
                     ),
                     spacing=DoubleConstantArray(
-                        value=float(dr[1]),
+                        value=float(spacing[1]),
                         count=int(shape[1]) - 1,
                     ),
                 ),
@@ -18775,9 +18778,10 @@ class PointGeometry(AbstractGeometry):
         | EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
-        origin: tuple[float, float],
-        dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
     ) -> Self:
         local_crs = DataObjectReference.from_object(crs)
 
@@ -18786,8 +18790,9 @@ class PointGeometry(AbstractGeometry):
             path_in_hdf_file=path_in_hdf_file,
             shape=shape,
             origin=origin,
-            dr=dr,
-            unit_vectors=unit_vectors,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
         )
 
         return cls(local_crs=local_crs, points=points)
@@ -19959,9 +19964,10 @@ class Grid2dPatch(Patch):
         | EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
-        origin: tuple[float, float],
-        dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
         patch_index: int = 0,
     ) -> Self:
         geometry = PointGeometry.from_regular_surface(
@@ -19970,8 +19976,9 @@ class Grid2dPatch(Patch):
             path_in_hdf_file=path_in_hdf_file,
             shape=shape,
             origin=origin,
-            dr=dr,
-            unit_vectors=unit_vectors,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
         )
 
         return cls(
@@ -23904,9 +23911,10 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             obj_EpcExternalPartReference | EpcExternalPartReference
         ),
         shape: tuple[int, int],
-        origin: tuple[float, float],
-        dr: tuple[float, float],
-        unit_vectors: tuple[tuple[float, float], tuple[float, float]],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
         patch_index: int = 0,
         path_in_hdf_file: str = "",
         uuid: str | uuid.UUID = uuid.uuid4(),
@@ -23942,8 +23950,9 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             path_in_hdf_file=path_in_hdf_file,
             shape=shape,
             origin=origin,
-            dr=dr,
-            unit_vectors=unit_vectors,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
             patch_index=patch_index,
         )
 
