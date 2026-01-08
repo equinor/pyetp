@@ -23908,6 +23908,11 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         npt.NDArray[np.float64],
         npt.NDArray[np.float64],
     ]:
+        """
+        Method constructing the `X`- and `Y`-grids for a regular surface. This
+        currently only works for surfaces where the grids are specified using
+        an origin, spacings, number of elements and unit vectors.
+        """
         points = self.grid2d_patch.geometry.points
 
         if not isinstance(points, Point3dZValueArray):
@@ -23916,14 +23921,21 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
                 f"{points.__class__.__name__}"
             )
 
+        sg = points.supporting_geometry
+        if not isinstance(sg, Point3dLatticeArray):
+            raise NotImplementedError(
+                "We do not support constructing the X, Y grid for a supporting "
+                f"geometry of type {sg.__class__.__name__}"
+            )
+
         from resqml_objects.surface_helpers import RegularGridParameters
 
         shape = (
             self.grid2d_patch.fastest_axis_count,
             self.grid2d_patch.slowest_axis_count,
         )
-        origin = points.supporting_geometry.origin
-        offsets = points.supporting_geometry.offset
+        origin = sg.origin
+        offsets = sg.offset
 
         ori = np.array(
             [
