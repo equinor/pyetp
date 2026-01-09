@@ -437,7 +437,7 @@ class ETPClient(ETPConnection):
             pass
         except TimeoutError:
             if close_session_sent:
-                logger.error(
+                logger.warning(
                     "Websockets connection was not closed within "
                     f"{self.etp_timeout or 10} seconds after the "
                     "`CloseSession`-message was sent"
