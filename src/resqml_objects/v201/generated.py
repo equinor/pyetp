@@ -757,7 +757,9 @@ class Citation:
         }
     )
     creation: XmlDateTime | datetime.datetime = field(
-        default_factory=lambda: XmlDateTime.from_datetime(datetime.datetime.now()),
+        default_factory=lambda: XmlDateTime.from_datetime(
+            datetime.datetime.now(datetime.timezone.utc)
+        ),
         metadata={
             "name": "Creation",
             "type": "Element",
