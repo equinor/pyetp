@@ -1,5 +1,4 @@
 import asyncio
-import sys
 from contextlib import contextmanager
 from typing import Tuple
 from unittest.mock import AsyncMock
@@ -398,16 +397,9 @@ async def test_oversized_models(
             gri_uri,
         )
 
-        if (sys.version_info.major, sys.version_info.minor) == (3, 10):
-            assert crs.vertical_crs.epsg_code == ret_crs.vertical_crs.epsg_code
-            assert crs.projected_crs.epsg_code == ret_crs.projected_crs.epsg_code
-            assert crs.uuid == ret_crs.uuid
-            assert epc.uuid == ret_epc.uuid
-            assert gri.uuid == ret_gri.uuid
-        else:
-            assert ret_epc == epc
-            assert ret_crs == crs
-            assert ret_gri == gri
+        assert ret_epc == epc
+        assert ret_crs == crs
+        assert ret_gri == gri
 
         ret_data = await etp_client.download_array(
             epc_uri,
@@ -579,18 +571,8 @@ async def test_resqml_objects(etp_client: ETPClient, dataspace_uri: DataspaceURI
     )
 
     assert epc == epc_r
-
-    import sys
-
-    # The equality check does not work for Python 3.10. We'll leave this check
-    # in here before limiting the project to Python 3.11 and up.
-    if sys.version_info.minor == 10 and sys.version_info.major == 3:
-        assert crs.vertical_crs.epsg_code == crs_r.vertical_crs.epsg_code
-        assert crs.projected_crs.epsg_code == crs_r.projected_crs.epsg_code
-        assert gri.uuid == gri_r.uuid
-    else:
-        assert crs == crs_r
-        assert gri == gri_r
+    assert crs == crs_r
+    assert gri == gri_r
 
     transaction_uuid = await etp_client.start_transaction(
         dataspace_uri=dataspace_uri, read_only=False
@@ -642,8 +624,7 @@ async def test_rddms_roundtrip(
     )
 
     supporting_geometry = gri.grid2d_patch.geometry.points.supporting_geometry
-    if sys.version_info[1] != 10:
-        assert isinstance(supporting_geometry, ro.Point3dLatticeArray)
+    assert isinstance(supporting_geometry, ro.Point3dLatticeArray)
 
     assert surface.xori == supporting_geometry.origin.coordinate1
     assert surface.yori == supporting_geometry.origin.coordinate2
