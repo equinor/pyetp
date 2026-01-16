@@ -19986,8 +19986,10 @@ class Grid2dPatch(Patch):
 
         return cls(
             patch_index=patch_index,
-            fastest_axis_count=shape[0],
-            slowest_axis_count=shape[1],
+            # Rows for NumPy-arrays in C-major ordering.
+            slowest_axis_count=shape[0],
+            # Columns for NumPy-arrays in C-major ordering.
+            fastest_axis_count=shape[1],
             geometry=geometry,
         )
 
@@ -23934,8 +23936,8 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         from resqml_objects.surface_helpers import RegularGridParameters
 
         shape = (
-            self.grid2d_patch.fastest_axis_count,
             self.grid2d_patch.slowest_axis_count,
+            self.grid2d_patch.fastest_axis_count,
         )
         origin = sg.origin
         offsets = sg.offset

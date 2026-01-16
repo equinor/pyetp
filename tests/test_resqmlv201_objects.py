@@ -175,8 +175,8 @@ def test_regular_grid_2d_representation() -> None:
     )
 
     ret_shape = (
-        ret_gri.grid2d_patch.fastest_axis_count,
         ret_gri.grid2d_patch.slowest_axis_count,
+        ret_gri.grid2d_patch.fastest_axis_count,
     )
 
     assert ret_shape == shape
