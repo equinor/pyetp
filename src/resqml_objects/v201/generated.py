@@ -1006,6 +1006,27 @@ class DataObjectReference:
         uuid_authority: None | str = None,
         version_string: None | str = None,
     ) -> Self:
+        """
+        Class method setting up a `DataObjectReference` from a RESQML-object
+        instance (subclass of `AbstractResqmlDataObject`). This populates the
+        mandatory fields from the `citation` field of the object.
+
+        Parameters
+        ----------
+        obj: AbstractResqmlDataObject
+            A subclass of the `AbstractResqmlDataObject` which contains a
+            `citation`-field.
+        uuid_authority: None | str
+            See documentation of `DataObjectReference`. Default is `None`.
+        version_string: None | str
+             See documentation of `DataObjectReference`. Default is `None`.
+
+        Returns
+        -------
+        Self
+            An instance of `DataObjectReference` with reference information on
+            `obj`.
+        """
         content_type = DataObjectReference.get_content_type_string(obj)
 
         return cls(
@@ -1016,7 +1037,27 @@ class DataObjectReference:
             version_string=version_string,
         )
 
-    def get_etp_data_object_uri(self, dataspace_path: str) -> str:
+    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
+        """
+        Method that sets up a valid ETP data object uri from a
+        `DataObjectReference`-instance. This is a helper function for easier
+        querying towards an ETP server when downloading parts of a model at a
+        time.
+
+        Parameters
+        ----------
+        dataspace_path_or_uri: str
+            Either a full dataspace uri on the form `"eml:///"` or
+            `"eml:///dataspace('foo/bar')"`, or just the dataspace path (or
+            name) – which looking at the previous two examples – is `""`
+            (empty) or "foo/bar".
+
+        Returns
+        -------
+            An ETP data object uri that be used to look up an object on an ETP
+            server.
+        """
+
         domain_version = ""
 
         if self.content_type.startswith("application/x-resqml+xml"):
@@ -1035,19 +1076,18 @@ class DataObjectReference:
 
         obj_type = m.group("obj_type")
 
-        if dataspace_path.startswith("eml:///"):
-            raise ValueError(
-                "The dataspace path can either be empty (for the default dataspace) "
-                "or is the part between the angle brackets: "
-                "'eml:///dataspace('<dataspace-path>')'."
-            )
+        if dataspace_path_or_uri.startswith("eml:///"):
+            dataspace_uri = dataspace_path_or_uri
+        elif not dataspace_path_or_uri:
+            # Only two forward slashes (!!!) as the combination with the
+            # `data_object_part` adds an extra forward slash.
+            dataspace_uri = "eml://"
+        else:
+            dataspace_uri = f"eml:///dataspace('{dataspace_path_or_uri}')"
 
         data_object_part = f"{domain_version}.{obj_type}({self.uuid})"
 
-        if not dataspace_path:
-            return f"eml:///{data_object_part}"
-
-        return f"eml:///dataspace('{dataspace_path}')/{data_object_part}"
+        return f"{dataspace_uri}/{data_object_part}"
 
 
 class DataTransferSpeedUom(Enum):
@@ -17114,8 +17154,7 @@ class Point3dZValueArray(AbstractPoint3dArray):
     @classmethod
     def from_regular_surface(
         cls,
-        epc_external_part_reference: obj_EpcExternalPartReference
-        | EpcExternalPartReference,
+        epc_external_part_reference: obj_EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
         origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
@@ -18810,8 +18849,7 @@ class PointGeometry(AbstractGeometry):
     def from_regular_surface(
         cls,
         crs: AbstractLocal3dCrs,
-        epc_external_part_reference: obj_EpcExternalPartReference
-        | EpcExternalPartReference,
+        epc_external_part_reference: obj_EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
         origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
@@ -19996,8 +20034,7 @@ class Grid2dPatch(Patch):
     def from_regular_surface(
         cls,
         crs: AbstractLocal3dCrs,
-        epc_external_part_reference: obj_EpcExternalPartReference
-        | EpcExternalPartReference,
+        epc_external_part_reference: obj_EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
         origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
@@ -23948,8 +23985,31 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
     ]:
         """
         Method constructing the `X`- and `Y`-grids for a regular surface. This
-        currently only works for surfaces where the grids are specified using
-        an origin, spacings, number of elements and unit vectors.
+        currently only works for `obj_Grid2dRepresentation`-objects that
+        represent regular surfaces. That is where the grids are specified using
+        an origin, spacings, number of elements and unit vectors. Otherwise the
+        `X`- and `Y`-grids are stored as arrays on an ETP server or in an
+        hdf5-file. The function also takes in a local crs that can be
+        transformed (translated and rotated) from a global crs. The method
+        treats any rotation and translation in the grid as an _active
+        transformation_, and any transformation in the local crs as a _passive
+        transformation_.
+
+        Parameters
+        ----------
+        crs: AbstractLocal3dCrs
+            A subclass of `AbstractLocal3dCrs`. It is used to correct for a
+            potential passive transformation done by the crs. The crs does not
+            have to be the same as referenced by the grid-object, but if it
+            does not match a warning is raised. Setting `crs=None` avoids any
+            transformation from the crs. Default is `None`.
+
+        Returns
+        -------
+            tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]
+            A pair of `X`- and `Y`-grids that gives the `x` and `y` coordinates
+            to the surface described by the grid-object. For an unrotated
+            surface this corresponds to a meshgrid.
         """
         points = self.grid2d_patch.geometry.points
 
@@ -24039,9 +24099,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         cls,
         citation: Citation,
         crs: AbstractLocal3dCrs,
-        epc_external_part_reference: (
-            obj_EpcExternalPartReference | EpcExternalPartReference
-        ),
+        epc_external_part_reference: obj_EpcExternalPartReference,
         shape: tuple[int, int],
         origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
         spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
@@ -24059,10 +24117,11 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         aliases: list[ObjectAlias] | None = None,
     ) -> Self:
         """
-        Classmethod that sets up a `obj_Grid2dRepresentation`-object (or
-        subclass thereof) for a regular surface described by the eight
-        parameters (seven free parameters) `shape`, `origin`, `dr` and
-        `unit_vectors`, and the necessary and/or optional metadata from RESQML.
+        Class method that sets up an `obj_Grid2dRepresentation`-object for a
+        regular surface described by the eight parameters (seven free
+        parameters) `shape`, `origin`, `dr` and `unit_vectors`, and the
+        necessary (a local crs, and an epc-reference file) and/or optional
+        metadata from RESQML.
         """
         uuid = str(uuid)
         surface_role = SurfaceRole(surface_role)
