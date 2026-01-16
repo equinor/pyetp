@@ -118,13 +118,8 @@ def instantiate_resqml_grid(
         grid2d_patch=ro.Grid2dPatch(
             # TODO: Perhaps we can use this for tiling?
             patch_index=0,
-            # NumPy-arrays are C-ordered, meaning that the last index is
-            # the index that changes most rapidly. However, xtgeo uses nrow for
-            # axis 1 in the array, and ncol for axis 0. This means that
-            # surf.nrow is the fastest changing axis, and surf.ncol the slowest
-            # changing axis (as surf.values.shape == (surf.ncol, surf.nrow))
-            fastest_axis_count=ny,
             slowest_axis_count=nx,
+            fastest_axis_count=ny,
             geometry=ro.PointGeometry(
                 local_crs=get_data_object_reference(crs),
                 points=ro.Point3dZValueArray(
