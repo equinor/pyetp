@@ -28,7 +28,6 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
 )
 
 import resqml_objects.v201 as ro
-from resqml_objects.surface_helpers import angle_to_unit_vectors
 from pyetp import etp_connect, utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataObjectURI, DataspaceURI
@@ -36,6 +35,7 @@ from pyetp.utils_xml import (
     instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
 )
+from resqml_objects.surface_helpers import angle_to_unit_vectors
 
 
 def create_surface(ncol: int, nrow: int, rotation: float):
