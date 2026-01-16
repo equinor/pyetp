@@ -28,6 +28,7 @@ from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_respons
 )
 
 import resqml_objects.v201 as ro
+from resqml_objects.surface_helpers import angle_to_unit_vectors
 from pyetp import etp_connect, utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataObjectURI, DataspaceURI
@@ -641,6 +642,48 @@ async def test_surface(etp_client: ETPClient, dataspace_uri: DataspaceURI):
     nsurf = await etp_client.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
     assert surf.metadata.get_metadata() == nsurf.metadata.get_metadata()
+
+
+def test_compare_xtgeo_surface() -> None:
+    shape = np.random.randint(50, 150), np.random.randint(50, 150)
+    rotation = 360 * np.random.random()
+
+    surf = create_surface(*shape, rotation)
+    X, Y = surf.get_xy_values(asmasked=False)
+
+    assert X.shape == Y.shape == shape
+    assert (surf.ncol, surf.nrow) == shape
+
+    epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 12345)
+
+    rX, rY = gri.get_xy_grid(crs=crs)
+
+    np.testing.assert_allclose(X, rX)
+    np.testing.assert_allclose(Y, rY)
+
+    rcrs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Grid crs", originator=crs.citation.originator),
+        vertical_crs=crs.vertical_crs,
+        projected_crs=crs.projected_crs,
+    )
+
+    # Note that xtgeo gives the rotation in degrees.
+    unit_vectors = angle_to_unit_vectors(np.deg2rad(surf.get_rotation()))
+
+    rgri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Grid", originator=crs.citation.originator),
+        crs=rcrs,
+        epc_external_part_reference=epc,
+        shape=surf.values.shape,
+        origin=np.array([surf.xori, surf.yori]),
+        spacing=np.array([surf.xinc, surf.yinc]),
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
+    )
+
+    r2X, r2Y = rgri.get_xy_grid(crs=rcrs)
+    np.testing.assert_allclose(X, r2X)
+    np.testing.assert_allclose(Y, r2Y)
 
 
 @pytest.mark.asyncio
