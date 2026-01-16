@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime
 import re
 import uuid
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Annotated, Any, Self
@@ -23963,6 +23964,13 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         crs_offset = np.array([0.0, 0.0])
 
         if crs is not None:
+            if crs.uuid != self.grid2d_patch.geometry.local_crs.uuid:
+                warnings.warn(
+                    f"The provided crs has a different uuid '{crs.citation.uuid}' "
+                    " than the referenced crs "
+                    f"'{self.grid2d_patch.geometry.local_crs.uuid}'."
+                )
+
             # NOTE: We assume that coordinate1 (coordinate2) corresponds to
             # xoffset (yoffset) in the CRS, and that they share the same units.
             crs_offset[0] = crs.xoffset
