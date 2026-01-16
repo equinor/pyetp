@@ -83,7 +83,9 @@ class DataObjectURI(_DataObjectURI, _Mixin):
                 obj.Meta, "target_namespace"
             )
             namespace = namespace.lower()
-            # TODO: we can rather look at citation.format - which could be used for xmlformat ? - however to be backward capatiable we check namespaces instead
+            # TODO: we can rather look at citation.format - which could be used
+            # for xmlformat ? - however to be backward capatiable we check
+            # namespaces instead
             if namespace.endswith("resqmlv2"):
                 domain = "resqml20"
             elif namespace.endswith("data/commonv2"):
