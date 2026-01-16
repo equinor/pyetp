@@ -1,7 +1,6 @@
 import asyncio
 import pathlib
 import re
-import sys
 
 import numpy as np
 import pytest
@@ -17,10 +16,6 @@ from resqml_objects.epc_readers import (
 data_path = pathlib.Path("data")
 
 
-@pytest.mark.skipif(
-    (sys.version_info.major, sys.version_info.minor) == (3, 10),
-    reason="This test requires Python 3.11 or higher",
-)
 @pytest.mark.parametrize(
     "input_mesh_file",
     [

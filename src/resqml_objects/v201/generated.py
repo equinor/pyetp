@@ -6,11 +6,21 @@ See: https://xsdata.readthedocs.io/
 
 from __future__ import annotations
 
+import datetime
+import re
+import uuid
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any, Self, Type
 
+import numpy as np
+import numpy.typing as npt
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
+
+resqml_schema_version = "2.0.1"
+common_schema_version = "2.0"
+OBJ_TYPE_PATTERN = re.compile(r"type=(?P<obj_type>\w+)$")
 
 
 class APIGammaRayUom(Enum):
@@ -747,15 +757,19 @@ class Citation:
             "white_space": "collapse",
         }
     )
-    creation: XmlDateTime = field(
+    creation: XmlDateTime | datetime.datetime = field(
+        default_factory=lambda: XmlDateTime.from_datetime(
+            datetime.datetime.now(datetime.timezone.utc)
+        ),
         metadata={
             "name": "Creation",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
     format: str = field(
+        default="",
         metadata={
             "name": "Format",
             "type": "Element",
@@ -764,7 +778,7 @@ class Citation:
             "min_length": 1,
             "max_length": 256,
             "white_space": "collapse",
-        }
+        },
     )
     editor: None | str = field(
         default=None,
@@ -777,7 +791,7 @@ class Citation:
             "white_space": "collapse",
         },
     )
-    last_update: None | XmlDateTime = field(
+    last_update: None | XmlDateTime | datetime.datetime = field(
         default=None,
         metadata={
             "name": "LastUpdate",
@@ -815,6 +829,21 @@ class Citation:
             "white_space": "collapse",
         },
     )
+
+    def __post_init__(self) -> None:
+        # Delayed to avoid circular import. Fix once the ETP-client is made
+        # indepent of the RESQML-objects.
+        from pyetp._version import version
+
+        if not self.format:
+            self.format = f"equinor:pyetp:{version}"
+
+        # Let the user pass in the creation time as a Python datetime-object
+        if isinstance(self.creation, datetime.datetime):
+            self.creation = XmlDateTime.from_datetime(self.creation)
+
+        if isinstance(self.last_update, datetime.datetime):
+            self.last_update = XmlDateTime.from_datetime(self.last_update)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -911,6 +940,154 @@ class DataObjectReference:
             "white_space": "collapse",
         },
     )
+
+    @staticmethod
+    def get_content_type_string(
+        obj: AbstractResqmlDataObject | Type[AbstractResqmlDataObject],
+    ) -> str:
+        """
+        Static method constructing a RESQML v2.0.1 or EML v2.0 content type
+        string based on the XML namespace of the provided object. The format of
+        the content type string for RESQML v2.0.1 is:
+
+            application/x-resqml+xml;version=2.0.1;type={object-type}
+
+        and for EML v2.0:
+
+            application/x-eml+xml;version=2.0;type={object-type}
+
+        where `object-type` should correspond to the XSD type of the object.
+        For example for a `obj_Grid2dRepresentation`-object this is exactly
+        `obj_Grid2dRepresentation`.
+
+        See Energistics Identifier Specification 4.0 (it is downloaded
+        alongside the RESQML v2.0.1 standard) section 4.1 for the
+        documentation of this format.
+
+        Parameters
+        ----------
+        obj: AbstractResqmlDataObject | Type[AbstractResqmlDataObject]
+            An instance or type that is a subclass of
+            `AbstractResqmlDataObject`.
+
+        Returns
+        -------
+        str
+            The content type string.
+        """
+
+        # Get class object instead of the instance.
+        if type(obj) is not type:
+            obj = type(obj)
+
+        namespace = getattr(obj.Meta, "namespace", None) or getattr(
+            obj.Meta, "target_namespace"
+        )
+
+        if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
+            return (
+                f"application/x-resqml+xml;version={resqml_schema_version};"
+                f"type={obj.__name__}"
+            )
+        elif namespace == "http://www.energistics.org/energyml/data/commonv2":
+            return (
+                f"application/x-eml+xml;version={common_schema_version};"
+                f"type={obj.__name__}"
+            )
+
+        raise NotImplementedError(
+            f"Namespace {namespace} from object {obj} is not supported"
+        )
+
+    @classmethod
+    def from_object(
+        cls,
+        obj: AbstractResqmlDataObject,
+        uuid_authority: None | str = None,
+        version_string: None | str = None,
+    ) -> Self:
+        """
+        Class method setting up a `DataObjectReference` from a RESQML-object
+        instance (subclass of `AbstractResqmlDataObject`). This populates the
+        mandatory fields from the `citation` field of the object.
+
+        Parameters
+        ----------
+        obj: AbstractResqmlDataObject
+            A subclass of the `AbstractResqmlDataObject` which contains a
+            `citation`-field.
+        uuid_authority: None | str
+            See documentation of `DataObjectReference`. Default is `None`.
+        version_string: None | str
+             See documentation of `DataObjectReference`. Default is `None`.
+
+        Returns
+        -------
+        Self
+            An instance of `DataObjectReference` with reference information on
+            `obj`.
+        """
+        content_type = DataObjectReference.get_content_type_string(obj)
+
+        return cls(
+            content_type=content_type,
+            title=obj.citation.title,
+            uuid=obj.uuid,
+            uuid_authority=uuid_authority,
+            version_string=version_string,
+        )
+
+    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
+        """
+        Method that sets up a valid ETP data object uri from a
+        `DataObjectReference`-instance. This is a helper function for easier
+        querying towards an ETP server when downloading parts of a model at a
+        time.
+
+        Parameters
+        ----------
+        dataspace_path_or_uri: str
+            Either a full dataspace uri on the form `"eml:///"` or
+            `"eml:///dataspace('foo/bar')"`, or just the dataspace path (or
+            name) – which looking at the previous two examples – is `""`
+            (empty) or "foo/bar".
+
+        Returns
+        -------
+            An ETP data object uri that be used to look up an object on an ETP
+            server.
+        """
+
+        domain_version = ""
+
+        if self.content_type.startswith("application/x-resqml+xml"):
+            domain_version = "resqml20"
+        elif self.content_type.startswith("application/x-eml+xml"):
+            domain_version = "eml20"
+        else:
+            raise NotImplementedError(
+                f"Qualified type for '{self.content_type}' is not implemented"
+            )
+
+        m = re.search(OBJ_TYPE_PATTERN, self.content_type)
+
+        if m is None:
+            raise ValueError("Content type string does not contain a valid object name")
+
+        obj_type = m.group("obj_type")
+
+        if dataspace_path_or_uri.startswith("eml:///"):
+            dataspace_uri = dataspace_path_or_uri
+        elif not dataspace_path_or_uri:
+            # Only two forward slashes (!!!) as the combination with the
+            # `data_object_part` adds an extra forward slash.
+            dataspace_uri = "eml://"
+        else:
+            dataspace_uri = f"eml:///dataspace('{dataspace_path_or_uri}')"
+
+        data_object_part = f"{domain_version}.{obj_type}({self.uuid})"
+
+        return f"{dataspace_uri}/{data_object_part}"
 
 
 class DataTransferSpeedUom(Enum):
@@ -9542,7 +9719,7 @@ class Timestamp:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    date_time: XmlDateTime = field(
+    date_time: XmlDateTime | datetime.datetime = field(
         metadata={
             "name": "DateTime",
             "type": "Element",
@@ -9558,6 +9735,10 @@ class Timestamp:
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
+
+    def __post_init__(self) -> None:
+        if isinstance(self.date_time, datetime.datetime):
+            self.date_time = XmlDateTime.from_datetime(self.date_time)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -9656,11 +9837,15 @@ class DateTime:
     class Meta:
         namespace = "http://www.isotc211.org/2005/gco"
 
-    value: XmlDateTime = field(
+    value: XmlDateTime | datetime.datetime = field(
         metadata={
             "required": True,
         }
     )
+
+    def __post_init__(self) -> None:
+        if isinstance(self.value, datetime.datetime):
+            self.value = XmlDateTime.from_datetime(self.value)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -10040,18 +10225,23 @@ class AbstractObject_1:
         },
     )
     schema_version: str = field(
+        # We set the schema_version in the __post_init__ if it is empty by
+        # default.
+        default="",
         metadata={
             "name": "schemaVersion",
             "type": "Attribute",
             "required": True,
-        }
+        },
     )
     uuid: str = field(
+        # We add a uuid by default, if it is not provided.
+        default_factory=lambda: str(uuid.uuid4()),
         metadata={
             "type": "Attribute",
             "required": True,
             "pattern": r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
-        }
+        },
     )
     object_version: None | str = field(
         default=None,
@@ -10063,6 +10253,23 @@ class AbstractObject_1:
             "white_space": "collapse",
         },
     )
+
+    def __post_init__(self) -> None:
+        if not self.schema_version:
+            namespace = getattr(self.Meta, "namespace", None) or getattr(
+                self.Meta, "target_namespace"
+            )
+
+            if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
+                self.schema_version = resqml_schema_version
+            elif namespace == "http://www.energistics.org/energyml/data/commonv2":
+                self.schema_version = common_schema_version
+            else:
+                raise NotImplementedError(
+                    f"Namespace {namespace} from object {self} has no default schema "
+                    "version. Provide this manually as keyword argument when "
+                    "constructing the object."
+                )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -16944,6 +17151,62 @@ class Point3dZValueArray(AbstractPoint3dArray):
         }
     )
 
+    @classmethod
+    def from_regular_surface(
+        cls,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        path_in_hdf_file: str,
+        shape: tuple[int, int],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+    ) -> Self:
+        supporting_geometry = Point3dLatticeArray(
+            origin=Point3d(
+                coordinate1=float(origin[0]),
+                coordinate2=float(origin[1]),
+                coordinate3=0.0,
+            ),
+            offset=[
+                Point3dOffset(
+                    offset=Point3d(
+                        coordinate1=float(unit_vec_1[0]),
+                        coordinate2=float(unit_vec_1[1]),
+                        coordinate3=0.0,
+                    ),
+                    spacing=DoubleConstantArray(
+                        value=float(spacing[0]),
+                        # TODO: Figure out how we should treat the spacing! The
+                        # documentation states that it should be N - 1 for an
+                        # array of N elements (that is, it counts the number of
+                        # spaces between elements). However, we have seen cases
+                        # where this is instead set to N.
+                        count=int(shape[0]) - 1,
+                    ),
+                ),
+                Point3dOffset(
+                    offset=Point3d(
+                        coordinate1=float(unit_vec_2[0]),
+                        coordinate2=float(unit_vec_2[1]),
+                        coordinate3=0.0,
+                    ),
+                    spacing=DoubleConstantArray(
+                        value=float(spacing[1]),
+                        count=int(shape[1]) - 1,
+                    ),
+                ),
+            ],
+        )
+        zvalues = DoubleHdf5Array(
+            values=Hdf5Dataset(
+                path_in_hdf_file=path_in_hdf_file,
+                hdf_proxy=DataObjectReference.from_object(epc_external_part_reference),
+            ),
+        )
+
+        return cls(supporting_geometry=supporting_geometry, zvalues=zvalues)
+
 
 @dataclass(slots=True, kw_only=True)
 class ResqmlJaggedArray:
@@ -17955,12 +18218,13 @@ class obj_EpcExternalPartReference(AbstractCitedDataObject):
         target_namespace = "http://www.energistics.org/energyml/data/commonv2"
 
     mime_type: str = field(
+        default="application/x-hdf5",
         metadata={
             "name": "MimeType",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/commonv2",
             "required": True,
-        }
+        },
     )
 
 
@@ -18580,6 +18844,32 @@ class PointGeometry(AbstractGeometry):
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
         },
     )
+
+    @classmethod
+    def from_regular_surface(
+        cls,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        path_in_hdf_file: str,
+        shape: tuple[int, int],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+    ) -> Self:
+        local_crs = DataObjectReference.from_object(crs)
+
+        points = Point3dZValueArray.from_regular_surface(
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=path_in_hdf_file,
+            shape=shape,
+            origin=origin,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
+        )
+
+        return cls(local_crs=local_crs, points=points)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -19424,44 +19714,49 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
     yoffset: float = field(
+        default=0.0,
         metadata={
             "name": "YOffset",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     zoffset: float = field(
+        default=0.0,
         metadata={
             "name": "ZOffset",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     areal_rotation: PlaneAngleMeasure = field(
+        default_factory=lambda: PlaneAngleMeasure(value=0.0, uom=PlaneAngleUom.RAD),
         metadata={
             "name": "ArealRotation",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_axis_order: AxisOrder2d = field(
+        default=AxisOrder2d.EASTING_NORTHING,
         metadata={
             "name": "ProjectedAxisOrder",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     projected_uom: LengthUom = field(
+        default=LengthUom.M,
         metadata={
             "name": "ProjectedUom",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     vertical_uom: LengthUom = field(
         metadata={
@@ -19472,20 +19767,22 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         }
     )
     xoffset: float = field(
+        default=0.0,
         metadata={
             "name": "XOffset",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     zincreasing_downward: bool = field(
+        default=True,
         metadata={
             "name": "ZIncreasingDownward",
             "type": "Element",
             "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
             "required": True,
-        }
+        },
     )
     vertical_crs: AbstractVerticalCrs = field(
         metadata={
@@ -19732,6 +20029,39 @@ class Grid2dPatch(Patch):
             "required": True,
         }
     )
+
+    @classmethod
+    def from_regular_surface(
+        cls,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        path_in_hdf_file: str,
+        shape: tuple[int, int],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        patch_index: int = 0,
+    ) -> Self:
+        geometry = PointGeometry.from_regular_surface(
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=path_in_hdf_file,
+            shape=shape,
+            origin=origin,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
+        )
+
+        return cls(
+            patch_index=patch_index,
+            # Rows for NumPy-arrays in C-major ordering.
+            slowest_axis_count=shape[0],
+            # Columns for NumPy-arrays in C-major ordering.
+            fastest_axis_count=shape[1],
+            geometry=geometry,
+        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -21779,6 +22109,17 @@ class obj_LocalDepth3dCrs(AbstractLocal3dCrs):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
+    # Overwriting the super-field to set a default.
+    vertical_uom: LengthUom = field(
+        default=LengthUom.M,
+        metadata={
+            "name": "VerticalUom",
+            "type": "Element",
+            "namespace": "http://www.energistics.org/energyml/data/resqmlv2",
+            "required": True,
+        },
+    )
+
 
 @dataclass(slots=True, kw_only=True)
 class obj_LocalTime3dCrs(AbstractLocal3dCrs):
@@ -23635,6 +23976,189 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             "required": True,
         }
     )
+
+    def get_xy_grid(
+        self, crs: AbstractLocal3dCrs | None = None
+    ) -> tuple[
+        npt.NDArray[np.float64],
+        npt.NDArray[np.float64],
+    ]:
+        """
+        Method constructing the `X`- and `Y`-grids for a regular surface. This
+        currently only works for `obj_Grid2dRepresentation`-objects that
+        represent regular surfaces. That is where the grids are specified using
+        an origin, spacings, number of elements and unit vectors. Otherwise the
+        `X`- and `Y`-grids are stored as arrays on an ETP server or in an
+        hdf5-file. The function also takes in a local crs that can be
+        transformed (translated and rotated) from a global crs. The method
+        treats any rotation and translation in the grid as an _active
+        transformation_, and any transformation in the local crs as a _passive
+        transformation_.
+
+        Parameters
+        ----------
+        crs: AbstractLocal3dCrs
+            A subclass of `AbstractLocal3dCrs`. It is used to correct for a
+            potential passive transformation done by the crs. The crs does not
+            have to be the same as referenced by the grid-object, but if it
+            does not match a warning is raised. Setting `crs=None` avoids any
+            transformation from the crs. Default is `None`.
+
+        Returns
+        -------
+            tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]
+            A pair of `X`- and `Y`-grids that gives the `x` and `y` coordinates
+            to the surface described by the grid-object. For an unrotated
+            surface this corresponds to a meshgrid.
+        """
+        points = self.grid2d_patch.geometry.points
+
+        if not isinstance(points, Point3dZValueArray):
+            raise NotImplementedError(
+                "We do not support constructing the X, Y grid for points of type "
+                f"{points.__class__.__name__}"
+            )
+
+        sg = points.supporting_geometry
+        if not isinstance(sg, Point3dLatticeArray):
+            raise NotImplementedError(
+                "We do not support constructing the X, Y grid for a supporting "
+                f"geometry of type {sg.__class__.__name__}"
+            )
+
+        from resqml_objects.surface_helpers import RegularGridParameters
+
+        shape = (
+            self.grid2d_patch.slowest_axis_count,
+            self.grid2d_patch.fastest_axis_count,
+        )
+        origin = sg.origin
+        offsets = sg.offset
+
+        ori = np.array(
+            [
+                origin.coordinate1,
+                origin.coordinate2,
+            ]
+        )
+        dr = np.array(
+            [
+                offsets[0].spacing.value,
+                offsets[1].spacing.value,
+            ]
+        )
+
+        unit_vectors = np.array(
+            [
+                [offsets[0].offset.coordinate1, offsets[1].offset.coordinate1],
+                [offsets[0].offset.coordinate2, offsets[1].offset.coordinate2],
+            ]
+        )
+
+        crs_angle = 0.0
+        crs_offset = np.array([0.0, 0.0])
+
+        if crs is not None:
+            if crs.uuid != self.grid2d_patch.geometry.local_crs.uuid:
+                warnings.warn(
+                    f"The provided crs has a different uuid '{crs.citation.uuid}' "
+                    " than the referenced crs "
+                    f"'{self.grid2d_patch.geometry.local_crs.uuid}'."
+                )
+
+            # NOTE: We assume that coordinate1 (coordinate2) corresponds to
+            # xoffset (yoffset) in the CRS, and that they share the same units.
+            crs_offset[0] = crs.xoffset
+            crs_offset[1] = crs.yoffset
+
+            crs_angle_unit = PlaneAngleUom(crs.areal_rotation.uom)
+
+            match crs_angle_unit:
+                case PlaneAngleUom.RAD:
+                    crs_angle = crs.areal_rotation.value
+                case PlaneAngleUom.DEGA:
+                    crs_angle = np.deg2rad(crs.areal_rotation.value)
+                case _:
+                    raise NotImplementedError(
+                        f"No conversion from {crs_angle_unit} to radians implemented"
+                    )
+
+        rgp = RegularGridParameters(
+            shape=shape,
+            origin=ori,
+            spacing=dr,
+            unit_vectors=unit_vectors,
+            crs_angle=crs_angle,
+            crs_offset=crs_offset,
+        )
+
+        return rgp.to_xy_grid(to_global_crs=True)
+
+    @classmethod
+    def from_regular_surface(
+        cls,
+        citation: Citation,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        shape: tuple[int, int],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        patch_index: int = 0,
+        path_in_hdf_file: str = "",
+        uuid: str | uuid.UUID = uuid.uuid4(),
+        surface_role: SurfaceRole | str = SurfaceRole.MAP,
+        boundaries: list[PatchBoundaries] | None = None,
+        represented_interpretation: AbstractFeatureInterpretation | None = None,
+        extra_metadata: list[NameValuePair] | None = None,
+        custom_data: CustomData | None = None,
+        object_version: str | None = None,
+        aliases: list[ObjectAlias] | None = None,
+    ) -> Self:
+        """
+        Class method that sets up an `obj_Grid2dRepresentation`-object for a
+        regular surface described by the eight parameters (seven free
+        parameters) `shape`, `origin`, `dr` and `unit_vectors`, and the
+        necessary (a local crs, and an epc-reference file) and/or optional
+        metadata from RESQML.
+        """
+        uuid = str(uuid)
+        surface_role = SurfaceRole(surface_role)
+        boundaries = boundaries or []
+        extra_metadata = extra_metadata or []
+        aliases = aliases or []
+        path_in_hdf_file = path_in_hdf_file or f"/RESQML/{uuid}/zvalues"
+
+        if represented_interpretation is not None:
+            represented_interpretation = DataObjectReference.from_object(
+                represented_interpretation
+            )
+
+        grid2d_patch = Grid2dPatch.from_regular_surface(
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=path_in_hdf_file,
+            shape=shape,
+            origin=origin,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
+            patch_index=patch_index,
+        )
+
+        return cls(
+            citation=citation,
+            aliases=aliases,
+            custom_data=custom_data,
+            uuid=uuid,
+            object_version=object_version,
+            surface_role=surface_role,
+            grid2d_patch=grid2d_patch,
+            boundaries=boundaries,
+            represented_interpretation=represented_interpretation,
+            extra_metadata=extra_metadata,
+        )
 
 
 @dataclass(slots=True, kw_only=True)

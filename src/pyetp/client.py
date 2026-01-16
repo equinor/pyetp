@@ -2,7 +2,6 @@ import asyncio
 import contextlib
 import datetime
 import logging
-import sys
 import typing as T
 import uuid
 import warnings
@@ -154,40 +153,6 @@ from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_objec
 
 logger = logging.getLogger(__name__)
 
-try:
-    # for py >3.11, we can raise grouped exceptions
-    from builtins import ExceptionGroup  # type: ignore
-except ImportError:
-    # Python 3.10
-    def ExceptionGroup(msg, errors):
-        return errors[0]
-
-
-try:
-    # Python >= 3.11
-    from asyncio import timeout
-except ImportError:
-    # Python 3.10
-    from contextlib import asynccontextmanager
-
-    import async_timeout
-
-    @asynccontextmanager
-    async def timeout(delay: T.Optional[float]) -> T.Any:
-        try:
-            async with async_timeout.timeout(delay):
-                yield None
-        except asyncio.CancelledError as e:
-            raise asyncio.TimeoutError(f"Timeout ({delay}s)") from e
-
-    TimeoutError = asyncio.TimeoutError
-
-try:
-    # Python >= 3.11
-    from typing import Self
-except ImportError:
-    Self = "ETPClient"
-
 
 class ETPError(Exception):
     def __init__(self, message: str, code: int):
@@ -315,7 +280,7 @@ class ETPClient(ETPConnection):
         for ti in timeout_intervals(self.etp_timeout):
             try:
                 # Wait for an event for `ti` seconds.
-                async with timeout(ti):
+                async with asyncio.timeout(ti):
                     await self._recv_events[correlation_id].wait()
             except TimeoutError:
                 # Check if the receiver task is still running.
@@ -428,7 +393,7 @@ class ETPClient(ETPConnection):
             # In some cases the server does not drop the connection after we
             # have sent the `CloseSession`-message. We therefore add a timeout
             # to the reading of possibly lost messages.
-            async with timeout(self.etp_timeout or 10):
+            async with asyncio.timeout(self.etp_timeout or 10):
                 async for msg in self.ws:
                     counter += 1
         except websockets.ConnectionClosed:
@@ -492,7 +457,7 @@ class ETPClient(ETPConnection):
 
         logger.info("Websockets connection closed and receiver task stopped")
 
-    async def __aenter__(self) -> Self:
+    async def __aenter__(self) -> T.Self:
         return await self.request_session()
 
     async def request_session(self):
@@ -831,20 +796,19 @@ class ETPClient(ETPConnection):
             "obj must be Grid2DRepresentation"
         )
         sgeo = gri.grid2d_patch.geometry.points.supporting_geometry  # type: ignore
-        if sys.version_info[1] != 10:
-            assert isinstance(
-                gri.grid2d_patch.geometry.points, ro.Point3dZValueArray
-            ), "Points must be Point3dZValueArray"
-            assert isinstance(
-                gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
-            ), "Values must be DoubleHdf5Array"
-            assert isinstance(
-                gri.grid2d_patch.geometry.points.supporting_geometry,
-                ro.Point3dLatticeArray,
-            ), "Points support_geo must be Point3dLatticeArray"
-            assert isinstance(sgeo, ro.Point3dLatticeArray), (
-                "supporting_geometry must be Point3dLatticeArray"
-            )
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray), (
+            "Points must be Point3dZValueArray"
+        )
+        assert isinstance(
+            gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
+        ), "Values must be DoubleHdf5Array"
+        assert isinstance(
+            gri.grid2d_patch.geometry.points.supporting_geometry,
+            ro.Point3dLatticeArray,
+        ), "Points support_geo must be Point3dLatticeArray"
+        assert isinstance(sgeo, ro.Point3dLatticeArray), (
+            "supporting_geometry must be Point3dLatticeArray"
+        )
         assert isinstance(
             gri.grid2d_patch.geometry.points.zvalues.values, ro.Hdf5Dataset
         ), "Values must be Hdf5Dataset"

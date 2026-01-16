@@ -1,5 +1,4 @@
 import asyncio
-import sys
 from contextlib import contextmanager
 from typing import Tuple
 from unittest.mock import AsyncMock
@@ -36,6 +35,7 @@ from pyetp.utils_xml import (
     instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
 )
+from resqml_objects.surface_helpers import angle_to_unit_vectors
 
 
 def create_surface(ncol: int, nrow: int, rotation: float):
@@ -398,16 +398,9 @@ async def test_oversized_models(
             gri_uri,
         )
 
-        if (sys.version_info.major, sys.version_info.minor) == (3, 10):
-            assert crs.vertical_crs.epsg_code == ret_crs.vertical_crs.epsg_code
-            assert crs.projected_crs.epsg_code == ret_crs.projected_crs.epsg_code
-            assert crs.uuid == ret_crs.uuid
-            assert epc.uuid == ret_epc.uuid
-            assert gri.uuid == ret_gri.uuid
-        else:
-            assert ret_epc == epc
-            assert ret_crs == crs
-            assert ret_gri == gri
+        assert ret_epc == epc
+        assert ret_crs == crs
+        assert ret_gri == gri
 
         ret_data = await etp_client.download_array(
             epc_uri,
@@ -579,18 +572,8 @@ async def test_resqml_objects(etp_client: ETPClient, dataspace_uri: DataspaceURI
     )
 
     assert epc == epc_r
-
-    import sys
-
-    # The equality check does not work for Python 3.10. We'll leave this check
-    # in here before limiting the project to Python 3.11 and up.
-    if sys.version_info.minor == 10 and sys.version_info.major == 3:
-        assert crs.vertical_crs.epsg_code == crs_r.vertical_crs.epsg_code
-        assert crs.projected_crs.epsg_code == crs_r.projected_crs.epsg_code
-        assert gri.uuid == gri_r.uuid
-    else:
-        assert crs == crs_r
-        assert gri == gri_r
+    assert crs == crs_r
+    assert gri == gri_r
 
     transaction_uuid = await etp_client.start_transaction(
         dataspace_uri=dataspace_uri, read_only=False
@@ -642,8 +625,7 @@ async def test_rddms_roundtrip(
     )
 
     supporting_geometry = gri.grid2d_patch.geometry.points.supporting_geometry
-    if sys.version_info[1] != 10:
-        assert isinstance(supporting_geometry, ro.Point3dLatticeArray)
+    assert isinstance(supporting_geometry, ro.Point3dLatticeArray)
 
     assert surface.xori == supporting_geometry.origin.coordinate1
     assert surface.yori == supporting_geometry.origin.coordinate2
@@ -660,6 +642,48 @@ async def test_surface(etp_client: ETPClient, dataspace_uri: DataspaceURI):
     nsurf = await etp_client.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
     np.testing.assert_allclose(surf.values, nsurf.values)  # type: ignore
     assert surf.metadata.get_metadata() == nsurf.metadata.get_metadata()
+
+
+def test_compare_xtgeo_surface() -> None:
+    shape = np.random.randint(50, 150), np.random.randint(50, 150)
+    rotation = 360 * np.random.random()
+
+    surf = create_surface(*shape, rotation)
+    X, Y = surf.get_xy_values(asmasked=False)
+
+    assert X.shape == Y.shape == shape
+    assert (surf.ncol, surf.nrow) == shape
+
+    epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 12345)
+
+    rX, rY = gri.get_xy_grid(crs=crs)
+
+    np.testing.assert_allclose(X, rX)
+    np.testing.assert_allclose(Y, rY)
+
+    rcrs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Grid crs", originator=crs.citation.originator),
+        vertical_crs=crs.vertical_crs,
+        projected_crs=crs.projected_crs,
+    )
+
+    # Note that xtgeo gives the rotation in degrees.
+    unit_vectors = angle_to_unit_vectors(np.deg2rad(surf.get_rotation()))
+
+    rgri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Grid", originator=crs.citation.originator),
+        crs=rcrs,
+        epc_external_part_reference=epc,
+        shape=surf.values.shape,
+        origin=np.array([surf.xori, surf.yori]),
+        spacing=np.array([surf.xinc, surf.yinc]),
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
+    )
+
+    r2X, r2Y = rgri.get_xy_grid(crs=rcrs)
+    np.testing.assert_allclose(X, r2X)
+    np.testing.assert_allclose(Y, r2Y)
 
 
 @pytest.mark.asyncio
