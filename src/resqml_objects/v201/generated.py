@@ -12,7 +12,7 @@ import uuid
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Annotated, Any, Self
+from typing import Annotated, Any, Self, Type
 
 import numpy as np
 import numpy.typing as npt
@@ -942,10 +942,43 @@ class DataObjectReference:
     )
 
     @staticmethod
-    def get_content_type_string(obj: AbstractResqmlDataObject) -> str:
-        # See Energistics Identifier Specification 4.0 (it is downloaded
-        # alongside the RESQML v2.0.1 standard) section 4.1 for an explanation
-        # on the format of content_type.
+    def get_content_type_string(
+        obj: AbstractResqmlDataObject | Type[AbstractResqmlDataObject],
+    ) -> str:
+        """
+        Static method constructing a RESQML v2.0.1 or EML v2.0 content type
+        string based on the XML namespace of the provided object. The format of
+        the content type string for RESQML v2.0.1 is:
+
+            application/x-resqml+xml;version=2.0.1;type={object-type}
+
+        and for EML v2.0:
+
+            application/x-eml+xml;version=2.0;type={object-type}
+
+        where `object-type` should correspond to the XSD type of the object.
+        For example for a `obj_Grid2dRepresentation`-object this is exactly
+        `obj_Grid2dRepresentation`.
+
+        See Energistics Identifier Specification 4.0 (it is downloaded
+        alongside the RESQML v2.0.1 standard) section 4.1 for the
+        documentation of this format.
+
+        Parameters
+        ----------
+        obj: AbstractResqmlDataObject | Type[AbstractResqmlDataObject]
+            An instance or type that is a subclass of
+            `AbstractResqmlDataObject`.
+
+        Returns
+        -------
+        str
+            The content type string.
+        """
+
+        # Get class object instead of the instance.
+        if type(obj) is not type:
+            obj = type(obj)
 
         namespace = getattr(obj.Meta, "namespace", None) or getattr(
             obj.Meta, "target_namespace"
@@ -954,12 +987,12 @@ class DataObjectReference:
         if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
             return (
                 f"application/x-resqml+xml;version={resqml_schema_version};"
-                f"type={obj.__class__.__name__}"
+                f"type={obj.__name__}"
             )
         elif namespace == "http://www.energistics.org/energyml/data/commonv2":
             return (
                 f"application/x-eml+xml;version={common_schema_version};"
-                f"type={obj.__class__.__name__}"
+                f"type={obj.__name__}"
             )
 
         raise NotImplementedError(
