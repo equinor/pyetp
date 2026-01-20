@@ -33,6 +33,12 @@ def check_if_server_is_accesible() -> bool:
     return sock.connect_ex((parsed_url.hostname, parsed_url.port)) == 0
 
 
+skip_decorator = pytest.mark.skipif(
+    not check_if_server_is_accesible(),
+    reason="websocket for test server not open",
+)
+
+
 @pytest_asyncio.fixture
 async def etp_client():
     if not check_if_server_is_accesible():
