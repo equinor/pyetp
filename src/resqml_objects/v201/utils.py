@@ -1,3 +1,7 @@
+import typing
+import warnings
+from dataclasses import fields
+
 import resqml_objects.v201 as ro
 
 resqml_schema_version = "2.0.1"
@@ -9,6 +13,12 @@ def get_content_type_string(
     resqml_schema_version: str = resqml_schema_version,
     common_schema_version: str = common_schema_version,
 ) -> str:
+    warnings.warn(
+        "The 'get_content_type_string'-function is deprecated and will be removed in "
+        "a future version of pyetp. Either use it directly from "
+        "'DataObjectReference.get_content_type_string', or let 'DataObjectReference' "
+        "handle it where it is needed (under 'resqml_object.v201')."
+    )
     # See Energistics Identifier Specification 4.0 (it is downloaded alongside
     # the RESQML v2.0.1 standard) section 4.1 for an explanation on the format
     # of content_type.
