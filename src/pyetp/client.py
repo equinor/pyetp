@@ -6,7 +6,7 @@ import typing as T
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from types import TracebackType
 
 import numpy as np
@@ -250,32 +250,6 @@ class ETPClient(ETPConnection):
         assert correlation_id in self._recv_events, (
             "Trying to receive a response on non-existing message"
         )
-
-        def timeout_intervals(etp_timeout):
-            # Local function generating progressively longer timeout intervals.
-
-            # Use the timeout-interval generator from the Python websockets
-            # library.
-            backoff_generator = websockets.client.backoff(
-                initial_delay=5.0, min_delay=5.0, max_delay=20.0
-            )
-
-            # Check if we should never time out.
-            if etp_timeout is None:
-                # This is an infinite generator, so it should never exit.
-                yield from backoff_generator
-                return
-
-            # Generate timeout intervals until we have reached the
-            # `etp_timeout`-threshold.
-            csum = 0.0
-            for d in backoff_generator:
-                yield d
-
-                csum += d
-
-                if csum >= etp_timeout:
-                    break
 
         for ti in timeout_intervals(self.etp_timeout):
             try:
@@ -1586,3 +1560,30 @@ class etp_connect:
                 max_message_size=self.max_message_size,
             ) as etp_client:
                 yield etp_client
+
+
+def timeout_intervals(total_timeout: float) -> Generator[float]:
+    # Local function generating progressively longer timeout intervals.
+
+    # Use the timeout-interval generator from the Python websockets
+    # library.
+    backoff_generator = websockets.client.backoff(
+        initial_delay=5.0, min_delay=5.0, max_delay=20.0
+    )
+
+    # Check if we should never time out.
+    if total_timeout is None:
+        # This is an infinite generator, so it should never exit.
+        yield from backoff_generator
+        return
+
+    # Generate timeout intervals until we have reached the
+    # `total_timeout`-threshold.
+    csum = 0.0
+    for d in backoff_generator:
+        yield d
+
+        csum += d
+
+        if csum >= total_timeout:
+            break
