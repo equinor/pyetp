@@ -390,7 +390,7 @@ class ETPClient(ETPConnection):
 
         logger.debug("Client closed")
 
-    async def close(self):
+    async def close(self) -> None:
         """Closing method that tears down the ETP-connection via the
         `ETPClient.__aexit__`-method, and closes the websockets connection.
         This method should _only_ be used if the user has set up a connection
