@@ -24107,7 +24107,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
         patch_index: int = 0,
         path_in_hdf_file: str = "",
-        uuid: str | uuid.UUID = uuid.uuid4(),
+        uuid: str | uuid.UUID | None = None,
         surface_role: SurfaceRole | str = SurfaceRole.MAP,
         boundaries: list[PatchBoundaries] | None = None,
         represented_interpretation: AbstractFeatureInterpretation | None = None,
@@ -24123,7 +24123,14 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         necessary (a local crs, and an epc-reference file) and/or optional
         metadata from RESQML.
         """
-        uuid = str(uuid)
+
+        if uuid is None:
+            # Cursed solution as the `uuid`-argument overwrites the top-level
+            # import of the standard-library `uuid`.
+            import uuid
+
+            uuid = str(uuid.uuid4())
+
         surface_role = SurfaceRole(surface_role)
         boundaries = boundaries or []
         extra_metadata = extra_metadata or []
