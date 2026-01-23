@@ -10271,6 +10271,41 @@ class AbstractObject_1:
                     "constructing the object."
                 )
 
+    @classmethod
+    def get_domain_version(cls) -> str:
+        namespace = getattr(cls.Meta, "namespace", None) or getattr(
+            cls.Meta, "target_namespace"
+        )
+
+        if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
+            return "resqml20"
+        elif namespace == "http://www.energistics.org/energyml/data/commonv2":
+            return "eml20"
+
+        raise NotImplementedError(
+            f"Namespace {namespace} from object {cls} is not supported"
+        )
+
+    @classmethod
+    def get_qualified_type(cls) -> str:
+        return cls.get_domain_version() + f".{cls.__name__}"
+
+    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
+        qualified_type = self.get_qualified_type()
+        identifier = (
+            self.uuid
+            if self.object_version is None
+            else f"uuid={self.uuid},version='{self.object_version}'"
+        )
+        data_object_part = f"{qualified_type}({identifier})"
+
+        if not dataspace_path_or_uri or dataspace_path_or_uri == "eml:///":
+            return f"eml:///{data_object_part}"
+        elif dataspace_path_or_uri.startswith("eml:///dataspace"):
+            return f"{dataspace_path_or_uri}/{data_object_part}"
+
+        return f"eml:///dataspace('{dataspace_path_or_uri}')/{data_object_part}"
+
 
 @dataclass(slots=True, kw_only=True)
 class ActivityOfRadioactivityMeasure:

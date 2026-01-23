@@ -4,6 +4,7 @@ from etptypes.energistics.etp.v12.datatypes.object.context_scope_kind import (
 )
 from etptypes.energistics.etp.v12.datatypes.object.data_object import DataObject
 from etptypes.energistics.etp.v12.datatypes.object.dataspace import Dataspace
+from etptypes.energistics.etp.v12.datatypes.object.edge import Edge
 from etptypes.energistics.etp.v12.datatypes.object.relationship_kind import (
     RelationshipKind,
 )
@@ -17,4 +18,5 @@ __all__ = [
     "ContextScopeKind",
     "RelationshipKind",
     "Resource",
+    "Edge",
 ]

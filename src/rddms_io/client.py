@@ -11,11 +11,21 @@ from pydantic import SecretStr
 
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes import ArrayOfString, DataValue, Uuid
+from energistics.etp.v12.datatypes.data_array_types import (
+    DataArrayIdentifier,
+    DataArrayMetadata,
+)
 from energistics.etp.v12.datatypes.object import (
     ContextInfo,
+    ContextScopeKind,
     DataObject,
     Dataspace,
+    RelationshipKind,
     Resource,
+)
+from energistics.etp.v12.protocol.data_array import (
+    GetDataArrayMetadata,
+    GetDataArrayMetadataResponse,
 )
 from energistics.etp.v12.protocol.dataspace import (
     DeleteDataspaces,
@@ -27,6 +37,7 @@ from energistics.etp.v12.protocol.dataspace import (
 )
 from energistics.etp.v12.protocol.discovery import (
     GetResources,
+    GetResourcesEdgesResponse,
     GetResourcesResponse,
 )
 from energistics.etp.v12.protocol.store import (
@@ -51,9 +62,9 @@ from pyetp.errors import (
     parse_and_raise_response_errors,
 )
 from pyetp.uri import DataObjectURI, DataspaceURI
-from rddms_io.data_types import RDDMSDataspace
+from rddms_io.data_types import LinkedObjects, RDDMSDataspace
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
-from resqml_objects.v201.utils import find_hdf5_datasets, get_qualified_type
+from resqml_objects.v201.utils import find_hdf5_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -68,30 +79,32 @@ class RDDMSClient:
     async def list_dataspaces(
         self, store_last_write_filter: int | None = None
     ) -> list[RDDMSDataspace]:
-        response = await self.etp_client.send(
+        responses = await self.etp_client.send(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
         parse_and_raise_response_errors(
-            [response],
+            responses,
             GetDataspacesResponse,
             "RDDMSClient.list_dataspaces",
         )
         dataspaces = [
-            RDDMSDataspace.from_etp_dataspace(ds) for ds in response.dataspaces
+            RDDMSDataspace.from_etp_dataspace(ds)
+            for response in responses
+            for ds in response.dataspaces
         ]
         return dataspaces
 
     async def delete_dataspace(self, dataspace_uri: DataspaceURI | str) -> None:
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
-        response = await self.etp_client.send(
+        responses = await self.etp_client.send(
             DeleteDataspaces(uris={dataspace_uri: dataspace_uri})
         )
         parse_and_raise_response_errors(
-            [response],
+            responses,
             DeleteDataspacesResponse,
             "RDDMSClient.delete_dataspace",
         )
-        assert dataspace_uri in response.success
+        assert any([dataspace_uri in response.success for response in responses])
 
     async def create_dataspace(
         self,
@@ -118,7 +131,7 @@ class RDDMSClient:
             **acl_parsing("viewers", viewers),
         }
 
-        response = await self.etp_client.send(
+        responses = await self.etp_client.send(
             PutDataspaces(
                 dataspaces={
                     str(dataspace_uri): Dataspace(
@@ -133,9 +146,9 @@ class RDDMSClient:
         )
 
         parse_and_raise_response_errors(
-            [response], PutDataspacesResponse, "RDDMSClient.create_dataspace"
+            responses, PutDataspacesResponse, "RDDMSClient.create_dataspace"
         )
-        assert str(dataspace_uri) in response.success
+        assert any([str(dataspace_uri) in response.success for response in responses])
 
     async def start_transaction(
         self,
@@ -178,31 +191,30 @@ class RDDMSClient:
             total_timeout = None
 
         for ti in timeout_intervals(total_timeout):
-            response = await self.etp_client.send(
+            responses = await self.etp_client.send(
                 StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri]),
             )
             parse_and_raise_response_errors(
-                [response], StartTransactionResponse, "RDDMSClient.start_transaction"
+                responses, StartTransactionResponse, "RDDMSClient.start_transaction"
             )
 
-            if response.successful:
-                break
+            assert len(responses) == 1
+            response = responses[0]
+
+            if all([response.successful for response in responses]):
+                transaction_uuid = uuid.UUID(str(response.transaction_uuid))
+                logger.debug("Started transaction with uuid: {transaction_uuid}")
+                return transaction_uuid
 
             if debounce:
                 logger.info(
-                    f"Failed to start transaction with response: {response}, retrying "
-                    f"in {ti} seconds"
+                    f"Failed to start transaction with response: {response}, "
+                    f"retrying in {ti} seconds"
                 )
                 await asyncio.sleep(ti)
                 continue
 
             raise ETPTransactionFailure(str(response))
-
-        transaction_uuid = uuid.UUID(str(response.transaction_uuid))
-
-        logger.debug("Started transaction with uuid: {transaction_uuid}")
-
-        return transaction_uuid
 
     async def commit_transaction(
         self,
@@ -213,9 +225,12 @@ class RDDMSClient:
         elif isinstance(transaction_uuid, str | bytes):
             transaction_uuid = Uuid(transaction_uuid)
 
-        response = await self.etp_client.send(
+        responses = await self.etp_client.send(
             CommitTransaction(transaction_uuid=transaction_uuid),
         )
+
+        assert len(responses) == 1
+        response = responses[0]
 
         if not response.successful:
             raise ETPTransactionFailure(str(response))
@@ -245,7 +260,7 @@ class RDDMSClient:
         data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
-    ) -> None:
+    ) -> list[Resource]:
         """
         This method will list all objects under a given dataspace.
 
@@ -266,7 +281,7 @@ class RDDMSClient:
         """
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
         data_object_types = [
-            dot if isinstance(dot, str) else get_qualified_type(dot)
+            dot if isinstance(dot, str) else dot.get_qualified_type()
             for dot in data_object_types
         ]
 
@@ -285,29 +300,168 @@ class RDDMSClient:
             include_edges=False,
         )
 
-        response = await self.etp_client.send(gr)
+        responses = await self.etp_client.send(gr)
+
         parse_and_raise_response_errors(
-            [response], GetResourcesResponse, "RDDMSClient.list_objects_under_dataspace"
+            responses, GetResourcesResponse, "RDDMSClient.list_objects_under_dataspace"
         )
-        print(response)
+        return [resource for response in responses for resource in response.resources]
 
     async def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-    ) -> None:
+        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        store_last_write_filter: int | None = None,
+    ) -> LinkedObjects:
         """
         This method lists all objects that are linked to the provided object
         uri. That is, starting from the object with the given uri it finds all
         objects that links to it, and all objects it links to.
         """
-        pass
+        data_object_types = [
+            dot if isinstance(dot, str) else dot.get_qualified_type()
+            for dot in data_object_types
+        ]
+
+        # TODO: This parameter needs to be tested more on larger models.
+        # The depth parameter seems to matter for the edges. If we have depth >
+        # 1, then we see the edges between objects higher up than the
+        # start-object. For example, using the three epc, crs and gri objects
+        # that we normally work with, starting from the crs, and setting depth
+        # = 2 will show the edge between the grid-object and the auto-generated
+        # activity-object. For depth = 1 this edge is not returned.
+        depth = 1
+
+        gr_sources = GetResources(
+            context=ContextInfo(
+                uri=str(start_uri),
+                depth=depth,
+                data_object_types=data_object_types,
+                navigable_edges=RelationshipKind.PRIMARY,
+            ),
+            # Setting the scope to `SOURCES_OR_SELF` returns the start-object
+            # resource _and_ the edge(s) between the start-object and its
+            # sources.
+            scope=ContextScopeKind.SOURCES_OR_SELF,
+            count_objects=True,
+            store_last_write_filter=store_last_write_filter,
+            include_edges=True,
+        )
+
+        gr_targets = GetResources(
+            context=ContextInfo(
+                uri=str(start_uri),
+                depth=depth,
+                data_object_types=data_object_types,
+                navigable_edges=RelationshipKind.PRIMARY,
+            ),
+            scope=ContextScopeKind.TARGETS_OR_SELF,
+            count_objects=True,
+            store_last_write_filter=store_last_write_filter,
+            include_edges=True,
+        )
+
+        task_responses = await asyncio.gather(
+            self.etp_client.send(gr_sources),
+            self.etp_client.send(gr_targets),
+        )
+
+        sources_responses = task_responses[0]
+        targets_responses = task_responses[1]
+
+        source_edges = [
+            e
+            for grer in filter(
+                lambda e: isinstance(e, GetResourcesEdgesResponse), sources_responses
+            )
+            for e in grer.edges
+        ]
+        source_resources = [
+            r
+            for grr in filter(
+                lambda e: isinstance(e, GetResourcesResponse), sources_responses
+            )
+            for r in grr.resources
+        ]
+
+        target_edges = [
+            e
+            for grer in filter(
+                lambda e: isinstance(e, GetResourcesEdgesResponse), targets_responses
+            )
+            for e in grer.edges
+        ]
+        target_resources = [
+            r
+            for grr in filter(
+                lambda e: isinstance(e, GetResourcesResponse), targets_responses
+            )
+            for r in grr.resources
+        ]
+
+        return LinkedObjects(
+            start_uri=start_uri,
+            source_resources=source_resources,
+            source_edges=source_edges,
+            target_resources=target_resources,
+            target_edges=target_edges,
+        )
 
     async def list_array_metadata(
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-    ) -> None:
-        pass
+    ) -> dict[str, dict[str, DataArrayMetadata]]:
+        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+
+        ml_uris = []
+        tasks = []
+        for obj in ml_objects:
+            obj_dais = []
+            for hdf5_dataset in find_hdf5_datasets(obj):
+                path_in_resource = hdf5_dataset.path_in_hdf_file
+                epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
+                    dataspace_path_or_uri=dataspace_uri,
+                )
+
+                dai = DataArrayIdentifier(
+                    uri=epc_uri,
+                    path_in_resource=path_in_resource,
+                )
+                obj_dais.append(dai)
+
+            if obj_dais:
+                ml_uris.append(
+                    obj.get_etp_data_object_uri(dataspace_path_or_uri=dataspace_uri)
+                )
+                task = self.etp_client.send(
+                    GetDataArrayMetadata(
+                        data_arrays={dai.path_in_resource: dai for dai in obj_dais},
+                    )
+                )
+                tasks.append(task)
+
+        if not tasks:
+            logger.info("There were no arrays connected to input objects")
+            return {}
+
+        task_responses = await asyncio.gather(*tasks)
+
+        metadata_map = {}
+        for uri, tr in zip(ml_uris, task_responses):
+            parse_and_raise_response_errors(
+                tr,
+                GetDataArrayMetadataResponse,
+                "RDDMSClient.list_array_metadata",
+            )
+
+            pirm = {}
+            for response in tr:
+                pirm = {**pirm, **response.array_metadata}
+
+            metadata_map[uri] = pirm
+
+        return metadata_map
 
     async def upload_array(
         self,
@@ -343,18 +497,12 @@ class RDDMSClient:
     ) -> list[str]:
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
 
-        if not handle_transaction:
-            return await self._upload_model(
+        if handle_transaction:
+            transaction_uuid = await self.start_transaction(
                 dataspace_uri=dataspace_uri,
-                ml_objects=ml_objects,
-                data_arrays=data_arrays,
+                read_only=False,
+                debounce=debounce,
             )
-
-        transaction_uuid = await self.start_transaction(
-            dataspace_uri=dataspace_uri,
-            read_only=False,
-            debounce=debounce,
-        )
 
         ml_uris = await self._upload_model(
             dataspace_uri,
@@ -362,7 +510,8 @@ class RDDMSClient:
             data_arrays=data_arrays,
         )
 
-        await self.commit_transaction(transaction_uuid=transaction_uuid)
+        if handle_transaction:
+            await self.commit_transaction(transaction_uuid=transaction_uuid)
 
         return ml_uris
 
@@ -389,7 +538,7 @@ class RDDMSClient:
             # Find all `Hdf5Dataset`-objects in the object.
             ml_hds.extend(find_hdf5_datasets(obj))
 
-            uri = str(DataObjectURI.from_obj(dataspace_uri, obj))
+            uri = obj.get_etp_data_object_uri(dataspace_uri)
             ml_uris.append(uri)
             obj_xml = serialize_resqml_v201_object(obj)
 
@@ -422,7 +571,10 @@ class RDDMSClient:
 
             tasks.append(self.etp_client.send(pdo))
 
-        responses = await asyncio.gather(*tasks)
+        task_responses = await asyncio.gather(*tasks)
+        responses = [
+            response for task_response in task_responses for response in task_response
+        ]
 
         parse_and_raise_response_errors(
             responses, PutDataObjectsResponse, "RDDMSClient.upload_model"
@@ -471,7 +623,10 @@ class RDDMSClient:
             task = self.etp_client.send(GetDataObjects(uris={str(uri): str(uri)}))
             tasks.append(task)
 
-        responses = await asyncio.gather(*tasks)
+        task_responses = await asyncio.gather(*tasks)
+        responses = [
+            response for task_response in task_responses for response in task_response
+        ]
 
         parse_and_raise_response_errors(
             responses, GetDataObjectsResponse, "RDDMSClient.download_model"
@@ -483,8 +638,14 @@ class RDDMSClient:
         if not download_arrays:
             return ml_objects, {}
 
-        dataspace_path = DataspaceURI.from_any(ml_uris[0]).dataspace
         ml_hds = [ml_hd for obj in ml_objects for ml_hd in find_hdf5_datasets(obj)]
+
+        if len(ml_hds) == 0:
+            logger.info("There are no referenced arrays in the downloaded objects")
+
+            return ml_objects, {}
+
+        dataspace_path = DataspaceURI.from_any(ml_uris[0]).dataspace
 
         tasks = []
         for hdf5_dataset in ml_hds:
@@ -523,10 +684,10 @@ class RDDMSClient:
                 dataspace_uri=dataspace_uris[0], read_only=False, debounce=debounce
             )
 
-        response = await self.etp_client.send(ddo)
+        responses = await self.etp_client.send(ddo)
 
         parse_and_raise_response_errors(
-            [response],
+            responses,
             DeleteDataObjectsResponse,
             "RDDMSClient.delete_model",
         )
