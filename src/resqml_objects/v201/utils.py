@@ -77,24 +77,3 @@ def _find_hdf5_datasets(obj: typing.Any) -> list[ro.Hdf5Dataset]:
             hds.extend(_find_hdf5_datasets(getattr(obj, f.name)))
 
     return hds
-
-
-def get_qualified_type(
-    data_object: typing.Type[ro.AbstractCitedDataObject] | ro.AbstractCitedDataObject,
-) -> str:
-    # Get class object instead of the instance.
-    if type(data_object) is not type:
-        data_object = type(data_object)
-
-    namespace = getattr(data_object.Meta, "namespace", None) or getattr(
-        data_object.Meta, "target_namespace"
-    )
-
-    if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
-        return f"resqml20.{data_object.__name__}"
-    elif namespace == "http://www.energistics.org/energyml/data/commonv2":
-        return f"eml20.{data_object.__name__}"
-
-    raise NotImplementedError(
-        f"Namespace {namespace} from object {data_object} is not supported"
-    )

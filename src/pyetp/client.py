@@ -117,7 +117,6 @@ from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces import PutDa
 from etptypes.energistics.etp.v12.protocol.dataspace.put_dataspaces_response import (
     PutDataspacesResponse,
 )
-from etptypes.energistics.etp.v12.protocol.discovery.get_resources import GetResources
 from etptypes.energistics.etp.v12.protocol.store.delete_data_objects import (
     DeleteDataObjects,
 )
@@ -145,6 +144,11 @@ from pydantic import SecretStr
 from xtgeo import RegularSurface
 
 import resqml_objects.v201 as ro
+from energistics.etp.v12.protocol.discovery import (
+    GetResources,
+    GetResourcesEdgesResponse,
+    GetResourcesResponse,
+)
 from pyetp import utils_arrays, utils_xml
 from pyetp._version import version
 from pyetp.config import SETTINGS
@@ -223,11 +227,11 @@ class ETPClient(ETPConnection):
     # client
     #
 
-    async def send(self, body: ETPModel):
+    async def send(self, body: ETPModel) -> list[ETPModel]:
         correlation_id = await self._send(body)
         return await self._recv(correlation_id)
 
-    async def _send(self, body: ETPModel):
+    async def _send(self, body: ETPModel) -> int:
         msg = Message.get_object_message(body, message_flags=MessageFlags.FINALPART)
         if msg is None:
             raise TypeError(f"{type(body)} not valid etp protocol")
@@ -246,7 +250,7 @@ class ETPClient(ETPConnection):
 
         return msg.header.message_id
 
-    async def _recv(self, correlation_id: int) -> ETPModel:
+    async def _recv(self, correlation_id: int) -> list[ETPModel]:
         assert correlation_id in self._recv_events, (
             "Trying to receive a response on non-existing message"
         )
@@ -301,11 +305,7 @@ class ETPClient(ETPConnection):
                 "Server responded with ETPErrors:", ETPError.from_protos(errors)
             )
 
-        if len(bodies) > 1:
-            logger.warning(f"Recived {len(bodies)} messages, but only expected one")
-
-        # ok
-        return bodies[0]
+        return bodies
 
     @staticmethod
     def _parse_error_info(bodies: list[ETPModel]) -> list[ErrorInfo]:
@@ -447,7 +447,7 @@ class ETPClient(ETPConnection):
 
             return "store"
 
-        msg = await self.send(
+        msgs = await self.send(
             RequestSession(
                 applicationName=self.application_name,
                 applicationVersion=self.application_version,
@@ -471,6 +471,10 @@ class ETPClient(ETPConnection):
                 ),
             )
         )
+
+        assert len(msgs) == 1
+        msg = msgs[0]
+
         assert msg and isinstance(msg, OpenSession)
 
         self.is_connected = True
@@ -484,12 +488,15 @@ class ETPClient(ETPConnection):
     async def authorize(
         self, authorization: str, supplemental_authorization: T.Mapping[str, str] = {}
     ):
-        msg = await self.send(
+        msgs = await self.send(
             Authorize(
                 authorization=authorization,
                 supplementalAuthorization=supplemental_authorization,
             )
         )
+        assert len(msgs) == 1
+        msg = msgs[0]
+
         assert msg and isinstance(msg, AuthorizeResponse)
 
         return msg
@@ -521,7 +528,9 @@ class ETPClient(ETPConnection):
             raise Exception("Max one / in dataspace name")
         return DataspaceURI.from_name(ds)
 
-    def list_objects(self, dataspace_uri: DataspaceURI | str, depth: int = 1) -> list:
+    def list_objects(
+        self, dataspace_uri: DataspaceURI | str, depth: int = 1
+    ) -> list[GetResourcesResponse | GetResourcesEdgesResponse]:
         return self.send(
             GetResources(
                 scope=ContextScopeKind.TARGETS_OR_SELF,
@@ -540,7 +549,7 @@ class ETPClient(ETPConnection):
 
     async def get_dataspaces(
         self, store_last_write_filter: int = None
-    ) -> GetDataspacesResponse:
+    ) -> list[GetDataspacesResponse]:
         return await self.send(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
@@ -552,13 +561,13 @@ class ETPClient(ETPConnection):
         owners: list[str],
         viewers: list[str],
         *dataspace_uris: DataspaceURI,
-    ):
+    ) -> dict[str, str]:
         _uris = list(map(DataspaceURI.from_any, dataspace_uris))
         for i in _uris:
             if i.raw_uri.count("/") > 4:  # includes the 3 eml
                 raise Exception("Max one / in dataspace name")
         time = self.timestamp
-        response = await self.send(
+        responses = await self.send(
             PutDataspaces(
                 dataspaces={
                     d.raw_uri: Dataspace(
@@ -581,15 +590,19 @@ class ETPClient(ETPConnection):
                 }
             )
         )
-        assert isinstance(response, PutDataspacesResponse), (
-            "Expected PutDataspacesResponse"
+        assert all(
+            [isinstance(response, PutDataspacesResponse) for response in responses]
+        ), "Expected PutDataspacesResponse"
+
+        successes = {}
+        for response in responses:
+            successes = {**successes, **response.success}
+
+        assert len(successes) == len(dataspace_uris), (
+            f"expected {len(dataspace_uris)} successes"
         )
 
-        assert len(response.success) == len(dataspace_uris), (
-            f"expected {len(dataspace_uris)} success's"
-        )
-
-        return response.success
+        return successes
 
     async def put_dataspaces_no_raise(
         self,
@@ -598,22 +611,44 @@ class ETPClient(ETPConnection):
         owners: list[str],
         viewers: list[str],
         *dataspace_uris: DataspaceURI,
-    ):
+    ) -> dict[str, str]:
         try:
-            return await self.put_dataspaces(
+            responses = await self.put_dataspaces(
                 legaltags, otherRelevantDataCountries, owners, viewers, *dataspace_uris
             )
         except ETPError:
-            pass
+            return {}
 
-    async def delete_dataspaces(self, *dataspace_uris: DataspaceURI):
+        assert all(
+            [isinstance(response, PutDataspacesResponse) for response in responses]
+        ), "Expected PutDataspacesResponse"
+
+        successes = {}
+        for response in responses:
+            successes = {**successes, **response.success}
+
+        assert len(successes) == len(dataspace_uris), (
+            f"expected {len(dataspace_uris)} successes"
+        )
+
+        return successes
+
+    async def delete_dataspaces(self, *dataspace_uris: DataspaceURI) -> dict[str, str]:
         _uris = list(map(str, dataspace_uris))
 
-        response = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
-        assert isinstance(response, DeleteDataspacesResponse), (
-            "Expected DeleteDataspacesResponse"
+        responses = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
+        assert all(
+            [isinstance(response, DeleteDataspacesResponse) for response in responses]
+        ), "Expected DeleteDataspacesResponse"
+
+        successes = {}
+        for response in responses:
+            successes = {**successes, **response.success}
+
+        assert len(successes) == len(dataspace_uris), (
+            f"expected {len(dataspace_uris)} successes"
         )
-        return response.success
+        return successes
 
     async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
         tasks = []
@@ -894,9 +929,12 @@ class ETPClient(ETPConnection):
             path_in_resource=path_in_resource,
         )
 
-        response = await self.send(
+        responses = await self.send(
             GetDataArrayMetadata(data_arrays={dai.path_in_resource: dai}),
         )
+
+        assert len(responses) == 1
+        response = responses[0]
 
         self.assert_response(response, GetDataArrayMetadataResponse)
         assert (
@@ -960,7 +998,12 @@ class ETPClient(ETPConnection):
                 )
                 tasks.append(task)
 
-            responses = await asyncio.gather(*tasks)
+            task_responses = await asyncio.gather(*tasks)
+            responses = [
+                response
+                for task_response in task_responses
+                for response in task_response
+            ]
 
             data_blocks = []
             for i, response in enumerate(responses):
@@ -995,9 +1038,12 @@ class ETPClient(ETPConnection):
             return data
 
         # Download the full array in one go.
-        response = await self.send(
+        responses = await self.send(
             GetDataArrays(data_arrays={dai.path_in_resource: dai}),
         )
+
+        assert len(responses) == 1
+        response = responses[0]
 
         self.assert_response(response, GetDataArraysResponse)
         assert (
@@ -1030,7 +1076,7 @@ class ETPClient(ETPConnection):
         now = self.timestamp
 
         # Allocate space on server for the array.
-        response = await self.send(
+        responses = await self.send(
             PutUninitializedDataArrays(
                 data_arrays={
                     dai.path_in_resource: PutUninitializedDataArrayType(
@@ -1046,6 +1092,9 @@ class ETPClient(ETPConnection):
                 },
             ),
         )
+
+        assert len(responses) == 1
+        response = responses[0]
 
         self.assert_response(response, PutUninitializedDataArraysResponse)
         assert len(response.success) == 1 and dai.path_in_resource in response.success
@@ -1096,7 +1145,14 @@ class ETPClient(ETPConnection):
                 tasks.append(task)
 
             # Upload all blocks.
-            responses = await asyncio.gather(*tasks)
+            task_responses = await asyncio.gather(*tasks)
+
+            # Flatten list of responses.
+            responses = [
+                response
+                for task_response in task_responses
+                for response in task_response
+            ]
 
             # Check for successful responses.
             for response in responses:
@@ -1113,7 +1169,7 @@ class ETPClient(ETPConnection):
         etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
 
         # Pass entire array in one message.
-        response = await self.send(
+        responses = await self.send(
             PutDataArrays(
                 data_arrays={
                     dai.path_in_resource: PutDataArraysType(
@@ -1123,6 +1179,9 @@ class ETPClient(ETPConnection):
                 }
             )
         )
+
+        assert len(responses) == 1
+        response = responses[0]
 
         self.assert_response(response, PutDataArraysResponse)
         assert len(response.success) == 1 and dai.path_in_resource in response.success
