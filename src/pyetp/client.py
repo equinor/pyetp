@@ -146,7 +146,6 @@ from xtgeo import RegularSurface
 import resqml_objects.v201 as ro
 from energistics.etp.v12.protocol.discovery import (
     GetResources,
-    GetResourcesEdgesResponse,
     GetResourcesResponse,
 )
 from energistics.etp.v12.protocol.transaction import (
@@ -532,10 +531,10 @@ class ETPClient(ETPConnection):
             raise Exception("Max one / in dataspace name")
         return DataspaceURI.from_name(ds)
 
-    def list_objects(
+    async def list_objects(
         self, dataspace_uri: DataspaceURI | str, depth: int = 1
-    ) -> list[GetResourcesResponse | GetResourcesEdgesResponse]:
-        return self.send(
+    ) -> GetResourcesResponse:
+        responses = await self.send(
             GetResources(
                 scope=ContextScopeKind.TARGETS_OR_SELF,
                 context=ContextInfo(
@@ -546,6 +545,8 @@ class ETPClient(ETPConnection):
                 ),
             )
         )
+        assert len(responses) == 1
+        return responses[0]
 
     #
     # dataspace
@@ -553,15 +554,17 @@ class ETPClient(ETPConnection):
 
     async def get_dataspaces(
         self, store_last_write_filter: int = None
-    ) -> list[GetDataspacesResponse]:
+    ) -> GetDataspacesResponse:
         responses = await self.send(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
+
         assert all(
             [isinstance(response, GetDataspacesResponse) for response in responses]
         ), "Expected GetDataspacesResponse"
+        assert len(responses) == 1
 
-        return responses
+        return responses[0]
 
     async def put_dataspaces(
         self,
