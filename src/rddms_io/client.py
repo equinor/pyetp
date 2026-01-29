@@ -87,11 +87,7 @@ class RDDMSClient:
             GetDataspacesResponse,
             "RDDMSClient.list_dataspaces",
         )
-        dataspaces = [
-            ds
-            for response in responses
-            for ds in response.dataspaces
-        ]
+        dataspaces = [ds for response in responses for ds in response.dataspaces]
         return dataspaces
 
     async def delete_dataspace(self, dataspace_uri: DataspaceURI | str) -> None:
