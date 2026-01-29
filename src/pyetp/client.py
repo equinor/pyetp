@@ -1591,7 +1591,12 @@ class etp_connect:
     ) -> None:
         self.uri = uri
         self.data_partition_id = data_partition_id
-        self.authorization = SecretStr(authorization)
+
+        if isinstance(authorization, SecretStr):
+            self.authorization = authorization
+        else:
+            self.authorization = SecretStr(authorization)
+
         self.etp_timeout = etp_timeout
         self.max_message_size = max_message_size
         self.subprotocols = ["etp12.energistics.org"]
