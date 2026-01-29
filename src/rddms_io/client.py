@@ -311,26 +311,52 @@ class RDDMSClient:
         self,
         start_uri: DataObjectURI | str,
         data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
-        store_last_write_filter: int | None = None,
+        store_last_write_filter: datetime.datetime | int | None = None,
+        depth: int = 1,
     ) -> LinkedObjects:
         """
         This method lists all objects that are linked to the provided object
         uri. That is, starting from the object with the given uri it finds all
-        objects that links to it, and all objects it links to.
+        objects (sources) that links to it, and all objects (targets) it links
+        to.
+
+        Parameters
+        ----------
+        start_uri: DataObjectURI | str
+            An ETP data object uri to start the query from.
+        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]]
+            A filter to limit which types of objects to include in the results.
+            As a string it is on the form `eml20.obj_EpcExternalPartReference`
+            for a specific object, or `eml20.*` for all Energistics Common
+            objects. For the RESQML v2.0.1 objects it is similarlarly
+            `resqml20.*`, or a specific type instead of the wildcard `*`. This
+            can also be classes from `resqml_objects.v201`, in which case the
+            filter will be constructed. Default is `[]`, meaning no filter is
+            applied.
+        store_last_write_filter: datetime.datetime | int | None
+            Filter to only include objects that are written after the provided
+            datetime or timestamp. Default is `None`, meaning no filter is
+            applied. Note that the timestamp should be in microsecond
+            resolution.
+        depth: int
+            The number of links to return. Setting `depth = 1` will only return
+            targets and sources that are directly linked to the start object.
+            With `depth = 2` we get links to objects that linkes to the targets
+            and sources of the start object. Default is `1`.
+
+        Returns
+        -------
+        LinkedObjects
+            A container (`NamedTuple`) with resources and edges for the sources
+            and targets of the start-object.
         """
         data_object_types = [
             dot if isinstance(dot, str) else dot.get_qualified_type()
             for dot in data_object_types
         ]
-
-        # TODO: This parameter needs to be tested more on larger models.
-        # The depth parameter seems to matter for the edges. If we have depth >
-        # 1, then we see the edges between objects higher up than the
-        # start-object. For example, using the three epc, crs and gri objects
-        # that we normally work with, starting from the crs, and setting depth
-        # = 2 will show the edge between the grid-object and the auto-generated
-        # activity-object. For depth = 1 this edge is not returned.
-        depth = 1
+        if isinstance(store_last_write_filter, datetime.datetime):
+            # Convert `datetime`-object to a microsecond resolution timestamp.
+            store_last_write_filter = int(store_last_write_filter.timestamp() * 1e6)
 
         gr_sources = GetResources(
             context=ContextInfo(
