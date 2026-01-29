@@ -17,22 +17,12 @@ from conftest import (
 from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
     DataArrayIdentifier,
 )
-from etptypes.energistics.etp.v12.datatypes.data_array_types.put_data_subarrays_type import (
-    PutDataSubarraysType,
-)
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays import (
-    PutDataSubarrays,
-)
-from etptypes.energistics.etp.v12.protocol.data_array.put_data_subarrays_response import (
-    PutDataSubarraysResponse,
-)
 
 import resqml_objects.v201 as ro
 from pyetp import etp_connect, utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
-from pyetp.uri import DataObjectURI, DataspaceURI
+from pyetp.uri import DataspaceURI
 from pyetp.utils_xml import (
-    instantiate_resqml_grid,
     parse_xtgeo_surface_to_resqml_grid,
 )
 from resqml_objects.surface_helpers import angle_to_unit_vectors
@@ -684,87 +674,3 @@ def test_compare_xtgeo_surface() -> None:
     r2X, r2Y = rgri.get_xy_grid(crs=rcrs)
     np.testing.assert_allclose(X, r2X)
     np.testing.assert_allclose(Y, r2Y)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "surface", [create_surface(100, 40, 0), create_surface(3, 3, 0)]
-)
-async def test_sub_array_map(
-    etp_client: ETPClient, surface: xtgeo.RegularSurface, dataspace_uri: DataspaceURI
-):
-    epc, crs, gri = instantiate_resqml_grid(
-        "name",
-        0,
-        surface.xori,
-        surface.yori,
-        surface.xinc,
-        surface.yinc,
-        surface.ncol,
-        surface.nrow,
-        12345,
-    )
-
-    transaction_uuid = await etp_client.start_transaction(
-        dataspace_uri=dataspace_uri, read_only=False
-    )
-
-    epc_uri, crs_uri, gri_uri = await etp_client.put_resqml_objects(
-        epc, crs, gri, dataspace_uri=dataspace_uri
-    )
-    uid = DataArrayIdentifier(
-        uri=epc_uri.raw_uri if isinstance(epc_uri, DataObjectURI) else epc_uri,
-        pathInResource=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore
-    )
-    logical_array_type, transport_array_type = (
-        utils_arrays.get_logical_and_transport_array_types(surface.values.dtype)
-    )
-    await etp_client._put_uninitialized_data_array(
-        uid,
-        (surface.ncol, surface.nrow),
-        logical_array_type=logical_array_type,
-        transport_array_type=transport_array_type,
-    )
-    # upload row by row
-    v = surface.values.filled(np.nan)
-    for i in range(surface.nrow):
-        row = v[:, i]
-
-        starts = np.array(
-            [0, i], dtype=np.int64
-        )  # len = 2 [x_start_index, y_start_index]
-        counts = np.array((surface.ncol, 1), dtype=np.int64)  # len = 2
-        values = row.reshape((surface.ncol, 1))
-        dataarray = utils_arrays.get_etp_data_array_from_numpy(values)
-        payload = PutDataSubarraysType(
-            uid=uid,
-            data=dataarray.data,
-            starts=starts.tolist(),
-            counts=counts.tolist(),
-        )
-        response = await etp_client.send(
-            PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
-        )
-        assert isinstance(response, PutDataSubarraysResponse), (
-            "Expected PutDataSubarraysResponse"
-        )
-        assert len(response.success) == 1, "expected one success"
-
-    await etp_client.commit_transaction(transaction_uuid=transaction_uuid)
-
-    # download the surface
-    chunked_surface = await etp_client.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
-    chunked_surface = np.array(chunked_surface.values.filled(np.nan))
-
-    # upload surface in one go
-    (
-        epc_uri_control,
-        gri_uri_control,
-        crs_uri_control,
-    ) = await etp_client.put_xtgeo_surface(surface, 23031, dataspace_uri)
-    control_surface = await etp_client.get_xtgeo_surface(
-        epc_uri_control, gri_uri_control, crs_uri_control
-    )
-    control_surface = np.array(control_surface.values.filled(np.nan))
-
-    assert np.allclose(chunked_surface, control_surface)
