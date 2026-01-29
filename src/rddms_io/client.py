@@ -62,7 +62,7 @@ from pyetp.errors import (
     parse_and_raise_response_errors,
 )
 from pyetp.uri import DataObjectURI, DataspaceURI
-from rddms_io.data_types import LinkedObjects, RDDMSDataspace
+from rddms_io.data_types import LinkedObjects
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 from resqml_objects.v201.utils import find_hdf5_datasets
 
@@ -78,7 +78,7 @@ class RDDMSClient:
 
     async def list_dataspaces(
         self, store_last_write_filter: int | None = None
-    ) -> list[RDDMSDataspace]:
+    ) -> list[Dataspace]:
         responses = await self.etp_client.send(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
@@ -88,7 +88,7 @@ class RDDMSClient:
             "RDDMSClient.list_dataspaces",
         )
         dataspaces = [
-            RDDMSDataspace.from_etp_dataspace(ds)
+            ds
             for response in responses
             for ds in response.dataspaces
         ]
