@@ -149,9 +149,13 @@ from energistics.etp.v12.protocol.discovery import (
     GetResourcesEdgesResponse,
     GetResourcesResponse,
 )
+from energistics.etp.v12.protocol.transaction import (
+    StartTransactionResponse,
+)
 from pyetp import utils_arrays, utils_xml
 from pyetp._version import version
 from pyetp.config import SETTINGS
+from pyetp.errors import ETPTransactionFailure
 from pyetp.uri import DataObjectURI, DataspaceURI
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 
@@ -550,9 +554,14 @@ class ETPClient(ETPConnection):
     async def get_dataspaces(
         self, store_last_write_filter: int = None
     ) -> list[GetDataspacesResponse]:
-        return await self.send(
+        responses = await self.send(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
+        assert all(
+            [isinstance(response, GetDataspacesResponse) for response in responses]
+        ), "Expected GetDataspacesResponse"
+
+        return responses
 
     async def put_dataspaces(
         self,
@@ -613,25 +622,11 @@ class ETPClient(ETPConnection):
         *dataspace_uris: DataspaceURI,
     ) -> dict[str, str]:
         try:
-            responses = await self.put_dataspaces(
+            return await self.put_dataspaces(
                 legaltags, otherRelevantDataCountries, owners, viewers, *dataspace_uris
             )
         except ETPError:
             return {}
-
-        assert all(
-            [isinstance(response, PutDataspacesResponse) for response in responses]
-        ), "Expected PutDataspacesResponse"
-
-        successes = {}
-        for response in responses:
-            successes = {**successes, **response.success}
-
-        assert len(successes) == len(dataspace_uris), (
-            f"expected {len(dataspace_uris)} successes"
-        )
-
-        return successes
 
     async def delete_dataspaces(self, *dataspace_uris: DataspaceURI) -> dict[str, str]:
         _uris = list(map(str, dataspace_uris))
@@ -656,7 +651,8 @@ class ETPClient(ETPConnection):
             task = self.send(GetDataObjects(uris={str(uri): str(uri)}))
             tasks.append(task)
 
-        responses = await asyncio.gather(*tasks)
+        task_responses = await asyncio.gather(*tasks)
+        responses = [r for tr in task_responses for r in tr]
         assert len(responses) == len(uris)
 
         data_objects = []
@@ -689,7 +685,8 @@ class ETPClient(ETPConnection):
             )
             tasks.append(task)
 
-        responses = await asyncio.gather(*tasks)
+        task_responses = await asyncio.gather(*tasks)
+        responses = [r for tr in task_responses for r in tr]
 
         errors = []
         for response in responses:
@@ -751,12 +748,16 @@ class ETPClient(ETPConnection):
     ):
         _uris = list(map(str, uris))
 
-        response = await self.send(
+        responses = await self.send(
             DeleteDataObjects(
                 uris=dict(zip(_uris, _uris)),
                 prune_contained_objects=prune_contained_objects,
             )
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+
         assert isinstance(response, DeleteDataObjectsResponse), (
             "Expected DeleteDataObjectsResponse"
         )
@@ -764,23 +765,34 @@ class ETPClient(ETPConnection):
         return response.deleted_uris
 
     async def start_transaction(
-        self, dataspace_uri: DataspaceURI, read_only: bool = True
+        self, dataspace_uri: DataspaceURI | str, read_only: bool = True
     ) -> Uuid:
-        trans_id = await self.send(
-            StartTransaction(
-                read_only=read_only, dataspace_uris=[dataspace_uri.raw_uri]
-            )
+        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        responses = await self.send(
+            StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri])
         )
-        if trans_id.successful is False:
-            raise Exception(f"Failed starting transaction {dataspace_uri.raw_uri}")
-        # uuid.UUID(bytes=trans_id.transaction_uuid)
-        return Uuid(trans_id.transaction_uuid)
+        assert all(
+            [isinstance(response, StartTransactionResponse) for response in responses]
+        ), "Expected StartTransactionResponse"
+
+        assert len(responses) == 1
+        response = responses[0]
+
+        if not response.successful:
+            raise ETPTransactionFailure(f"Failed starting trasaction {dataspace_uri}")
+
+        return response.transaction_uuid
 
     async def commit_transaction(self, transaction_uuid: Uuid):
-        r = await self.send(CommitTransaction(transaction_uuid=transaction_uuid))
-        if r.successful is False:
-            raise Exception(r.failure_reason)
-        return r
+        responses = await self.send(
+            CommitTransaction(transaction_uuid=transaction_uuid)
+        )
+        assert len(responses) == 1
+        response = responses[0]
+
+        if response.successful is False:
+            raise ETPTransactionFailure(response.failure_reason)
+        return response
 
     async def rollback_transaction(self, transaction_id: Uuid):
         return await self.send(RollbackTransaction(transactionUuid=transaction_id))
@@ -886,9 +898,12 @@ class ETPClient(ETPConnection):
     #
 
     async def get_array_metadata(self, *uids: DataArrayIdentifier):
-        response = await self.send(
+        responses = await self.send(
             GetDataArrayMetadata(dataArrays={i.path_in_resource: i for i in uids})
         )
+        assert len(responses) == 1
+        response = responses[0]
+
         assert isinstance(response, GetDataArrayMetadataResponse)
 
         if len(response.array_metadata) != len(uids):
@@ -908,9 +923,13 @@ class ETPClient(ETPConnection):
         ):
             return await self._get_array_chunked(uid)
 
-        response = await self.send(
+        responses = await self.send(
             GetDataArrays(dataArrays={uid.path_in_resource: uid})
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+
         assert isinstance(response, GetDataArraysResponse), (
             "Expected GetDataArraysResponse"
         )
@@ -1204,7 +1223,7 @@ class ETPClient(ETPConnection):
         if data.nbytes > self.max_array_size:
             return await self._put_array_chunked(uid, data)
 
-        response = await self.send(
+        responses = await self.send(
             PutDataArrays(
                 data_arrays={
                     uid.path_in_resource: PutDataArraysType(
@@ -1214,6 +1233,9 @@ class ETPClient(ETPConnection):
                 }
             )
         )
+
+        assert len(responses) == 1
+        response = responses[0]
 
         assert isinstance(response, PutDataArraysResponse), (
             "Expected PutDataArraysResponse"
@@ -1238,9 +1260,13 @@ class ETPClient(ETPConnection):
             starts=starts.tolist(),
             counts=counts.tolist(),
         )
-        response = await self.send(
+        responses = await self.send(
             GetDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+
         assert isinstance(response, GetDataSubarraysResponse), (
             "Expected GetDataSubarraysResponse"
         )
@@ -1279,9 +1305,13 @@ class ETPClient(ETPConnection):
             f"{dataarray.data.item.__class__.__name__}"
         )
 
-        response = await self.send(
+        responses = await self.send(
             PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+
         assert isinstance(response, PutDataSubarraysResponse), (
             "Expected PutDataSubarraysResponse"
         )
@@ -1403,9 +1433,13 @@ class ETPClient(ETPConnection):
                 )
             ),
         )
-        response = await self.send(
+        responses = await self.send(
             PutUninitializedDataArrays(dataArrays={uid.path_in_resource: payload})
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+
         assert isinstance(response, PutUninitializedDataArraysResponse), (
             "Expected PutUninitializedDataArraysResponse"
         )
