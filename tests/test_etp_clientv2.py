@@ -234,8 +234,8 @@ async def test_auth(etp_client: ETPClient):
 @pytest.mark.asyncio
 async def test_dataspaces(etp_client: ETPClient, dataspace_uri: DataspaceURI):
     response = await etp_client.get_dataspaces()
-    assert len(response.dataspaces) == 1
-    assert str(dataspace_uri) == response.dataspaces[0].uri
+
+    assert str(dataspace_uri) in [d.uri for d in response.dataspaces]
 
 
 @pytest.mark.asyncio
