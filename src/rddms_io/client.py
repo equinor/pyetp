@@ -636,14 +636,63 @@ class RDDMSClient:
         logger.debug("Done uploading arrays.")
         return ml_uris
 
+    @typing.overload
+    async def download_model(
+        self,
+        ml_uris: list[str | DataObjectURI],
+        download_arrays: typing.Literal[False],
+    ) -> list[ro.AbstractCitedDataObject]: ...
+
+    @typing.overload
+    async def download_model(
+        self,
+        ml_uris: list[str | DataObjectURI],
+        download_arrays: typing.Literal[True],
+    ) -> tuple[
+        list[ro.AbstractCitedDataObject],
+        dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
+    ]: ...
+
     async def download_model(
         self,
         ml_uris: list[str | DataObjectURI],
         download_arrays: bool = False,
-    ) -> tuple[
-        list[ro.AbstractCitedDataObject],
-        dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
-    ]:
+    ) -> (
+        tuple[
+            list[ro.AbstractCitedDataObject],
+            dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
+        ]
+        | list[ro.AbstractCitedDataObject]
+    ):
+        """
+        Download RESQML-model from the RDDMS. A model in this sense is just a
+        grouping of RESQML-objects specified by their uris. The objects do not
+        need to be linked in any way.
+
+        Parameters
+        ----------
+        ml_uris: list[str | DataObjectURI]
+            A list of ETP data object uris.
+
+        download_arrays: bool
+            A flag to toggle if any referenced arrays should be download
+            alongside the RESQML-objects. Setting to `True` will make the
+            function return a tuple where the first element contains a list of
+            the objects, and the second element a dictionary with the
+            `path_in_hdf_file` as the key, and the arrays as the values. If the
+            flag is set to `False` no arrays will be downloaded, and the
+            function only returns a list of the objects. Default is `False`.
+
+        Returns
+        -------
+        tuple[
+            list[ro.AbstractCitedDataObject],
+            dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
+        ]
+        | list[ro.AbstractCitedDataObject]
+            See the `download_arrays`-argument for an explanation on which part
+            of the union is returned when.
+        """
         tasks = []
         for uri in ml_uris:
             task = self.etp_client.send(GetDataObjects(uris={str(uri): str(uri)}))
@@ -662,7 +711,7 @@ class RDDMSClient:
         ml_objects = [parse_resqml_v201_object(d.data) for d in data_objects]
 
         if not download_arrays:
-            return ml_objects, {}
+            return ml_objects
 
         ml_hds = [ml_hd for obj in ml_objects for ml_hd in find_hdf5_datasets(obj)]
 
