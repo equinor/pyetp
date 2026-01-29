@@ -386,7 +386,20 @@ async def test_list_array_metadata() -> None:
             dataspace_uri=dataspace_uri,
             ml_objects=[gri_1, gri_2],
         )
-        print(metadata)
+        assert gri_1_uri in metadata
+        assert gri_2_uri in metadata
+
+        m_1 = metadata[gri_1_uri]
+        m_2 = metadata[gri_2_uri]
+
+        pir_1 = gri_1.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+        pir_2 = gri_2.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+
+        assert len(m_1) == len(m_2) == 1
+        assert pir_1 in m_1
+        assert pir_2 in m_2
+        assert tuple(m_1[pir_1].dimensions) == Z.shape
+        assert tuple(m_2[pir_2].dimensions) == Z.shape
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         # List all objects under the dataspace. The server adds two extra
