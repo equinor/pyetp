@@ -14,11 +14,11 @@ from conftest import (
     construct_2d_resqml_grid_from_array,
     etp_server_url,
 )
-from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array_identifier import (
-    DataArrayIdentifier,
-)
 
 import resqml_objects.v201 as ro
+from energistics.etp.v12.datatypes.data_array_types import (
+    DataArrayIdentifier,
+)
 from pyetp import etp_connect, utils_arrays
 from pyetp.client import ETPClient, ETPError, connect
 from pyetp.uri import DataspaceURI

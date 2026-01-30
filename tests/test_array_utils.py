@@ -3,12 +3,12 @@ import random
 import numpy as np
 import numpy.typing as npt
 import pytest
-from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
-from etptypes.energistics.etp.v12.datatypes.any_logical_array_type import (
-    AnyLogicalArrayType,
-)
 
 import pyetp.utils_arrays
+from energistics.etp.v12.datatypes import (
+    AnyArrayType,
+    AnyLogicalArrayType,
+)
 
 
 @pytest.mark.parametrize(
