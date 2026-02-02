@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import pytest
 from conftest import etp_server_url, skip_decorator
 
@@ -8,6 +9,67 @@ from pyetp.errors import ETPTransactionFailure
 from pyetp.uri import DataspaceURI
 from rddms_io.client import rddms_connect
 from resqml_objects.surface_helpers import RegularGridParameters
+
+
+def get_random_surface() -> tuple[
+    ro.obj_LocalDepth3dCrs,
+    ro.obj_EpcExternalPartReference,
+    ro.obj_Grid2dRepresentation,
+    npt.NDArray[np.float64],
+]:
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(
+        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
+    )
+    y = np.linspace(
+        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
+    )
+    Z = np.exp(
+        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
+        - np.linspace(-1, 1, shape[1]) ** 2
+    )
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+
+    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
+    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
+
+    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
+    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(
+            title="Random crs",
+            originator="rddms-io-tester",
+        ),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+        areal_rotation=ro.PlaneAngleMeasure(
+            value=crs_angle,
+            uom=ro.PlaneAngleUom.RAD,
+        ),
+        xoffset=float(crs_offset[0]),
+        yoffset=float(crs_offset[1]),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
+    )
+
+    gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Random grid", originator="rddms-io-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=grid_unit_vectors[:, 0],
+        unit_vec_2=grid_unit_vectors[:, 1],
+    )
+
+    return crs, epc, gri, Z
 
 
 @skip_decorator
@@ -63,57 +125,7 @@ async def test_create_and_delete_dataspaces() -> None:
 @skip_decorator
 @pytest.mark.asyncio
 async def test_upload_and_download_model() -> None:
-    shape = tuple(np.random.randint(10, 123, size=2).tolist())
-
-    x = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
-    )
-    y = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
-    )
-    Z = np.exp(
-        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
-        - np.linspace(-1, 1, shape[1]) ** 2
-    )
-
-    origin = np.array([x[0], y[0]])
-    spacing = np.array([x[1] - x[0], y[1] - y[0]])
-
-    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
-    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
-
-    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
-    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
-
-    crs = ro.obj_LocalDepth3dCrs(
-        citation=ro.Citation(
-            title="Random crs",
-            originator="rddms-io-tester",
-        ),
-        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
-        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
-        areal_rotation=ro.PlaneAngleMeasure(
-            value=crs_angle,
-            uom=ro.PlaneAngleUom.RAD,
-        ),
-        xoffset=float(crs_offset[0]),
-        yoffset=float(crs_offset[1]),
-    )
-
-    epc = ro.obj_EpcExternalPartReference(
-        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
-    )
-
-    gri = ro.obj_Grid2dRepresentation.from_regular_surface(
-        citation=ro.Citation(title="Random grid", originator="rddms-io-tester"),
-        crs=crs,
-        epc_external_part_reference=epc,
-        shape=shape,
-        origin=origin,
-        spacing=spacing,
-        unit_vec_1=grid_unit_vectors[:, 0],
-        unit_vec_2=grid_unit_vectors[:, 1],
-    )
+    crs, epc, gri, Z = get_random_surface()
 
     dataspace_path = "rddms-io/test-upload-and-download-model"
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
@@ -182,57 +194,7 @@ async def test_upload_and_download_model() -> None:
 @skip_decorator
 @pytest.mark.asyncio
 async def test_list_linked_objects() -> None:
-    shape = tuple(np.random.randint(10, 123, size=2).tolist())
-
-    x = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
-    )
-    y = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
-    )
-    Z = np.exp(
-        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
-        - np.linspace(-1, 1, shape[1]) ** 2
-    )
-
-    origin = np.array([x[0], y[0]])
-    spacing = np.array([x[1] - x[0], y[1] - y[0]])
-
-    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
-    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
-
-    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
-    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
-
-    crs = ro.obj_LocalDepth3dCrs(
-        citation=ro.Citation(
-            title="Random crs",
-            originator="rddms-io-tester",
-        ),
-        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
-        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
-        areal_rotation=ro.PlaneAngleMeasure(
-            value=crs_angle,
-            uom=ro.PlaneAngleUom.RAD,
-        ),
-        xoffset=float(crs_offset[0]),
-        yoffset=float(crs_offset[1]),
-    )
-
-    epc = ro.obj_EpcExternalPartReference(
-        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
-    )
-
-    gri = ro.obj_Grid2dRepresentation.from_regular_surface(
-        citation=ro.Citation(title="Random grid", originator="rddms-io-tester"),
-        crs=crs,
-        epc_external_part_reference=epc,
-        shape=shape,
-        origin=origin,
-        spacing=spacing,
-        unit_vec_1=grid_unit_vectors[:, 0],
-        unit_vec_2=grid_unit_vectors[:, 1],
-    )
+    crs, epc, gri, Z = get_random_surface()
 
     dataspace_path = "rddms-io/test-list-linked-objects"
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
@@ -288,57 +250,24 @@ async def test_list_linked_objects() -> None:
 @skip_decorator
 @pytest.mark.asyncio
 async def test_list_array_metadata() -> None:
-    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+    crs, epc, gri_1, Z = get_random_surface()
 
-    x = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
-    )
-    y = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
-    )
-    Z = np.exp(
-        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
-        - np.linspace(-1, 1, shape[1]) ** 2
+    shape = (
+        gri_1.grid2d_patch.slowest_axis_count,
+        gri_1.grid2d_patch.fastest_axis_count,
     )
 
-    origin = np.array([x[0], y[0]])
-    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    sg = gri_1.grid2d_patch.geometry.points.supporting_geometry
 
-    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
-    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
-
-    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
-    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
-
-    crs = ro.obj_LocalDepth3dCrs(
-        citation=ro.Citation(
-            title="Random crs",
-            originator="rddms-io-tester",
-        ),
-        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
-        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
-        areal_rotation=ro.PlaneAngleMeasure(
-            value=crs_angle,
-            uom=ro.PlaneAngleUom.RAD,
-        ),
-        xoffset=float(crs_offset[0]),
-        yoffset=float(crs_offset[1]),
+    origin = np.array([sg.origin.coordinate1, sg.origin.coordinate2])
+    spacing = np.array([sg.offset[0].spacing.value, sg.offset[1].spacing.value])
+    unit_vec_1 = np.array(
+        [sg.offset[0].offset.coordinate1, sg.offset[0].offset.coordinate2]
+    )
+    unit_vec_2 = np.array(
+        [sg.offset[1].offset.coordinate1, sg.offset[1].offset.coordinate2]
     )
 
-    epc = ro.obj_EpcExternalPartReference(
-        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
-    )
-
-    gri_1 = ro.obj_Grid2dRepresentation.from_regular_surface(
-        citation=ro.Citation(title="Random grid 1", originator="rddms-io-tester"),
-        crs=crs,
-        epc_external_part_reference=epc,
-        shape=shape,
-        origin=origin,
-        spacing=spacing,
-        unit_vec_1=grid_unit_vectors[:, 0],
-        unit_vec_2=grid_unit_vectors[:, 1],
-    )
     gri_2 = ro.obj_Grid2dRepresentation.from_regular_surface(
         citation=ro.Citation(title="Random grid 2", originator="rddms-io-tester"),
         crs=crs,
@@ -346,8 +275,8 @@ async def test_list_array_metadata() -> None:
         shape=shape,
         origin=origin,
         spacing=spacing,
-        unit_vec_1=grid_unit_vectors[:, 0],
-        unit_vec_2=grid_unit_vectors[:, 1],
+        unit_vec_1=unit_vec_1,
+        unit_vec_2=unit_vec_2,
     )
 
     dataspace_path = "rddms-io/test-list-array-metadata"
@@ -428,57 +357,24 @@ async def test_list_array_metadata() -> None:
 @skip_decorator
 @pytest.mark.asyncio
 async def test_partial_deletion() -> None:
-    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+    crs, epc, gri_1, Z = get_random_surface()
 
-    x = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
-    )
-    y = np.linspace(
-        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
-    )
-    Z = np.exp(
-        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
-        - np.linspace(-1, 1, shape[1]) ** 2
+    shape = (
+        gri_1.grid2d_patch.slowest_axis_count,
+        gri_1.grid2d_patch.fastest_axis_count,
     )
 
-    origin = np.array([x[0], y[0]])
-    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    sg = gri_1.grid2d_patch.geometry.points.supporting_geometry
 
-    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
-    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
-
-    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
-    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
-
-    crs = ro.obj_LocalDepth3dCrs(
-        citation=ro.Citation(
-            title="Random crs",
-            originator="rddms-io-tester",
-        ),
-        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
-        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
-        areal_rotation=ro.PlaneAngleMeasure(
-            value=crs_angle,
-            uom=ro.PlaneAngleUom.RAD,
-        ),
-        xoffset=float(crs_offset[0]),
-        yoffset=float(crs_offset[1]),
+    origin = np.array([sg.origin.coordinate1, sg.origin.coordinate2])
+    spacing = np.array([sg.offset[0].spacing.value, sg.offset[1].spacing.value])
+    unit_vec_1 = np.array(
+        [sg.offset[0].offset.coordinate1, sg.offset[0].offset.coordinate2]
+    )
+    unit_vec_2 = np.array(
+        [sg.offset[1].offset.coordinate1, sg.offset[1].offset.coordinate2]
     )
 
-    epc = ro.obj_EpcExternalPartReference(
-        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
-    )
-
-    gri_1 = ro.obj_Grid2dRepresentation.from_regular_surface(
-        citation=ro.Citation(title="Random grid 1", originator="rddms-io-tester"),
-        crs=crs,
-        epc_external_part_reference=epc,
-        shape=shape,
-        origin=origin,
-        spacing=spacing,
-        unit_vec_1=grid_unit_vectors[:, 0],
-        unit_vec_2=grid_unit_vectors[:, 1],
-    )
     gri_2 = ro.obj_Grid2dRepresentation.from_regular_surface(
         citation=ro.Citation(title="Random grid 2", originator="rddms-io-tester"),
         crs=crs,
@@ -486,8 +382,8 @@ async def test_partial_deletion() -> None:
         shape=shape,
         origin=origin,
         spacing=spacing,
-        unit_vec_1=grid_unit_vectors[:, 0],
-        unit_vec_2=grid_unit_vectors[:, 1],
+        unit_vec_1=unit_vec_1,
+        unit_vec_2=unit_vec_2,
     )
     gri_1_pir = gri_1.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
     gri_2_pir = gri_2.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
