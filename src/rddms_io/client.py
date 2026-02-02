@@ -74,11 +74,44 @@ class RDDMSClient:
         self.etp_client = etp_client
 
     async def close(self) -> None:
+        """
+        Method used for manual closing of the ETP-connection when the client
+        has been set up outside a context manager. For example, if the client
+        has been made via an `await`-statement then this method should be used
+        to stop the connection.
+
+        >>> rddms_client = await rddms_connect(...)
+        >>> ...
+        >>> await rddms_client.close()
+        """
         await self.etp_client.close()
 
     async def list_dataspaces(
-        self, store_last_write_filter: int | None = None
+        self, store_last_write_filter: datetime.datetime | int | None = None
     ) -> list[Dataspace]:
+        """
+        Method used to list all dataspaces on the ETP-server.
+
+        Parameters
+        ----------
+        store_last_write_filter: datetime.datetime | int | None
+            A parameter that can be used to limit the results to only include
+            dataspaces that were created after the time specified in the
+            filter. The default is `None`, meaning all dataspaces will be
+            included.
+
+        Returns
+        -------
+        list[Dataspace]
+            A list of ETP `Dataspace`-data objects. See section 23.43.10 of the
+            ETP v1.2 standards documentation for an accurate description of the
+            different fields.
+        """
+
+        if isinstance(store_last_write_filter, datetime.datetime):
+            # Convert `datetime`-object to a microsecond resolution timestamp.
+            store_last_write_filter = int(store_last_write_filter.timestamp() * 1e6)
+
         responses = await self.etp_client.send(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
@@ -91,6 +124,16 @@ class RDDMSClient:
         return dataspaces
 
     async def delete_dataspace(self, dataspace_uri: DataspaceURI | str) -> None:
+        """
+        Method deleting a dataspace.
+
+        Parameters
+        ----------
+        dataspace_uri: str | DataspaceURI
+            The ETP dataspace uri, or path, for the dataspace to delete. If it
+            is a dataspace path (on the form `'foo/bar'`) it will be converted
+            to the dataspace uri `"eml:///dataspace('foo/bar')"`.
+        """
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
         responses = await self.etp_client.send(
             DeleteDataspaces(uris={dataspace_uri: dataspace_uri})
@@ -110,6 +153,28 @@ class RDDMSClient:
         owners: list[str] = [],
         viewers: list[str] = [],
     ) -> None:
+        """
+        Method creating a new dataspace on the ETP server. This function is
+        limited to creating a single dataspace with optional access-control
+        list (ACL) information.
+
+        Parameters
+        ----------
+        dataspace_uri: str | DataspaceURI
+            The ETP dataspace uri, or path, to create. If it is a dataspace
+            path (on the form `'foo/bar'`) it will be converted to the
+            dataspace uri `"eml:///dataspace('foo/bar')"`.
+        legal_tags: list[str]
+            A list of legal tag strings for the ACL. The default is an empty
+            list.
+        other_relevant_data_countries: list[str]
+            A list of data countries for the ACL. The default is an empty list.
+        owners: list[str]
+            A list of owners ACL. The default is an empty list.
+        viewers: list[str]
+            A list of viewers ACL. The default is an empty list.
+
+        """
         dataspace_uri = DataspaceURI.from_any(dataspace_uri)
 
         # A UTC timestamp in microseconds.
@@ -228,6 +293,17 @@ class RDDMSClient:
         self,
         transaction_uuid: bytes | str | uuid.UUID | Uuid,
     ) -> None:
+        """
+        Method for commiting a transaction after completing all tasks that
+        needs to be synchronized between the client and the server.
+
+        Parameters
+        ----------
+        transaction_uuid: bytes | str | uuid.UUID | Uuid
+            The transaction uuid for the current transaction. This will
+            typically be the uuid from the
+            `RDDMSClient.start_transaction`-method.
+        """
         if isinstance(transaction_uuid, uuid.UUID):
             transaction_uuid = Uuid(transaction_uuid.bytes)
         elif isinstance(transaction_uuid, str | bytes):
@@ -248,6 +324,18 @@ class RDDMSClient:
     async def rollback_transaction(
         self, transaction_uuid: bytes | str | uuid.UUID | Uuid
     ) -> None:
+        """
+        Method for cancelling a running transaction. This will tell the server
+        that it should disregard any changes incurred by the current
+        transaction.
+
+        Parameters
+        ----------
+        transaction_uuid: bytes | str | uuid.UUID | Uuid
+            The transaction uuid for the current transaction. This will
+            typically be the uuid from the
+            `RDDMSClient.start_transaction`-method.
+        """
         if isinstance(transaction_uuid, uuid.UUID | str):
             transaction_uuid = Uuid(str(transaction_uuid).encode())
         elif isinstance(transaction_uuid, bytes):
