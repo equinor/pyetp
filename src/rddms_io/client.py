@@ -517,6 +517,9 @@ class RDDMSClient:
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> list[str]:
+        if not ml_objects:
+            return []
+
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
 
         if handle_transaction:
@@ -689,6 +692,9 @@ class RDDMSClient:
             See the `download_arrays`-argument for an explanation on which part
             of the union is returned when.
         """
+        if not ml_uris:
+            return ([], {}) if download_arrays else []
+
         tasks = []
         for uri in ml_uris:
             task = self.etp_client.send(GetDataObjects(uris={str(uri): str(uri)}))
@@ -742,6 +748,9 @@ class RDDMSClient:
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> None:
+        if not ml_uris:
+            return
+
         uris = list(map(str, ml_uris))
         ddo = DeleteDataObjects(
             uris=dict(zip(uris, uris)),
