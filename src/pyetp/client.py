@@ -726,7 +726,7 @@ class ETPClient(ETPConnection):
         response = responses[0]
 
         if not response.successful:
-            raise ETPTransactionFailure(f"Failed starting trasaction {dataspace_uri}")
+            raise ETPTransactionFailure(f"Failed starting transaction {dataspace_uri}")
 
         return response.transaction_uuid
 
