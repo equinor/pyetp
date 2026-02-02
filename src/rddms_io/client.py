@@ -56,7 +56,7 @@ from energistics.etp.v12.protocol.transaction import (
     StartTransactionResponse,
 )
 from pyetp import utils_arrays
-from pyetp.client import ETPClient, etp_connect, timeout_intervals
+from pyetp.client import ETPClient, ETPError, etp_connect, timeout_intervals
 from pyetp.errors import (
     ETPTransactionFailure,
     parse_and_raise_response_errors,
@@ -187,9 +187,25 @@ class RDDMSClient:
             total_timeout = None
 
         for ti in timeout_intervals(total_timeout):
-            responses = await self.etp_client.send(
-                StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri]),
-            )
+            try:
+                responses = await self.etp_client.send(
+                    StartTransaction(
+                        read_only=read_only, dataspace_uris=[dataspace_uri]
+                    ),
+                )
+            except ETPError as e:
+                # Check if the error corresponds to the ETP Error
+                # `EMAX_TRANSACTIONS_EXCEEDED`.
+                if e.code != 15:
+                    raise
+
+                if debounce:
+                    logger.info(f"Failed to start transaction retrying in {ti} seconds")
+                    await asyncio.sleep(ti)
+                    continue
+
+                raise
+
             parse_and_raise_response_errors(
                 responses, StartTransactionResponse, "RDDMSClient.start_transaction"
             )
@@ -197,20 +213,16 @@ class RDDMSClient:
             assert len(responses) == 1
             response = responses[0]
 
-            if all([response.successful for response in responses]):
-                transaction_uuid = uuid.UUID(str(response.transaction_uuid))
-                logger.debug("Started transaction with uuid: {transaction_uuid}")
-                return transaction_uuid
+            if not response.successful:
+                raise ETPTransactionFailure(str(response.failure_reason))
 
-            if debounce:
-                logger.info(
-                    f"Failed to start transaction with response: {response}, "
-                    f"retrying in {ti} seconds"
-                )
-                await asyncio.sleep(ti)
-                continue
+            transaction_uuid = uuid.UUID(str(response.transaction_uuid))
+            logger.debug("Started transaction with uuid: {transaction_uuid}")
+            return transaction_uuid
 
-            raise ETPTransactionFailure(str(response))
+        raise ETPTransactionFailure(
+            f"Failed to start transaction after {total_timeout} seconds",
+        )
 
     async def commit_transaction(
         self,
