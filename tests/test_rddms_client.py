@@ -1,3 +1,5 @@
+import asyncio
+
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -542,6 +544,85 @@ async def test_partial_deletion() -> None:
         await rddms_client.delete_model([r.uri for r in resources])
         # Only the `obj_ActivityTemplate`-object is left.
         assert len(resources) == 1
+
+        # Delete the dataspace.
+        await rddms_client.delete_dataspace(dataspace_uri)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_debouncing() -> None:
+    dataspace_path = "rddms-io/test-debouncing"
+    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        try:
+            await rddms_client.create_dataspace(dataspace_path)
+        except ETPError:
+            pass
+
+    async def task(debounce: bool | float, sleep_time: float) -> None:
+        async with rddms_connect(uri=etp_server_url) as rddms_client:
+            transaction_uuid = await rddms_client.start_transaction(
+                dataspace_uri=dataspace_uri,
+                read_only=False,
+                debounce=debounce,
+            )
+            await asyncio.sleep(sleep_time)
+            await rddms_client.commit_transaction(transaction_uuid=transaction_uuid)
+
+    # Test a transaction failure when two tasks tries to start a transaction
+    # for writing on the same dataspace, and then going to sleep.
+    task_1 = asyncio.create_task(task(debounce=False, sleep_time=1))
+    task_2 = asyncio.create_task(task(debounce=False, sleep_time=1))
+
+    with pytest.raises(ETPError):
+        try:
+            # The gather-call will incur an error from one of the tasks, but it
+            # will not cancel the remaining task.
+            await asyncio.gather(task_1, task_2)
+        except ETPError as e:
+            # Check that either `task_1` or `task_2` has completed (but not
+            # both!).
+            assert task_1.done() != task_2.done()
+
+            # Cancel both tasks, one of them should have generated the
+            # `ETPError`, and the other is still sleeping and needs to be
+            # stopped so that it frees up the dataspace for new transactions.
+            task_1.cancel()
+            task_2.cancel()
+            # Check that we get a `EMAX_TRANSACTIONS_EXCEEDED` error code.
+            assert e.code == 15
+            raise e
+
+    # Test a transaction failure when the debouncing time is too short.
+    task_1 = asyncio.create_task(task(debounce=1.0, sleep_time=10))
+    task_2 = asyncio.create_task(task(debounce=1.0, sleep_time=10))
+
+    # This raises an `ETPTransactionFailure` instead of an `ETPError`.
+    with pytest.raises(ETPTransactionFailure):
+        await asyncio.gather(task_1, task_2)
+
+    # Check that either `task_1` or `task_2` has completed (but not both!).
+    assert task_1.done() != task_2.done()
+
+    # Cancel the tasks to free up the dataspace.
+    task_1.cancel()
+    task_2.cancel()
+
+    # Test working debouncing.
+    task_1 = asyncio.create_task(task(debounce=True, sleep_time=1.0))
+    task_2 = asyncio.create_task(task(debounce=True, sleep_time=1.0))
+
+    await asyncio.gather(task_1, task_2)
+
+    # Check that both tasks completed successfully.
+    assert task_1.done() and task_2.done()
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        # Clean-up code. Remove all objects, arrays and the dataspace.
+        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
+        await rddms_client.delete_model([r.uri for r in resources])
 
         # Delete the dataspace.
         await rddms_client.delete_dataspace(dataspace_uri)
