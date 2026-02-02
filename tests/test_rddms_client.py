@@ -626,3 +626,68 @@ async def test_debouncing() -> None:
 
         # Delete the dataspace.
         await rddms_client.delete_dataspace(dataspace_uri)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_debouncing_on_upload() -> None:
+    crs_1, epc_1, gri_1, Z_1 = get_random_surface()
+    crs_2, epc_2, gri_2, Z_2 = get_random_surface()
+    crs_3, epc_3, gri_3, Z_3 = get_random_surface()
+
+    dataspace_path = "rddms-io/test-debouncing-on-upload"
+    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        try:
+            await rddms_client.create_dataspace(dataspace_path)
+        except ETPError:
+            pass
+
+    async def task(
+        crs: ro.obj_LocalDepth3dCrs,
+        epc: ro.obj_EpcExternalPartReference,
+        gri: ro.obj_Grid2dRepresentation,
+        Z: npt.NDArray[np.float64],
+    ) -> None:
+        data_arrays = {
+            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file: Z,
+        }
+        async with rddms_connect(uri=etp_server_url) as rddms_client:
+            await rddms_client.upload_model(
+                dataspace_uri=dataspace_uri,
+                ml_objects=[crs, epc, gri],
+                data_arrays=data_arrays,
+                debounce=True,
+            )
+
+    task_1 = asyncio.create_task(task(crs=crs_1, epc=epc_1, gri=gri_1, Z=Z_1))
+    task_2 = asyncio.create_task(task(crs=crs_2, epc=epc_2, gri=gri_2, Z=Z_2))
+    task_3 = asyncio.create_task(task(crs=crs_3, epc=epc_3, gri=gri_3, Z=Z_3))
+
+    await asyncio.gather(task_1, task_2, task_3)
+
+    assert task_1.done() and task_2.done() and task_3.done()
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        # Clean-up code. Remove all objects, arrays and the dataspace.
+        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
+        uris = [r.uri for r in resources]
+
+        # Check that all objects were successfully uploaded.
+        assert crs_1.get_etp_data_object_uri(dataspace_uri) in uris
+        assert crs_2.get_etp_data_object_uri(dataspace_uri) in uris
+        assert crs_3.get_etp_data_object_uri(dataspace_uri) in uris
+
+        assert epc_1.get_etp_data_object_uri(dataspace_uri) in uris
+        assert epc_2.get_etp_data_object_uri(dataspace_uri) in uris
+        assert epc_3.get_etp_data_object_uri(dataspace_uri) in uris
+
+        assert gri_1.get_etp_data_object_uri(dataspace_uri) in uris
+        assert gri_2.get_etp_data_object_uri(dataspace_uri) in uris
+        assert gri_3.get_etp_data_object_uri(dataspace_uri) in uris
+
+        await rddms_client.delete_model(uris)
+
+        # Delete the dataspace.
+        await rddms_client.delete_dataspace(dataspace_uri)
