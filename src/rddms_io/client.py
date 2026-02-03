@@ -547,9 +547,98 @@ class RDDMSClient:
 
     async def list_array_metadata(
         self,
+        ml_uris: list[str | DataObjectURI],
+    ) -> dict[str, dict[str, DataArrayMetadata]]:
+        """
+        Method used for listing array metadata for all connected arrays to the
+        provided data object uris. This method downloads the data objects from
+        the uris, and calls `RDDMSClient.list_object_array_metadata` to get the
+        actual metadata. If the objects have already been downloaded, then
+        using `RDDMSClient.list_object_array_metadata` will be more efficient.
+
+        The purpose of this method is to provide a more convenient way of
+        exploring an RDDMS server without needing to handle data objects. It is
+        recommended to use `RDDMSClient.list_object_array_metadata` if the
+        objects have already been downloaded.
+
+        Parameters
+        ----------
+        ml_uris: list[str | DataObjectURI]
+            A list of ETP data object uris.
+
+        Returns
+        -------
+        dict[str, dict[str, DataArrayMetadata]]
+            A dictionary indexed by the data object uri, containing a new
+            dictionary with the path in resource as the key and the metadata
+            (the ETP datatype `DataArrayMetadata`) as the value.
+
+        See Also
+        --------
+        RDDMSClient.list_object_array_metadata
+            A similar method that fetches the metadata from the objects
+            themselves along with a dataspace uri. It is recommended to use
+            `list_object_array_metadata` if you already have the objects in
+            memory.
+        """
+        ml_objects = await self.download_model(
+            ml_uris=ml_uris,
+            download_arrays=False,
+        )
+
+        if not ml_objects:
+            return {}
+
+        ml_uris = [DataObjectURI(str(uri)) for uri in ml_uris]
+        dataspace_uris = [DataspaceURI.from_any(uri) for uri in ml_uris]
+
+        array_metadata = await asyncio.gather(
+            *[
+                self.list_object_array_metadata(
+                    dataspace_uri=dataspace_uri,
+                    ml_objects=[ml_object],
+                )
+                for dataspace_uri, ml_object in zip(dataspace_uris, ml_objects)
+            ]
+        )
+
+        metadata_map = {}
+        for am in array_metadata:
+            metadata_map = {**metadata_map, **am}
+
+        return metadata_map
+
+    async def list_object_array_metadata(
+        self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
     ) -> dict[str, dict[str, DataArrayMetadata]]:
+        """
+        Method used for listing array metadata for all connected arrays to the
+        provided RESQML-objects. This method works by taking in a dataspace uri
+        and the objects themselves (instead of their uris) as they would need
+        to be downloaded to look up which arrays they link to.
+
+        Parameters
+        ----------
+        dataspace_uri: str | DataspaceURI
+            The ETP dataspace uri where the objects are located.
+        ml_objects: Sequence[ro.AbstractCitedDataObject]
+            A list (or any sequence) of objects that links to arrays.
+
+        Returns
+        -------
+        dict[str, dict[str, DataArrayMetadata]]
+            A dictionary indexed by the data object uri, containing a new
+            dictionary with the path in resource as the key and the metadata
+            (the ETP datatype `DataArrayMetadata`) as the value.
+
+        See Also
+        --------
+        RDDMSClient.list_array_metadata
+            A similar method that looks up array metadata needing only the uris
+            of the objects.
+        """
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
 
         ml_uris = []
