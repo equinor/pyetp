@@ -905,13 +905,17 @@ class RDDMSClient:
 
         dataspace_path = DataspaceURI(dataspace_uri).dataspace
 
+        uploaded_data_keys = []
         tasks = []
         for hdf5_dataset in ml_hds:
             path_in_resource = hdf5_dataset.path_in_hdf_file
             epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
                 dataspace_path_or_uri=dataspace_path
             )
-            data = data_arrays.pop(path_in_resource)
+
+            data = data_arrays[path_in_resource]
+            uploaded_data_keys.append(path_in_resource)
+
             tasks.append(
                 self.upload_array(
                     epc_uri=epc_uri,
@@ -920,10 +924,11 @@ class RDDMSClient:
                 )
             )
 
-        if len(data_arrays) > 0:
+        if len(data_arrays) > len(uploaded_data_keys):
             logger.warning(
                 "Not all arrays were uploaded. The remaining array keys "
-                f"{sorted(data_arrays)} were not found in the provided objects."
+                f"{set(data_arrays) - set(uploaded_data_keys)} were not found in the "
+                "provided objects."
             )
 
         await asyncio.gather(*tasks)
