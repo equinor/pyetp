@@ -65,6 +65,11 @@ def find_hdf5_datasets(
 def _find_hdf5_datasets(obj: typing.Any) -> list[ro.Hdf5Dataset]:
     hds = []
 
+    if isinstance(obj, list):
+        for _obj in obj:
+            hds.extend(_find_hdf5_datasets(_obj))
+        return hds
+
     try:
         _fields = fields(obj)
     except TypeError:
