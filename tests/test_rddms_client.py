@@ -307,7 +307,7 @@ async def test_list_array_metadata() -> None:
 
         assert (
             len(
-                await rddms_client.list_array_metadata(
+                await rddms_client.list_object_array_metadata(
                     dataspace_uri=dataspace_uri,
                     ml_objects=[ret_crs, ret_epc],
                 )
@@ -315,9 +315,13 @@ async def test_list_array_metadata() -> None:
             == 0
         )
         metadata = await rddms_client.list_array_metadata(
+            ml_uris=[gri_1_uri, gri_2_uri]
+        )
+        ometadata = await rddms_client.list_object_array_metadata(
             dataspace_uri=dataspace_uri,
             ml_objects=[gri_1, gri_2],
         )
+        assert metadata == ometadata
         assert gri_1_uri in metadata
         assert gri_2_uri in metadata
 
