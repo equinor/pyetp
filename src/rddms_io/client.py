@@ -70,6 +70,22 @@ logger = logging.getLogger(__name__)
 
 
 class RDDMSClient:
+    """
+    Client using ETP to communicate with an RDDMS (Reservoir Domain Data
+    Management Services) server. It is specifically
+    tailored towards the OSDU open-etp-server (see:
+    https://community.opengroup.org/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server)
+    and made with the intention to make it easier to interact with RDDMS by
+    exposing ergonomic user-facing functions.
+
+    The client is meant to be set up via :func:`rddms_connect`.
+
+    Parameters
+    ----------
+    etp_client: ETPClient
+        An instance of `ETPClient` from `pyetp`.
+    """
+
     def __init__(self, etp_client: ETPClient) -> None:
         self.etp_client = etp_client
 
@@ -411,10 +427,10 @@ class RDDMSClient:
         depth: int = 1,
     ) -> LinkedObjects:
         """
-        This method lists all objects that are linked to the provided object
-        uri. That is, starting from the object with the given uri it finds all
-        objects (sources) that links to it, and all objects (targets) it links
-        to.
+        Method listing all objects that are linked to the provided object uri.
+        That is, starting from the object indexed by the uri `start_uri` it
+        finds all objects (sources) that links to it, and all objects (targets)
+        it links to.
 
         Parameters
         ----------
@@ -591,6 +607,30 @@ class RDDMSClient:
         path_in_resource: str,
         data: npt.NDArray[utils_arrays.LogicalArrayDTypes],
     ) -> None:
+        """
+        Method used for uploading a single array to an ETP server. This method
+        will not work without the user setting up a transaction for writing to
+        the relevant dataspace. It should not be necessary for a user to call
+        this method, prefer `RDDMSClient.upload_model` instead.
+
+        Parameters
+        ----------
+        epc_uri: str | DataObjectURI
+            An ETP data object uri to an `obj_EpcExternalPartReference` that is
+            connected to the object that links to the provided array.
+        path_in_resource: str
+            A key (typically a HDF5-key) that uniquely identifies the array
+            along with the `epc_uri`. This key is found in the object that
+            links to the provided array.
+        data: npt.NDArray[utils_arrays.LogicalArrayDTypes]
+            A NumPy-array with the data.
+
+        See Also
+        --------
+        RDDMSClient.upload_model
+            A higher-level method that wraps transaction handling, data object
+            uploading and array uploading in one go.
+        """
         await self.etp_client.upload_array(
             epc_uri=epc_uri,
             path_in_resource=path_in_resource,
@@ -602,6 +642,32 @@ class RDDMSClient:
         epc_uri: str | DataObjectURI,
         path_in_resource: str,
     ) -> npt.NDArray[utils_arrays.LogicalArrayDTypes]:
+        """
+        Method used for downloading a single array from an ETP server. It
+        should not be necessary for a user to call this method, prefer
+        `RDDMSClient.download_model` instead.
+
+        Parameters
+        ----------
+        epc_uri: str | DataObjectURI
+            An ETP data object uri to an `obj_EpcExternalPartReference` that is
+            connected to the object that links to the provided array.
+        path_in_resource: str
+            A key (typically a HDF5-key) that uniquely identifies the array
+            along with the `epc_uri`. This key is found in the object that
+            links to the provided array.
+
+        Returns
+        -------
+        data: npt.NDArray[utils_arrays.LogicalArrayDTypes]
+            A NumPy-array with the data.
+
+        See Also
+        --------
+        RDDMSClient.download_model
+            A higher-level method that wraps, data object and array downloading
+            in one go.
+        """
         return await self.etp_client.download_array(
             epc_uri=epc_uri,
             path_in_resource=path_in_resource,
@@ -617,6 +683,47 @@ class RDDMSClient:
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> list[str]:
+        """
+        The main driver method for uploading data to an ETP server. This method
+        takes in a dataspace uri (for uploading to multiple dataspaces you need
+        to call `RDDMSClient.upload_model` multiple times), a set of
+        RESQML-objects, and a mapping of data arrays that are indexed by their
+        path in resource (which is found in the RESQML-objects as well).
+
+        Parameters
+        ----------
+        dataspace_uri: str | DataspaceURI
+            An ETP dataspace uri.
+        ml_objects: Sequence[ro.AbstractCitedDataObject]
+            A sequence of RESQML v2.0.1-objects.
+        data_arrays: typing.Mapping[
+            str, Sequence[npt.NDArray[utils_arrays.LogicalArrayDTypes]]
+        ]
+            A mapping, e.g., a dictionary, of data arrays where the path in
+            resources (found in the RESQML-objects) are the keys. Default is
+            `{}`, meaning that only the RESQML-objects will be uploaded.
+        handle_transaction: bool
+            A flag to toggle if `RDDMSClient.upload_model` should start and
+            commit the transaction towards the dataspace. Default is `True`,
+            and the method will ensure that the transaction handling is done
+            correctly.
+        debounce: bool | float
+            Parameter to decide if `RDDMSClient.upload_model` should retry
+            starting a transaction if it initially fails. See
+            `RDDMSClient.start_transaction` for a more in-depth explanation of
+            the parameter. Default is `False`, i.e., no debouncing will occur
+            and the method will fail if it is unable to start a transaction.
+
+        Returns
+        -------
+        list[str]
+            A list of ETP data object uris to the uploaded objects.
+
+        See Also
+        --------
+        RDDMSClient.download_model
+        RDDMSClient.start_transaction
+        """
         if not ml_objects:
             return []
 
@@ -772,7 +879,6 @@ class RDDMSClient:
         ----------
         ml_uris: list[str | DataObjectURI]
             A list of ETP data object uris.
-
         download_arrays: bool
             A flag to toggle if any referenced arrays should be download
             alongside the RESQML-objects. Setting to `True` will make the
@@ -848,6 +954,32 @@ class RDDMSClient:
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> None:
+        """
+        Method used for deleting a set of objects on an ETP server. In order
+        for the deletion to be successful the objects to be deleted can not
+        leave any dangling source-objects. That is, there can be no objects
+        left on the ETP server that references the deleted objects.
+
+        Parameters
+        ----------
+        ml_uris: list[str | DataObjectURI]
+            A list of ETP data object uris to delete.
+        prune_contained_objects: bool
+            See section 9.3.4 in the ETP v1.2 standards documentation for an
+            accurate description of this parameter. Default is `False` meaning
+            no pruning is done.
+        handle_transaction: bool
+            A flag to toggle if `RDDMSClient.delete_model` should start and
+            commit the transaction towards the dataspace. Default is `True`,
+            and the method will ensure that the transaction handling is done
+            correctly.
+        debounce: bool | float
+            Parameter to decide if `RDDMSClient.delete_model` should retry
+            starting a transaction if it initially fails. See
+            `RDDMSClient.start_transaction` for a more in-depth explanation of
+            the parameter. Default is `False`, i.e., no debouncing will occur
+            and the method will fail if it is unable to start a transaction.
+        """
         if not ml_uris:
             return
 
@@ -877,6 +1009,84 @@ class RDDMSClient:
 
 
 class rddms_connect:
+    """
+    Connect to an RDDMS server via ETP.
+
+    This class can act as:
+
+    1. A context manager handling setup and tear-down of the connection.
+    2. An asynchronous iterator which can be used to persistently retry to
+    connect if the websockets connection drops.
+    3. An awaitable connection that must be manually closed by the user.
+
+    See below for examples of all three cases.
+
+    Parameters
+    ----------
+    uri: str
+        The uri to the RDDMS server. This should be the uri to a websockets
+        endpoint to an ETP server.
+    data_partition_id: str | None
+        The data partition id used when connecting to the OSDU open-etp-server
+        in multi-partition mode. Default is `None`.
+    authorization: str | SecretStr | None
+        Bearer token used for authenticating to the RDDMS server. This token
+        should be on the form `"Bearer 1234..."`. Default is `None`.
+    etp_timeout: float | None
+        The timeout in seconds for when to stop waiting for a message from the
+        server. Setting it to `None` will persist the connection indefinetly.
+        Default is `None`.
+    max_message_size: float
+        The maximum number of bytes for a single websockets message. Default is
+        `2**20` corresponding to `1` MiB.
+
+
+    Examples
+    --------
+    An example of connecting to an RDDMS server using :func:`rddms_connect` as a
+    context manager is:
+
+        async with rddms_connect(...) as rddms_client:
+            ...
+
+    In this case the closing message is sent and the websockets connection is
+    closed once the program exits the context manager.
+
+
+    To persist a connection if the websockets connection is dropped (for any
+    reason), use :func:`rddms_connect` as an asynchronous generator, viz.:
+
+        import websockets
+
+        async for rddms_client in rddms_connect(...):
+            try:
+                ...
+            except websockets.ConnectionClosed:
+                continue
+
+            # Include `break` to avoid re-running the whole block if the
+            # iteration runs without any errors.
+            break
+
+    Note that in this case the whole program under the `try`-block is re-run
+    from the start if the iteration completes normally, or if the websockets
+    connection is dropped. Therefore, make sure to include a `break` at the end
+    of the `try`-block (as in the example above).
+
+
+    The third option is to set up a connection via `await` and then manually
+    close the connection once done:
+
+        rddms_client = await rddms_connect(...)
+        ...
+        await rddms_client.close()
+
+    See Also
+    --------
+    pyetp.client.etp_connect
+        The `rddms_connect`-class is a thin wrapper around `etp_connect`.
+    """
+
     def __init__(
         self,
         uri: str,
