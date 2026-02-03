@@ -1,4 +1,5 @@
 import asyncio
+import pathlib
 
 import numpy as np
 import numpy.typing as npt
@@ -9,7 +10,12 @@ import resqml_objects.v201 as ro
 from pyetp.client import ETPError
 from pyetp.errors import ETPTransactionFailure
 from pyetp.uri import DataspaceURI
+from pyetp.utils_arrays import get_valid_dtype_cast
 from rddms_io.client import rddms_connect
+from resqml_objects.epc_readers import (
+    get_arrays_and_paths_in_hdf_file,
+    get_resqml_v201_objects,
+)
 from resqml_objects.surface_helpers import RegularGridParameters
 
 
@@ -691,6 +697,72 @@ async def test_debouncing_on_upload() -> None:
         assert gri_2.get_etp_data_object_uri(dataspace_uri) in uris
         assert gri_3.get_etp_data_object_uri(dataspace_uri) in uris
 
+        await rddms_client.delete_model(uris)
+
+        # Delete the dataspace.
+        await rddms_client.delete_dataspace(dataspace_uri)
+
+
+@skip_decorator
+@pytest.mark.parametrize(
+    "input_mesh_file",
+    [
+        pathlib.Path("data") / "model_hexa_0.epc",
+        pathlib.Path("data") / "model_hexa_ts_0_new.epc",
+    ],
+)
+@pytest.mark.asyncio
+async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
+    ml_objects = get_resqml_v201_objects(input_mesh_file)
+    input_hdf_file = input_mesh_file.with_suffix(".h5")
+    data_arrays = get_arrays_and_paths_in_hdf_file(input_hdf_file)
+
+    dataspace_path = "rddms-io/test-epc-file-roundtrip"
+    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+
+    # Cast array data types to valid transport array types. This is needed as
+    # the open-etp-server does not currently support the use of the logical
+    # array types.
+    original_dtypes = {}
+    casted_data_arrays = {}
+    for k, v in data_arrays.items():
+        original_dtypes[k] = v.dtype
+        casted_data_arrays[k] = v.astype(get_valid_dtype_cast(v))
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        try:
+            await rddms_client.create_dataspace(dataspace_path)
+        except ETPError:
+            pass
+
+        ml_uris = await rddms_client.upload_model(
+            dataspace_uri=dataspace_uri,
+            ml_objects=ml_objects,
+            data_arrays=casted_data_arrays,
+        )
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        ret_ml_objects, ret_data_arrays = await rddms_client.download_model(
+            ml_uris=ml_uris,
+            download_arrays=True,
+        )
+
+    assert ml_objects == ret_ml_objects
+    assert sorted(ret_data_arrays) == sorted(casted_data_arrays)
+
+    casted_ret_data_arrays = {
+        k: v.astype(original_dtypes[k]) for k, v in ret_data_arrays.items()
+    }
+
+    for k in casted_ret_data_arrays:
+        np.testing.assert_equal(casted_ret_data_arrays[k], casted_data_arrays[k])
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        # Clean-up code. Remove all objects, arrays and the dataspace.
+        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
+        uris = [r.uri for r in resources]
+
+        # Delete all data objects.
         await rddms_client.delete_model(uris)
 
         # Delete the dataspace.
