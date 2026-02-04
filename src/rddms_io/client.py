@@ -64,7 +64,7 @@ from pyetp.errors import (
 from pyetp.uri import DataObjectURI, DataspaceURI
 from rddms_io.data_types import LinkedObjects
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
-from resqml_objects.v201.utils import find_hdf5_datasets
+from resqml_objects.v201.utils import find_data_object_references, find_hdf5_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -941,6 +941,7 @@ class RDDMSClient:
         self,
         ml_uris: list[str | DataObjectURI],
         download_arrays: typing.Literal[False],
+        download_linked_objects: bool = False,
     ) -> list[ro.AbstractCitedDataObject]: ...
 
     @typing.overload
@@ -948,6 +949,7 @@ class RDDMSClient:
         self,
         ml_uris: list[str | DataObjectURI],
         download_arrays: typing.Literal[True],
+        download_linked_objects: bool = False,
     ) -> tuple[
         list[ro.AbstractCitedDataObject],
         dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
@@ -957,6 +959,7 @@ class RDDMSClient:
         self,
         ml_uris: list[str | DataObjectURI],
         download_arrays: bool = False,
+        download_linked_objects: bool = False,
     ) -> (
         tuple[
             list[ro.AbstractCitedDataObject],
@@ -981,6 +984,19 @@ class RDDMSClient:
             `path_in_hdf_file` as the key, and the arrays as the values. If the
             flag is set to `False` no arrays will be downloaded, and the
             function only returns a list of the objects. Default is `False`.
+        download_linked_objects: bool
+            Flag to toggle if linked objects (target-objects), i.e., objects
+            referenced by objects from `ml_uris`. For example, setting the flag
+            to `True` and passing in a single `obj_Grid2dRepresentation`-uri in
+            the `ml_uris` will try to download any linked coordinate systems or
+            any other referenced objects. Note that if any of the linked objects
+            are already in `ml_uris` they will not be included again. The
+            method only looks for objects linked one level down (corresponding
+            to `depth = 1` in `GetResources`), and it will ignore
+            `obj_EpcExternalPartReference`- and
+            `EpcExternalPartReference`-objects. Any connected arrays to the
+            linked objects will also be downloaded if `download_arrays = True`.
+            Default is `False` meaning no linked objects will be downloaded.
 
         Returns
         -------
@@ -1011,6 +1027,31 @@ class RDDMSClient:
 
         data_objects = [r.data_objects[str(u)] for u, r in zip(ml_uris, responses)]
         ml_objects = [parse_resqml_v201_object(d.data) for d in data_objects]
+
+        if download_linked_objects:
+            additional_uris = []
+
+            for u, obj in zip(ml_uris, ml_objects):
+                dataspace_uri = str(DataspaceURI.from_any(u))
+                dors = find_data_object_references(obj)
+                additional_uris.extend(
+                    [dor.get_etp_data_object_uri(dataspace_uri) for dor in dors]
+                )
+
+            extra_uris = list(set(additional_uris) - set(ml_uris))
+            # Remove any `EpcExternalPartReference`-objects from the extra
+            # uris.
+            extra_uris = list(
+                filter(lambda e: "EpcExternalPartReference" not in e, extra_uris)
+            )
+
+            # This should be optimized to only download the new objects, but
+            # for now this will do.
+            return await self.download_model(
+                ml_uris=[*ml_uris, *extra_uris],
+                download_arrays=download_arrays,
+                download_linked_objects=False,
+            )
 
         if not download_arrays:
             return ml_objects

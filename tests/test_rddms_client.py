@@ -177,6 +177,29 @@ async def test_upload_and_download_model() -> None:
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
     )
 
+    # Test downloading linked objects.
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        ret_objs, ret_Z = await rddms_client.download_model(
+            ml_uris=[gri_uri],
+            download_arrays=True,
+            download_linked_objects=True,
+        )
+
+    assert len(ret_objs) == 2
+    assert len(ret_Z) == 1
+
+    ret_gri = next(
+        filter(lambda o: isinstance(o, ro.obj_Grid2dRepresentation), ret_objs)
+    )
+    ret_crs = next(filter(lambda o: isinstance(o, ro.obj_LocalDepth3dCrs), ret_objs))
+
+    assert ret_crs == crs
+    assert ret_gri == gri
+
+    np.testing.assert_equal(
+        ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
+    )
+
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         # List all objects under the dataspace. The server adds two extra
         # objects to the three that we upload, and we need to include these if
