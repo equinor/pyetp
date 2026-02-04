@@ -82,3 +82,31 @@ def _find_hdf5_datasets(obj: typing.Any) -> list[ro.Hdf5Dataset]:
             hds.extend(_find_hdf5_datasets(getattr(obj, f.name)))
 
     return hds
+
+
+def find_data_object_references(
+    obj: ro.AbstractCitedDataObject,
+) -> list[ro.DataObjectReference]:
+    return _find_data_object_references(obj)
+
+
+def _find_data_object_references(obj: typing.Any) -> list[ro.DataObjectReference]:
+    dors = []
+
+    if isinstance(obj, list):
+        for _obj in obj:
+            dors.extend(_find_data_object_references(_obj))
+        return dors
+
+    try:
+        _fields = fields(obj)
+    except TypeError:
+        return dors
+
+    for f in _fields:
+        if isinstance(getattr(obj, f.name), ro.DataObjectReference):
+            dors.append(getattr(obj, f.name))
+        else:
+            dors.extend(_find_data_object_references(getattr(obj, f.name)))
+
+    return dors
