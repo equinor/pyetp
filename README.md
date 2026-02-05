@@ -15,7 +15,7 @@ This package is published to PyPI, and can be installed via:
 ```bash
 pip install pyetp
 ```
-The library is tested against Python versions 3.10, 3.11, 3.12 and 3.13.
+The library is tested against Python versions 3.11, 3.12 and 3.13.
 
 ## Local development
 Locally we suggest setting up a virtual environment, and installing the latest
