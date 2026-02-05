@@ -1045,13 +1045,16 @@ class RDDMSClient:
                 filter(lambda e: "EpcExternalPartReference" not in e, extra_uris)
             )
 
-            # This should be optimized to only download the new objects, but
-            # for now this will do.
-            return await self.download_model(
-                ml_uris=[*ml_uris, *extra_uris],
-                download_arrays=download_arrays,
-                download_linked_objects=False,
-            )
+            # Avoid re-running `download_model` if there are no new uris to include.
+            if extra_uris:
+                logger.info(f"Downloading additional objects with uris: {extra_uris}")
+                # This should be optimized to only download the new objects, but
+                # for now this will do.
+                return await self.download_model(
+                    ml_uris=[*ml_uris, *extra_uris],
+                    download_arrays=download_arrays,
+                    download_linked_objects=False,
+                )
 
         if not download_arrays:
             return ml_objects
