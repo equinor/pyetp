@@ -39,6 +39,7 @@ dev = [
     "pytest-cov >= 4.1.0",
     "ipykernel >= 6.29.5",
     "ruff>=0.13.2",
+    "mkdocs>=1.6.1",
 ]
 
 [tool.pytest.ini_options]
