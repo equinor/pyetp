@@ -68,22 +68,31 @@ from resqml_objects.v201.utils import find_data_object_references, find_hdf5_dat
 
 logger = logging.getLogger(__name__)
 
+ListOfRESQMLObjects: typing.TypeAlias = list[ro.AbstractCitedDataObject]
+ObjectsAndArrays: typing.TypeAlias = tuple[
+    ListOfRESQMLObjects, dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]]
+]
+DownloadModelType: typing.TypeAlias = ListOfRESQMLObjects | ObjectsAndArrays
+
 
 class RDDMSClient:
     """
     Client using ETP to communicate with an RDDMS (Reservoir Domain Data
-    Management Services) server. It is specifically
-    tailored towards the OSDU open-etp-server (see:
-    https://community.opengroup.org/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server)
+    Management Services) server. It is specifically tailored towards the OSDU
+    [open-etp-server](https://community.opengroup.org/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server)
     and made with the intention to make it easier to interact with RDDMS by
     exposing ergonomic user-facing functions.
 
-    The client is meant to be set up via :func:`rddms_connect`.
+    Note
+    ----
+    The client is meant to be set up via
+    [`rddms_connect`][rddms_io.client.rddms_connect].
+
 
     Parameters
     ----------
     etp_client: ETPClient
-        An instance of `ETPClient` from `pyetp`.
+        An instance of [`ETPClient`][pyetp.client.ETPClient].
     """
 
     def __init__(self, etp_client: ETPClient) -> None:
@@ -96,9 +105,12 @@ class RDDMSClient:
         has been made via an `await`-statement then this method should be used
         to stop the connection.
 
-        >>> rddms_client = await rddms_connect(...)
-        >>> ...
-        >>> await rddms_client.close()
+        Examples
+        --------
+
+            rddms_client = await rddms_connect(...)
+            ...
+            await rddms_client.close()
         """
         await self.etp_client.close()
 
@@ -942,7 +954,7 @@ class RDDMSClient:
         ml_uris: list[str | DataObjectURI],
         download_arrays: typing.Literal[False],
         download_linked_objects: bool = False,
-    ) -> list[ro.AbstractCitedDataObject]: ...
+    ) -> ListOfRESQMLObjects: ...
 
     @typing.overload
     async def download_model(
@@ -950,23 +962,14 @@ class RDDMSClient:
         ml_uris: list[str | DataObjectURI],
         download_arrays: typing.Literal[True],
         download_linked_objects: bool = False,
-    ) -> tuple[
-        list[ro.AbstractCitedDataObject],
-        dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
-    ]: ...
+    ) -> ObjectsAndArrays: ...
 
     async def download_model(
         self,
         ml_uris: list[str | DataObjectURI],
         download_arrays: bool = False,
         download_linked_objects: bool = False,
-    ) -> (
-        tuple[
-            list[ro.AbstractCitedDataObject],
-            dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
-        ]
-        | list[ro.AbstractCitedDataObject]
-    ):
+    ) -> DownloadModelType:
         """
         Download RESQML-model from the RDDMS. A model in this sense is just a
         grouping of RESQML-objects specified by their uris. The objects do not
@@ -1000,11 +1003,7 @@ class RDDMSClient:
 
         Returns
         -------
-        tuple[
-            list[ro.AbstractCitedDataObject],
-            dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]],
-        ]
-        | list[ro.AbstractCitedDataObject]
+        DownloadModelType
             See the `download_arrays`-argument for an explanation on which part
             of the union is returned when.
         """
@@ -1181,8 +1180,8 @@ class rddms_connect:
 
     Examples
     --------
-    An example of connecting to an RDDMS server using :func:`rddms_connect` as a
-    context manager is:
+    An example of connecting to an RDDMS server using
+    [`rddms_connect`][rddms_io.client.rddms_connect] as a context manager is:
 
         async with rddms_connect(...) as rddms_client:
             ...
@@ -1221,8 +1220,9 @@ class rddms_connect:
 
     See Also
     --------
-    pyetp.client.etp_connect
-        The `rddms_connect`-class is a thin wrapper around `etp_connect`.
+    [`pyetp.client.etp_connect`][pyetp.client.etp_connect]
+        The [`rddms_connect`][rddms_io.client.rddms_connect]-class is a thin
+        wrapper around [`etp_connect`][pyetp.client.etp_connect].
     """
 
     def __init__(

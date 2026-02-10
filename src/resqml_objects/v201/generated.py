@@ -24041,7 +24041,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
 
         Returns
         -------
-            tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]
+        tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]
             A pair of `X`- and `Y`-grids that gives the `x` and `y` coordinates
             to the surface described by the grid-object. For an unrotated
             surface this corresponds to a meshgrid.
@@ -24155,8 +24155,11 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         Class method that sets up an `obj_Grid2dRepresentation`-object for a
         regular surface described by the eight parameters (seven free
         parameters) `shape`, `origin`, `dr` and `unit_vectors`, and the
-        necessary (a local crs, and an epc-reference file) and/or optional
-        metadata from RESQML.
+        necessary (a local crs
+        [`AbstractLocal3dCrs`][resqml_objects.v201.generated.AbstractLocal3dCrs],
+        and an epc-object
+        [`obj_EpcExternalPartReference`][resqml_objects.v201.generated.obj_EpcExternalPartReference])
+        and/or optional metadata from RESQML.
         """
 
         if uuid is None:
