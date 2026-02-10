@@ -25,7 +25,7 @@ OBJ_TYPE_PATTERN = re.compile(r"type=(?P<obj_type>\w+)$")
 
 class APIGammaRayUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     G_API
         API gamma ray unit
@@ -36,7 +36,7 @@ class APIGammaRayUom(Enum):
 
 class APIGravityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     D_API
         API gravity unit
@@ -47,7 +47,7 @@ class APIGravityUom(Enum):
 
 class APINeutronUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     N_API
         API neutron unit
@@ -58,7 +58,7 @@ class APINeutronUom(Enum):
 
 class AbsorbedDoseUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_GY
         centigray
@@ -156,7 +156,7 @@ class AbstractVerticalCrs:
 
 class ActivityOfRadioactivityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BQ
         becquerel
@@ -191,7 +191,7 @@ class ActivityOfRadioactivityUom(Enum):
 
 class AmountOfSubstancePerAmountOfSubstanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -220,7 +220,7 @@ class AmountOfSubstancePerAmountOfSubstanceUom(Enum):
 
 class AmountOfSubstancePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     MOL_M2
         gram-mole per square metre
@@ -231,7 +231,7 @@ class AmountOfSubstancePerAreaUom(Enum):
 
 class AmountOfSubstancePerTimePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     LBMOL_H_FT2
         pound-mass-mole per hour square foot
@@ -248,7 +248,7 @@ class AmountOfSubstancePerTimePerAreaUom(Enum):
 
 class AmountOfSubstancePerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KMOL_H
         kilogram-mole per hour
@@ -271,7 +271,7 @@ class AmountOfSubstancePerTimeUom(Enum):
 
 class AmountOfSubstancePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KMOL_M3
         kilogram-mole per cubic metre
@@ -294,7 +294,7 @@ class AmountOfSubstancePerVolumeUom(Enum):
 
 class AmountOfSubstanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KMOL
         kilogram-mole
@@ -317,7 +317,7 @@ class AmountOfSubstanceUom(Enum):
 
 class AnglePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_DEGA_FT
         angular degree per hundred foot
@@ -352,7 +352,7 @@ class AnglePerLengthUom(Enum):
 
 class AnglePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     RAD_FT3
         radian per cubic foot
@@ -366,7 +366,7 @@ class AnglePerVolumeUom(Enum):
 
 class AngularAccelerationUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     RAD_S2
         radian per second squared
@@ -380,7 +380,7 @@ class AngularAccelerationUom(Enum):
 
 class AngularVelocityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DEGA_H
         angular degree per hour
@@ -406,7 +406,7 @@ class AngularVelocityUom(Enum):
 
 class AreaPerAmountOfSubstanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     M2_MOL
         square metre per gram-mole
@@ -417,7 +417,7 @@ class AreaPerAmountOfSubstanceUom(Enum):
 
 class AreaPerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -449,7 +449,7 @@ class AreaPerAreaUom(Enum):
 
 class AreaPerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CM2_G
         square centimetre per gram
@@ -469,7 +469,7 @@ class AreaPerMassUom(Enum):
 
 class AreaPerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CM2_S
         square centimetre per second
@@ -501,7 +501,7 @@ class AreaPerTimeUom(Enum):
 
 class AreaPerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_M
         per metre
@@ -527,7 +527,7 @@ class AreaPerVolumeUom(Enum):
 
 class AreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     ACRE
         acre
@@ -577,7 +577,7 @@ class AreaUom(Enum):
 
 class AttenuationPerFrequencyIntervalUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     B_O
         bel per octave
@@ -594,7 +594,7 @@ class AxisOrder2d(Enum):
     Defines the cordinate system axis order of the global CRS using the axis names
     (from EPSG database).
 
-    Properties
+    Attributes
     ----------
     EASTING_NORTHING
         The first axis is easting and the second axis is northing.
@@ -620,7 +620,7 @@ class AxisOrder2d(Enum):
 
 class CapacitanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_F
         centifarad
@@ -1092,7 +1092,7 @@ class DataObjectReference:
 
 class DataTransferSpeedUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BIT_S
         bit per second
@@ -1106,7 +1106,7 @@ class DataTransferSpeedUom(Enum):
 
 class DiffusionCoefficientUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     M2_S
         square metre per second
@@ -1117,7 +1117,7 @@ class DiffusionCoefficientUom(Enum):
 
 class DigitalStorageUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BIT
         bit
@@ -1137,7 +1137,7 @@ class DigitalStorageUom(Enum):
 
 class DimensionlessUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -1193,7 +1193,7 @@ class DimensionlessUom(Enum):
 
 class DipoleMomentUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_M
         coulomb metre
@@ -1204,7 +1204,7 @@ class DipoleMomentUom(Enum):
 
 class DoseEquivalentUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     MREM
         thousandth of rem
@@ -1224,7 +1224,7 @@ class DoseEquivalentUom(Enum):
 
 class DynamicViscosityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_P
         centipoise
@@ -1295,7 +1295,7 @@ class DynamicViscosityUom(Enum):
 
 class ElectricChargePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_CM2
         coulomb per square centimetre
@@ -1315,7 +1315,7 @@ class ElectricChargePerAreaUom(Enum):
 
 class ElectricChargePerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A_S_KG
         ampere second per kilogram
@@ -1332,7 +1332,7 @@ class ElectricChargePerMassUom(Enum):
 
 class ElectricChargePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A_S_M3
         ampere second per cubic metre
@@ -1352,7 +1352,7 @@ class ElectricChargePerVolumeUom(Enum):
 
 class ElectricChargeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A_H
         ampere hour
@@ -1405,7 +1405,7 @@ class ElectricChargeUom(Enum):
 
 class ElectricConductanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_S
         centisiemens
@@ -1452,7 +1452,7 @@ class ElectricConductanceUom(Enum):
 
 class ElectricConductivityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     K_S_M
         kilosiemens per metre
@@ -1472,7 +1472,7 @@ class ElectricConductivityUom(Enum):
 
 class ElectricCurrentDensityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A_CM2
         ampere per square centimetre
@@ -1504,7 +1504,7 @@ class ElectricCurrentDensityUom(Enum):
 
 class ElectricCurrentUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A
         ampere
@@ -1551,7 +1551,7 @@ class ElectricCurrentUom(Enum):
 
 class ElectricFieldStrengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     M_V_FT
         millivolt per foot
@@ -1574,7 +1574,7 @@ class ElectricFieldStrengthUom(Enum):
 
 class ElectricPotentialDifferenceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_V
         centivolt
@@ -1618,7 +1618,7 @@ class ElectricPotentialDifferenceUom(Enum):
 
 class ElectricResistancePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     OHM_M
         ohm per metre
@@ -1635,7 +1635,7 @@ class ElectricResistancePerLengthUom(Enum):
 
 class ElectricResistanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     COHM
         centiohm
@@ -1682,7 +1682,7 @@ class ElectricResistanceUom(Enum):
 
 class ElectricalResistivityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KOHM_M
         kiloohm metre
@@ -1708,7 +1708,7 @@ class ElectricalResistivityUom(Enum):
 
 class ElectromagneticMomentUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A_M2
         ampere square metre
@@ -1719,7 +1719,7 @@ class ElectromagneticMomentUom(Enum):
 
 class EnergyLengthPerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     J_M_M2
         joule metre per square metre
@@ -1733,7 +1733,7 @@ class EnergyLengthPerAreaUom(Enum):
 
 class EnergyLengthPerTimeAreaTemperatureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_IN_H_FT2_DELTA_F
         BTU per (hour square foot delta Fahrenheit per inch)
@@ -1753,7 +1753,7 @@ class EnergyLengthPerTimeAreaTemperatureUom(Enum):
 
 class EnergyPerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     ERG_CM2
         erg per square centimetre
@@ -1785,7 +1785,7 @@ class EnergyPerAreaUom(Enum):
 
 class EnergyPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     J_M
         joule per metre
@@ -1799,7 +1799,7 @@ class EnergyPerLengthUom(Enum):
 
 class EnergyPerMassPerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     MREM_H
         thousandth of irem per hour
@@ -1822,7 +1822,7 @@ class EnergyPerMassPerTimeUom(Enum):
 
 class EnergyPerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_LBM
         BTU per pound-mass
@@ -1878,7 +1878,7 @@ class EnergyPerMassUom(Enum):
 
 class EnergyPerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_BBL
         BTU per barrel
@@ -1955,7 +1955,7 @@ class EnergyPerVolumeUom(Enum):
 
 class EnergyUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_E6_BTU_IT
         million BTU
@@ -2131,7 +2131,7 @@ class EnergyUom(Enum):
 
 class ForceAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DYNE_CM2
         dyne square centimetre
@@ -2166,7 +2166,7 @@ class ForceAreaUom(Enum):
 
 class ForceLengthPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KGF_M_M
         thousand gram-force metre per metre
@@ -2189,7 +2189,7 @@ class ForceLengthPerLengthUom(Enum):
 
 class ForcePerForceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -2212,7 +2212,7 @@ class ForcePerForceUom(Enum):
 
 class ForcePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_LBF_FT
         pound-force per hundred foot
@@ -2262,7 +2262,7 @@ class ForcePerLengthUom(Enum):
 
 class ForcePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_001_PSI_FT
         psi per thousand foot
@@ -2321,7 +2321,7 @@ class ForcePerVolumeUom(Enum):
 
 class ForceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_10_K_N
         ten kilonewton
@@ -2410,7 +2410,7 @@ class ForceUom(Enum):
 
 class FrequencyIntervalUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     O
         octave
@@ -2421,7 +2421,7 @@ class FrequencyIntervalUom(Enum):
 
 class FrequencyUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_HZ
         centihertz
@@ -2468,7 +2468,7 @@ class FrequencyUom(Enum):
 
 class HeatCapacityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     J_DELTA_K
         joule per delta kelvin
@@ -2479,7 +2479,7 @@ class HeatCapacityUom(Enum):
 
 class HeatFlowRateUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_E6_BTU_IT_H
         million BTU per hour
@@ -2556,7 +2556,7 @@ class HeatFlowRateUom(Enum):
 
 class HeatTransferCoefficientUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_H_FT2_DELTA_F
         BTU per hour square foot delta Fahrenheit
@@ -2597,7 +2597,7 @@ class HeatTransferCoefficientUom(Enum):
 
 class IlluminanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FOOTCANDLE
         footcandle
@@ -2617,7 +2617,7 @@ class IlluminanceUom(Enum):
 
 class InductanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_H
         centihenry
@@ -2661,7 +2661,7 @@ class InductanceUom(Enum):
 
 class IsothermalCompressibilityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DM3_K_W_H
         cubic decimetre per kilowatt hour
@@ -2687,7 +2687,7 @@ class IsothermalCompressibilityUom(Enum):
 
 class KinematicViscosityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CM2_S
         square centimetre per second
@@ -2725,7 +2725,7 @@ class KinematicViscosityUom(Enum):
 
 class LengthPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -2772,7 +2772,7 @@ class LengthPerLengthUom(Enum):
 
 class LengthPerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FT_LBM
         foot per pound-mass
@@ -2786,7 +2786,7 @@ class LengthPerMassUom(Enum):
 
 class LengthPerPressureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FT_PSI
         foot per psi
@@ -2803,7 +2803,7 @@ class LengthPerPressureUom(Enum):
 
 class LengthPerTemperatureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FT_DELTA_F
         foot per delta Fahrenheit
@@ -2817,7 +2817,7 @@ class LengthPerTemperatureUom(Enum):
 
 class LengthPerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1000_FT_H
         thousand foot per hour
@@ -2909,7 +2909,7 @@ class LengthPerTimeUom(Enum):
 
 class LengthPerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FT_BBL
         foot per barrel
@@ -2941,7 +2941,7 @@ class LengthPerVolumeUom(Enum):
 
 class LengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_1_FT
         tenth of foot
@@ -3198,7 +3198,7 @@ class LengthUom(Enum):
 
 class LightExposureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FOOTCANDLE_S
         footcandle second
@@ -3212,7 +3212,7 @@ class LightExposureUom(Enum):
 
 class LinearAccelerationUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CM_S2
         centimetre per square second
@@ -3244,7 +3244,7 @@ class LinearAccelerationUom(Enum):
 
 class LinearThermalExpansionUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_DELTA_K
         per delta kelvin
@@ -3264,7 +3264,7 @@ class LinearThermalExpansionUom(Enum):
 
 class LogarithmicPowerRatioPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     B_M
         bel per metre
@@ -3284,7 +3284,7 @@ class LogarithmicPowerRatioPerLengthUom(Enum):
 
 class LogarithmicPowerRatioUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     B
         bel
@@ -3298,7 +3298,7 @@ class LogarithmicPowerRatioUom(Enum):
 
 class LuminanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CD_M2
         candela per square metre
@@ -3309,7 +3309,7 @@ class LuminanceUom(Enum):
 
 class LuminousEfficacyUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     LM_W
         lumen per watt
@@ -3320,7 +3320,7 @@ class LuminousEfficacyUom(Enum):
 
 class LuminousFluxUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     LM
         lumen
@@ -3331,7 +3331,7 @@ class LuminousFluxUom(Enum):
 
 class LuminousIntensityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CD
         candela
@@ -3345,7 +3345,7 @@ class LuminousIntensityUom(Enum):
 
 class MagneticDipoleMomentUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     WB_M
         weber metre
@@ -3356,7 +3356,7 @@ class MagneticDipoleMomentUom(Enum):
 
 class MagneticFieldStrengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     A_M
         ampere per metre
@@ -3373,7 +3373,7 @@ class MagneticFieldStrengthUom(Enum):
 
 class MagneticFluxDensityPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     GAUSS_CM
         gauss per centimetre
@@ -3390,7 +3390,7 @@ class MagneticFluxDensityPerLengthUom(Enum):
 
 class MagneticFluxDensityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CGAUSS
         centigauss
@@ -3473,7 +3473,7 @@ class MagneticFluxDensityUom(Enum):
 
 class MagneticFluxUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_WB
         centiweber
@@ -3520,7 +3520,7 @@ class MagneticFluxUom(Enum):
 
 class MagneticPermeabilityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     H_M
         henry per metre
@@ -3534,7 +3534,7 @@ class MagneticPermeabilityUom(Enum):
 
 class MagneticVectorPotentialUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     WB_M
         weber per metre
@@ -3548,7 +3548,7 @@ class MagneticVectorPotentialUom(Enum):
 
 class MassLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KG_M
         kilogram metre
@@ -3562,7 +3562,7 @@ class MassLengthUom(Enum):
 
 class MassPerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_LBM_FT2
         pound-mass per hundred square foot
@@ -3585,7 +3585,7 @@ class MassPerAreaUom(Enum):
 
 class MassPerEnergyUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KG_K_W_H
         kilogram per kilowatt hour
@@ -3608,7 +3608,7 @@ class MassPerEnergyUom(Enum):
 
 class MassPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KG_M_CM2
         kilogram metre per square centimetre
@@ -3631,7 +3631,7 @@ class MassPerLengthUom(Enum):
 
 class MassPerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -3690,7 +3690,7 @@ class MassPerMassUom(Enum):
 
 class MassPerTimePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     G_FT_CM3_S
         gram foot per cubic centimetre second
@@ -3719,7 +3719,7 @@ class MassPerTimePerAreaUom(Enum):
 
 class MassPerTimePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KG_M_S
         kilogram per metre second
@@ -3739,7 +3739,7 @@ class MassPerTimePerLengthUom(Enum):
 
 class MassPerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_E6_LBM_A
         million pound-mass per julian-year
@@ -3825,7 +3825,7 @@ class MassPerTimeUom(Enum):
 
 class MassPerVolumePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     G_CM4
         gram per centimetre to the fourth power
@@ -3854,7 +3854,7 @@ class MassPerVolumePerLengthUom(Enum):
 
 class MassPerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_001_LBM_BBL
         pound-mass per thousand barrel
@@ -3949,7 +3949,7 @@ class MassPerVolumeUom(Enum):
 
 class MassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     AG
         attogram
@@ -4035,7 +4035,7 @@ class MassUom(Enum):
 
 class MobilityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     D_PA_S
         darcy per pascal second
@@ -4064,7 +4064,7 @@ class MobilityUom(Enum):
 
 class MolarEnergyUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_LBMOL
         BTU per pound-mass-mole
@@ -4087,7 +4087,7 @@ class MolarEnergyUom(Enum):
 
 class MolarHeatCapacityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_LBMOL_DELTA_F
         BTU per pound-mass-mole delta Fahrenheit
@@ -4107,7 +4107,7 @@ class MolarHeatCapacityUom(Enum):
 
 class MolarVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DM3_KMOL
         cubic decimetre per kilogram-mole
@@ -4133,7 +4133,7 @@ class MolarVolumeUom(Enum):
 
 class MolecularWeightUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     G_MOL
         gram per mole
@@ -4150,7 +4150,7 @@ class MolecularWeightUom(Enum):
 
 class MomentOfForceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1000_LBF_FT
         thousand foot pound-force
@@ -4197,7 +4197,7 @@ class MomentOfForceUom(Enum):
 
 class MomentOfInertiaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KG_M2
         kilogram square metre
@@ -4211,7 +4211,7 @@ class MomentOfInertiaUom(Enum):
 
 class MomentumUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     KG_M_S
         kilogram metre per second
@@ -4225,7 +4225,7 @@ class MomentumUom(Enum):
 
 class NormalizedPowerUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     B_W
         bel watt
@@ -4280,7 +4280,7 @@ class ObjectAlias:
 
 class PermeabilityLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     D_FT
         darcy foot
@@ -4303,7 +4303,7 @@ class PermeabilityLengthUom(Enum):
 
 class PermeabilityRockUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     D
         darcy
@@ -4323,7 +4323,7 @@ class PermeabilityRockUom(Enum):
 
 class PermittivityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     F_M
         farad per metre
@@ -4337,7 +4337,7 @@ class PermittivityUom(Enum):
 
 class PlaneAngleUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_001_SECA
         angular millisecond
@@ -4387,7 +4387,7 @@ class PlaneAngleUom(Enum):
 
 class PotentialDifferencePerPowerDropUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     V_B
         volt per bel
@@ -4401,7 +4401,7 @@ class PotentialDifferencePerPowerDropUom(Enum):
 
 class PowerPerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_H_FT2
         (BTU per hour) per square foot
@@ -4445,7 +4445,7 @@ class PowerPerAreaUom(Enum):
 
 class PowerPerPowerUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -4468,7 +4468,7 @@ class PowerPerPowerUom(Enum):
 
 class PowerPerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_H_FT3
         BTU per hour cubic foot
@@ -4500,7 +4500,7 @@ class PowerPerVolumeUom(Enum):
 
 class PowerUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     C_W
         centiwatt
@@ -4562,7 +4562,7 @@ class PowerUom(Enum):
 
 class PressurePerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     ATM_H
         standard atmosphere per hour
@@ -4597,7 +4597,7 @@ class PressurePerTimeUom(Enum):
 
 class PressurePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PA_M3
         pascal per cubic metre
@@ -4611,7 +4611,7 @@ class PressurePerVolumeUom(Enum):
 
 class PressureSquaredPerForceTimePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_001_K_PA2_C_P
         kilopascal squared per thousand centipoise
@@ -4634,7 +4634,7 @@ class PressureSquaredPerForceTimePerAreaUom(Enum):
 
 class PressureSquaredUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BAR2
         bar squared
@@ -4660,7 +4660,7 @@ class PressureSquaredUom(Enum):
 
 class PressureTimePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PA_S_M3
         pascal second per cubic metre
@@ -4674,7 +4674,7 @@ class PressureTimePerVolumeUom(Enum):
 
 class PressureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_LBF_FT2
         pound-force per hundred square foot
@@ -4811,7 +4811,7 @@ class PressureUom(Enum):
 
 class QuantityOfLightUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     LM_S
         lumen second
@@ -4822,7 +4822,7 @@ class QuantityOfLightUom(Enum):
 
 class RadianceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     W_M2_SR
         watt per square metre steradian
@@ -4833,7 +4833,7 @@ class RadianceUom(Enum):
 
 class RadiantIntensityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     W_SR
         watt per steradian
@@ -4844,7 +4844,7 @@ class RadiantIntensityUom(Enum):
 
 class ReciprocalAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_FT2
         per square foot
@@ -4864,7 +4864,7 @@ class ReciprocalAreaUom(Enum):
 
 class ReciprocalElectricPotentialDifferenceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_U_V
         per microvolt
@@ -4878,7 +4878,7 @@ class ReciprocalElectricPotentialDifferenceUom(Enum):
 
 class ReciprocalForceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_LBF
         per pound-force
@@ -4892,7 +4892,7 @@ class ReciprocalForceUom(Enum):
 
 class ReciprocalLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_ANGSTROM
         per angstrom
@@ -4930,7 +4930,7 @@ class ReciprocalLengthUom(Enum):
 
 class ReciprocalMassTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_KG_S
         per (kilogram per second)
@@ -4947,7 +4947,7 @@ class ReciprocalMassTimeUom(Enum):
 
 class ReciprocalMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_G
         per gram
@@ -4964,7 +4964,7 @@ class ReciprocalMassUom(Enum):
 
 class ReciprocalPressureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_BAR
         per bar
@@ -4990,7 +4990,7 @@ class ReciprocalPressureUom(Enum):
 
 class ReciprocalTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_A
         per julian-year
@@ -5022,7 +5022,7 @@ class ReciprocalTimeUom(Enum):
 
 class ReciprocalVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_BBL
         per barrel
@@ -5048,7 +5048,7 @@ class ReciprocalVolumeUom(Enum):
 
 class ReluctanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_H
         per henry
@@ -5059,7 +5059,7 @@ class ReluctanceUom(Enum):
 
 class SecondMomentOfAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CM4
         centimetre to the fourth power
@@ -5076,7 +5076,7 @@ class SecondMomentOfAreaUom(Enum):
 
 class SignalingEventPerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BD
         baud
@@ -5087,7 +5087,7 @@ class SignalingEventPerTimeUom(Enum):
 
 class SolidAngleUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     SR
         steradian
@@ -5098,7 +5098,7 @@ class SolidAngleUom(Enum):
 
 class SpecificHeatCapacityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_LBM_DELTA_F
         BTU per pound-mass delta Fahrenheit
@@ -5130,7 +5130,7 @@ class SpecificHeatCapacityUom(Enum):
 
 class TemperatureIntervalPerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_DELTA_F_FT
         delta Fahrenheit per hundred foot
@@ -5165,7 +5165,7 @@ class TemperatureIntervalPerLengthUom(Enum):
 
 class TemperatureIntervalPerPressureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DELTA_C_K_PA
         delta Celsius per kilopascal
@@ -5182,7 +5182,7 @@ class TemperatureIntervalPerPressureUom(Enum):
 
 class TemperatureIntervalPerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DELTA_C_H
         delta Celsius per hour
@@ -5211,7 +5211,7 @@ class TemperatureIntervalPerTimeUom(Enum):
 
 class TemperatureIntervalUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DELTA_C
         delta Celsius
@@ -5231,7 +5231,7 @@ class TemperatureIntervalUom(Enum):
 
 class ThermalConductanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     W_DELTA_K
         watt per delta kelvin
@@ -5242,7 +5242,7 @@ class ThermalConductanceUom(Enum):
 
 class ThermalConductivityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_H_FT_DELTA_F
         BTU per hour foot delta Fahrenheit
@@ -5265,7 +5265,7 @@ class ThermalConductivityUom(Enum):
 
 class ThermalDiffusivityUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     CM2_S
         square centimetre per second
@@ -5294,7 +5294,7 @@ class ThermalDiffusivityUom(Enum):
 
 class ThermalInsulanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DELTA_C_M2_H_KCAL_TH
         delta Celsius square metre hour per thousand calory
@@ -5314,7 +5314,7 @@ class ThermalInsulanceUom(Enum):
 
 class ThermalResistanceUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DELTA_K_W
         delta kelvin per watt
@@ -5325,7 +5325,7 @@ class ThermalResistanceUom(Enum):
 
 class ThermodynamicTemperatureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     DEG_C
         degree Celsius
@@ -5345,7 +5345,7 @@ class ThermodynamicTemperatureUom(Enum):
 
 class TimePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_001_H_FT
         hour per thousand foot
@@ -5404,7 +5404,7 @@ class TimePerLengthUom(Enum):
 
 class TimePerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     S_KG
         second per kilogram
@@ -5415,7 +5415,7 @@ class TimePerMassUom(Enum):
 
 class TimePerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -5435,7 +5435,7 @@ class TimePerTimeUom(Enum):
 
 class TimePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_001_D_FT3
         day per thousand cubic foot
@@ -5476,7 +5476,7 @@ class TimePerVolumeUom(Enum):
 
 class TimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_2_MS
         half of millisecond
@@ -5556,7 +5556,7 @@ class TimeUom(Enum):
 
 class VerticalDirection(Enum):
     """
-    Properties
+    Attributes
     ----------
     UP
         Values are positive when moving away from the center of the Earth.
@@ -5570,7 +5570,7 @@ class VerticalDirection(Enum):
 
 class VolumeFlowRatePerVolumeFlowRateUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -5596,7 +5596,7 @@ class VolumeFlowRatePerVolumeFlowRateUom(Enum):
 
 class VolumePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_E6_BBL_ACRE
         million barrel per acre
@@ -5616,7 +5616,7 @@ class VolumePerAreaUom(Enum):
 
 class VolumePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_DM3_KM
         cubic decimetre per hundred kilometre
@@ -5666,7 +5666,7 @@ class VolumePerLengthUom(Enum):
 
 class VolumePerMassUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_0_01_L_KG
         litre per hundred kilogram
@@ -5740,7 +5740,7 @@ class VolumePerMassUom(Enum):
 
 class VolumePerPressureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BBL_PSI
         barrel per psi
@@ -5757,7 +5757,7 @@ class VolumePerPressureUom(Enum):
 
 class VolumePerRotationUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FT3_RAD
         cubic foot per radian
@@ -5774,7 +5774,7 @@ class VolumePerRotationUom(Enum):
 
 class VolumePerTimeLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1000_BBL_FT_D
         thousand barrel foot per day
@@ -5791,7 +5791,7 @@ class VolumePerTimeLengthUom(Enum):
 
 class VolumePerTimePerAreaUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     FT3_MIN_FT2
         cubic foot per minute square foot
@@ -5826,7 +5826,7 @@ class VolumePerTimePerAreaUom(Enum):
 
 class VolumePerTimePerLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1000_FT3_D_FT
         (thousand cubic foot per day) per foot
@@ -5879,7 +5879,7 @@ class VolumePerTimePerLengthUom(Enum):
 
 class VolumePerTimePerPressureLengthUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BBL_FT_PSI_D
         barrel per day foot psi
@@ -5899,7 +5899,7 @@ class VolumePerTimePerPressureLengthUom(Enum):
 
 class VolumePerTimePerPressureUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1000_FT3_PSI_D
         (thousand cubic foot per day) per psi
@@ -5940,7 +5940,7 @@ class VolumePerTimePerPressureUom(Enum):
 
 class VolumePerTimePerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BBL_D2
         (barrel per day) per day
@@ -5990,7 +5990,7 @@ class VolumePerTimePerTimeUom(Enum):
 
 class VolumePerTimePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BBL_D_ACRE_FT
         barrel per day acre foot
@@ -6004,7 +6004,7 @@ class VolumePerTimePerVolumeUom(Enum):
 
 class VolumePerTimeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_30_CM3_MIN
         cubic centimetre per thirty minute
@@ -6108,7 +6108,7 @@ class VolumePerTimeUom(Enum):
 
 class VolumePerVolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     PERCENT_SIGN
         percent
@@ -6257,7 +6257,7 @@ class VolumePerVolumeUom(Enum):
 
 class VolumeUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1000_BBL
         thousand barrel
@@ -6373,7 +6373,7 @@ class VolumeUom(Enum):
 
 class VolumetricHeatTransferCoefficientUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     BTU_IT_H_FT3_DELTA_F
         BTU per hour cubic foot delta Fahrenheit
@@ -6393,7 +6393,7 @@ class VolumetricHeatTransferCoefficientUom(Enum):
 
 class VolumetricThermalExpansionUom(Enum):
     """
-    Properties
+    Attributes
     ----------
     VALUE_1_DELTA_C
         per delta Celsius
@@ -6516,7 +6516,7 @@ class BoundaryRelation(Enum):
     """
     The enumerated attributes of a horizon.
 
-    Properties
+    Attributes
     ----------
     CONFORMABLE
         If used uniquely, then it means the horizon is conformable above and
@@ -6543,7 +6543,7 @@ class CellShape(Enum):
     If a specific cell shape is not appropriate, then use polyhedral.
     BUSINESS RULE: Should be consistent with the actual geometry of the grid.
 
-    Properties
+    Attributes
     ----------
     TETRAHEDRAL
         All grid cells are constrained to have only 4 nodes/cell with 4
@@ -6579,7 +6579,7 @@ class ColumnShape(Enum):
     If a specific column shape is not appropriate, then use polygonal.
     BUSINESS RULE: Should be consistent with the actual geometry of the grid.
 
-    Properties
+    Attributes
     ----------
     TRIANGULAR
         All grid columns have 3 sides.
@@ -6607,7 +6607,7 @@ class ContactRelationship(Enum):
     The enumerations that specify the role of the contacts in a contact
     interpretation as described in the attributes below.
 
-    Properties
+    Attributes
     ----------
     FRONTIER_FEATURE_TO_FRONTIER_FEATURE
         A contact between two frontier features to close a volume of
@@ -6661,7 +6661,7 @@ class ContactSide(Enum):
     CC-BY-SA-3.0-MIGRATED; GFDL-WITH-DISCLAIMERS
     Released under the GNU Free Documentation License.
 
-    Properties
+    Attributes
     ----------
     FOOTWALL
         The footwall side of the fault. See picture.
@@ -6701,7 +6701,7 @@ class ContactVerb(Enum):
     construction of the model of the geological event that created the binary
     contact.
 
-    Properties
+    Attributes
     ----------
     SPLITS
         Specifies that the fault has opened a pair of fault lips in a
@@ -6755,7 +6755,7 @@ class Domain(Enum):
     the seismic time or depth domain or if it is derived from a laboratory
     measurement.
 
-    Properties
+    Attributes
     ----------
     DEPTH
         Position defined by measurements in the depth domain.
@@ -6812,7 +6812,7 @@ class Facet(Enum):
     existing property types, which minimizes the need to create
     specialized property types.
 
-    Properties
+    Attributes
     ----------
     CONDITIONS
         Indicates condition of how the property was acquired, e.g.,
@@ -6851,7 +6851,7 @@ class FluidContact(Enum):
 
     See attributes below.
 
-    Properties
+    Attributes
     ----------
     FREE_WATER_CONTACT
         A surface defined by vanishing capillary pressure between the water
@@ -6895,7 +6895,7 @@ class GeneticBoundaryKind(Enum):
     See attributes below. Note that a genetic boundary has a younger
     side and an older side.
 
-    Properties
+    Attributes
     ----------
     GEOBODY_BOUNDARY
         An interface between a geobody and other geologic objects.
@@ -6966,7 +6966,7 @@ class GridGeometryAttachment(Enum):
     Indexable grid elements to which point geometry may be attached to describe
     additional grid geometry.
 
-    Properties
+    Attributes
     ----------
     CELLS
         Geometry may be attached to cells to distort the geometry of that
@@ -7015,7 +7015,7 @@ class IdentityKind(Enum):
     """
     Enumeration of the identity kinds for the element identities (ElementIdentity).
 
-    Properties
+    Attributes
     ----------
     COLOCATION
         A set of (sub)representations is collocated if there is bijection
@@ -7061,7 +7061,7 @@ class IndexableElements(Enum):
     - construct a sub-representation from an existing representation.
     See the RESQML Overview Guide for the table of indexable elements and the representations to which they apply.
 
-    Properties
+    Attributes
     ----------
     CELLS
     COLUMN_EDGES
@@ -7134,7 +7134,7 @@ class KDirection(Enum):
     If not uniquely defined, e.g., for over-turned reservoirs, then
     indicate that the K direction is not monotonic.
 
-    Properties
+    Attributes
     ----------
     DOWN
         K is increasing with depth, dot(tangent,gradDepth)&gt;0.
@@ -7154,7 +7154,7 @@ class LineRole(Enum):
     Indicates the various roles that a polyline topology can have in a
     representation.
 
-    Properties
+    Attributes
     ----------
     FAULT_CENTER_LINE
         Usually used to represent fault lineaments on horizons. These lines
@@ -7203,7 +7203,7 @@ class MdDomain(Enum):
     """
     Different types of measured depths.
 
-    Properties
+    Attributes
     ----------
     DRILLER
         The original depths recorded while drilling a well or LWD or MWD.
@@ -7225,7 +7225,7 @@ class MdReference(Enum):
     points (e.g., kelly bushing) used as a datum and vertical reference
     datums (e.g., mean sea level).
 
-    Properties
+    Attributes
     ----------
     GROUND_LEVEL
     KELLY_BUSHING
@@ -7326,7 +7326,7 @@ class OrderingCriteria(Enum):
     Enumeration used to specify the order of an abstract stratigraphic organization
     or a structural organization interpretation.
 
-    Properties
+    Attributes
     ----------
     AGE
         From youngest to oldest period (increasing age).
@@ -7346,7 +7346,7 @@ class OrganizationKind(Enum):
 
     See attributes below.
 
-    Properties
+    Attributes
     ----------
     EARTH_MODEL
         An organization composed of the other types of organizations listed
@@ -7470,7 +7470,7 @@ class Phase(Enum):
     The seal is considered here as a part ( the coverage phase) of an
     hydrostatic column.
 
-    Properties
+    Attributes
     ----------
     AQUIFER
         Volume of the hydrostatic column for which only the aqueous phase is
@@ -7503,7 +7503,7 @@ class PillarShape(Enum):
     If a specific pillar shape is not appropriate, then use curved.
     BUSINESS RULE: Should be consistent with the actual geometry of the grid.
 
-    Properties
+    Attributes
     ----------
     VERTICAL
         If represented by a parametric line, requires only a single control
@@ -7569,7 +7569,7 @@ class ResqmlPropertyKind(Enum):
     """
     Enumeration of the standard set of RESQML property kinds.
 
-    Properties
+    Attributes
     ----------
     ABSORBED_DOSE
         The amount of energy absorbed per mass.
@@ -9536,7 +9536,7 @@ class StreamlineFlux(Enum):
     """
     Enumeration of the usual streamline fluxes.
 
-    Properties
+    Attributes
     ----------
     OIL
         Oil Phase flux
@@ -9605,7 +9605,7 @@ class SubnodeNodeObject(Enum):
     column layer grid, cell indicates that this count varies from column
     to column.
 
-    Properties
+    Attributes
     ----------
     CELL
         If geometry or properties are discontinuous from cell to cell (i.e.,
@@ -9635,7 +9635,7 @@ class SurfaceRole(Enum):
     """
     Indicates the various roles that a surface topology can have.
 
-    Properties
+    Attributes
     ----------
     MAP
         Representation support for properties.
@@ -9651,7 +9651,7 @@ class TectonicBoundaryKind(Enum):
     """
     Enumeration of the types of tectonic boundaries.
 
-    Properties
+    Attributes
     ----------
     FAULT
         Fracture with displacement
@@ -9681,7 +9681,7 @@ class TimeSetKind(Enum):
     Indicates that the collection of properties shares this time relationship, if
     any.
 
-    Properties
+    Attributes
     ----------
     SINGLE_TIME
         Indicates that the collection contains only property values
