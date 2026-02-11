@@ -83,15 +83,15 @@ class RDDMSClient:
     and made with the intention to make it easier to interact with RDDMS by
     exposing ergonomic user-facing functions.
 
-    Note
-    ----
+    Notes
+    -----
     The client is meant to be set up via
     [`rddms_connect`][rddms_io.client.rddms_connect].
 
 
     Parameters
     ----------
-    etp_client: ETPClient
+    etp_client
         An instance of [`ETPClient`][pyetp.client.ETPClient].
     """
 
@@ -793,22 +793,20 @@ class RDDMSClient:
 
         Parameters
         ----------
-        dataspace_uri: str | DataspaceURI
+        dataspace_uri
             An ETP dataspace uri.
-        ml_objects: Sequence[ro.AbstractCitedDataObject]
+        ml_objects
             A sequence of RESQML v2.0.1-objects.
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[utils_arrays.LogicalArrayDTypes]]
-        ]
+        data_arrays
             A mapping, e.g., a dictionary, of data arrays where the path in
             resources (found in the RESQML-objects) are the keys. Default is
             `{}`, meaning that only the RESQML-objects will be uploaded.
-        handle_transaction: bool
+        handle_transaction
             A flag to toggle if `RDDMSClient.upload_model` should start and
             commit the transaction towards the dataspace. Default is `True`,
             and the method will ensure that the transaction handling is done
             correctly.
-        debounce: bool | float
+        debounce
             Parameter to decide if `RDDMSClient.upload_model` should retry
             starting a transaction if it initially fails. See
             `RDDMSClient.start_transaction` for a more in-depth explanation of
@@ -977,9 +975,9 @@ class RDDMSClient:
 
         Parameters
         ----------
-        ml_uris: list[str | DataObjectURI]
+        ml_uris
             A list of ETP data object uris.
-        download_arrays: bool
+        download_arrays
             A flag to toggle if any referenced arrays should be download
             alongside the RESQML-objects. Setting to `True` will make the
             function return a tuple where the first element contains a list of
@@ -987,7 +985,7 @@ class RDDMSClient:
             `path_in_hdf_file` as the key, and the arrays as the values. If the
             flag is set to `False` no arrays will be downloaded, and the
             function only returns a list of the objects. Default is `False`.
-        download_linked_objects: bool
+        download_linked_objects
             Flag to toggle if linked objects (target-objects), i.e., objects
             referenced by objects from `ml_uris`. For example, setting the flag
             to `True` and passing in a single `obj_Grid2dRepresentation`-uri in
@@ -1099,18 +1097,18 @@ class RDDMSClient:
 
         Parameters
         ----------
-        ml_uris: list[str | DataObjectURI]
+        ml_uris
             A list of ETP data object uris to delete.
-        prune_contained_objects: bool
+        prune_contained_objects
             See section 9.3.4 in the ETP v1.2 standards documentation for an
             accurate description of this parameter. Default is `False` meaning
             no pruning is done.
-        handle_transaction: bool
+        handle_transaction
             A flag to toggle if `RDDMSClient.delete_model` should start and
             commit the transaction towards the dataspace. Default is `True`,
             and the method will ensure that the transaction handling is done
             correctly.
-        debounce: bool | float
+        debounce
             Parameter to decide if `RDDMSClient.delete_model` should retry
             starting a transaction if it initially fails. See
             `RDDMSClient.start_transaction` for a more in-depth explanation of
@@ -1160,20 +1158,20 @@ class rddms_connect:
 
     Parameters
     ----------
-    uri: str
+    uri
         The uri to the RDDMS server. This should be the uri to a websockets
         endpoint to an ETP server.
-    data_partition_id: str | None
+    data_partition_id
         The data partition id used when connecting to the OSDU open-etp-server
         in multi-partition mode. Default is `None`.
-    authorization: str | SecretStr | None
+    authorization
         Bearer token used for authenticating to the RDDMS server. This token
         should be on the form `"Bearer 1234..."`. Default is `None`.
-    etp_timeout: float | None
+    etp_timeout
         The timeout in seconds for when to stop waiting for a message from the
         server. Setting it to `None` will persist the connection indefinetly.
         Default is `None`.
-    max_message_size: float
+    max_message_size
         The maximum number of bytes for a single websockets message. Default is
         `2**20` corresponding to `1` MiB.
 
@@ -1220,7 +1218,7 @@ class rddms_connect:
 
     See Also
     --------
-    [`pyetp.client.etp_connect`][pyetp.client.etp_connect]
+    [`pyetp.client.etp_connect`][pyetp.client.etp_connect]:
         The [`rddms_connect`][rddms_io.client.rddms_connect]-class is a thin
         wrapper around [`etp_connect`][pyetp.client.etp_connect].
     """
