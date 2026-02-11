@@ -6468,7 +6468,7 @@ class AbstractParametricLineArray:
     """Defines an array of parametric lines.
 
     The array size is obtained from context. In the current schema, this
-    may be as simple as a 1D array (#Lines=count) or a 2D array #Lines =
+    may be as simple as a 1D array (\\#Lines=count) or a 2D array \\#Lines =
     NIL x NJL for an IJK grid representation.
     """
 
@@ -18669,7 +18669,7 @@ class ParametricLineArray(AbstractParametricLineArray):
         parameters on each line. Described as a 1D array, the control point
         parameter array is divided into segments of length count, with null
         (NaN) values added to each segment to fill it up. Size = count x
-        #Lines, e.g., 2D or 3D BUSINESS RULE: This count should be zero for
+        \\#Lines, e.g., 2D or 3D BUSINESS RULE: This count should be zero for
         vertical and Z linear cubic parametric lines. For all other
         parametric line kinds, there should be one control point parameter
         for each control point. NOTES: (1) Vertical parametric lines do not
@@ -18684,7 +18684,7 @@ class ParametricLineArray(AbstractParametricLineArray):
         the count of non-null 3D points on each line. Described as a 1D
         array, the control point array is divided into segments of length
         count, with null (NaN) values added to each segment to fill it up.
-        Size = count x #Lines, e.g., 2D or 3D
+        Size = count x \\#Lines, e.g., 2D or 3D
     knot_count
         The first dimension of the control point, control point parameter,
         and tangent vector arrays for the parametric splines. The Knot Count
@@ -18704,7 +18704,7 @@ class ParametricLineArray(AbstractParametricLineArray):
         on each of these line kinds. Described as a 1D array, the tangent
         vector array is divided into segments of length count, with null
         (NaN) values added to each segment to fill it up. Size = count x
-        #Lines, e.g., 2D or 3D BUSINESS RULE: For all lines other than the
+        \\#Lines, e.g., 2D or 3D BUSINESS RULE: For all lines other than the
         cubic and minimum-curvature parametric lines, this count is zero.
         For these line kinds, there is one tangent vector for each control
         point. If a tangent vector is missing, then it is computed in the
@@ -21480,8 +21480,8 @@ class ColumnLayerParentWindow(AbstractParentWindow):
         List of parent cells that are to be retained at their original
         resolution and are not to be included within a local grid. The omit
         allows non-rectangular local grids to be specified. 0-based indexing
-        follows #Columns x #Layers relative to the parent window cell count,
-        not to the parent grid.
+        follows \\#Columns x \\#Layers relative to the parent window cell
+        count, not to the parent grid.
     kregrid
     parent_grid
     """
@@ -22059,21 +22059,21 @@ class obj_GridConnectionSetRepresentation(AbstractRepresentation):
     count
         count of connections. Must be positive.
     cell_index_pairs
-        2 x #Connections array of cell indices for (Cell1,Cell2) for each
+        2 x \\#Connections array of cell indices for (Cell1,Cell2) for each
         connection.
     grid_index_pairs
-        2 x #Connections array of grid indices for (Cell1,Cell2) for each
+        2 x \\#Connections array of grid indices for (Cell1,Cell2) for each
         connection. The grid indices are obtained from the grid index pairs.
         If only a single grid is referenced from the grid index, then this
-        array need not be used. BUSINESS RULE: This array should appear if
-        more than one grid index pair is referenced.
+        array need not be used. BUSINESS RULE: This array should appear if more
+        than one grid index pair is referenced.
     local_face_per_cell_index_pairs
-        Optional 2 x #Connections array of local face per cell indices for
-        (Cell1,Cell2) for each connection. Local face per cell indices are
-        used because global face indices need not have been defined. Null
-        value = -1. If no face per cell definition occur as part of the grid
-        representation, e.g., for a block centered grid, then this array
-        need not appear.
+        Optional 2 x \\#Connections array of local face per cell indices for
+        (Cell1,Cell2) for each connection. Local face per cell indices are used
+        because global face indices need not have been defined. Null value =
+        -1. If no face per cell definition occur as part of the grid
+        representation, e.g., for a block centered grid, then this array need
+        not appear.
     connection_interpretations
     grid
     """
@@ -23172,7 +23172,7 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
         geometry. This is considered grid meta-data. If the indicator does
         not indicate that the pillar geometry is defined, then this over-
         rides any other node geometry specification. Array index follows
-        #Pillars and so may be either 2d or 1d.
+        \\#Pillars and so may be either 2d or 1d.
     pillar_shape
     cell_geometry_is_defined
         Indicator that a cell has a defined geometry. This attribute is grid
@@ -23183,12 +23183,12 @@ class AbstractColumnLayerGridGeometry(AbstractGridGeometry):
         Optional indicator that two adjacent nodes on a coordinate line are
         colocated. This is considered grid meta-data, and is intended to
         over-ride any geometric comparison of node locations. Array index
-        follows #CoordinateLines x (NKL-1).
+        follows \\#CoordinateLines x (NKL-1).
     node_is_colocated_on_kedge
         Optional indicator that two adjacent nodes on the KEDGE of a cell
         are colocated. This is considered grid meta-data, and is intended to
         over-ride any geometric comparison of node locations. Array index
-        follows #EdgesPerColumn x NKL for unstructured column layer grids
+        follows \\#EdgesPerColumn x NKL for unstructured column layer grids
         and 4 x NI x NJ x NKL for IJK grids.
     subnode_topology
     split_coordinate_lines
