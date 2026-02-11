@@ -13,3 +13,10 @@ an awaitable, a context manager, or generator returning an instance of
 ## Client implementation
 
 ::: rddms_io.client.RDDMSClient
+
+## Data types
+
+Data types returned by [`RDDMSClient`][rddms_io.client.RDDMSClient] in various
+methods.
+
+::: rddms_io.data_types

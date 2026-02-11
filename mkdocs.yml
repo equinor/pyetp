@@ -6,11 +6,18 @@ repo_name: "equinor/pyetp"
 repo_url: "https://github.com/equinor/pyetp"
 
 nav:
-  - Home: index.md
+  - Introduction: index.md
+  - Tutorials:
+    - tutorials/index.md
+    - tutorials/set_up_regular_surface.md
   - API:
     - RDDMS Client: api/rddms_client.md
-    - ETP v1.2 Client: api/etp_client.md
-    - RESQML v2.0.1 objects: api/resqml_objects.md
+    - ETP v1.2 Client:
+      - api/etp_client/index.md
+      - api/etp_client/etp_objects.md
+    - RESQML objects:
+      - v201:
+        - api/resqml_objects/v201/index.md
 
 plugins:
   - mkdocstrings:
@@ -23,7 +30,6 @@ plugins:
                   line_length: 88
                   unwrap_annotated: true
                   heading_level: 3
-                  parameter_headings: true
                   inherited_members: true
                   members_order: source
                   merge_init_into_class: true
@@ -58,15 +64,17 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
+  features:
+    - navigation.indexes
 
 
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
