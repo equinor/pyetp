@@ -39,6 +39,19 @@ def angle_to_unit_vectors(
     (in radians), where the first unit vector (the `x`-direction) is rotated
     counter-clockwise to the `[1.0, 0.0]`-axis, and the second unit vector is
     rotated `pi/2.0` compared to the `x`-unit vector.
+
+    Parameters
+    ----------
+    angle
+        Angle in radians for the first unit vector counter-clockwise to the
+        `[1.0, 0.0]`-axis.
+
+    Returns
+    -------
+    typing.Annotated[npt.NDArray[np.float64], dict(shape=(2, 2))]
+        A pair of unit vectors in the columns of the returned matrix. The
+        second unit vector is rotated an angle `pi/2.0` counter-clockwise
+        compared to the first unit vector.
     """
 
     return rotate_2d_vector(np.eye(2).astype(np.float64), angle)
