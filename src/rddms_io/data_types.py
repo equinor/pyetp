@@ -32,6 +32,7 @@ class LinkedObjects(typing.NamedTuple):
         that describes how the targets links to the object referenced by
         `start_uri`.
     """
+
     start_uri: str
     source_resources: list[Resource]
     source_edges: list[Edge]
