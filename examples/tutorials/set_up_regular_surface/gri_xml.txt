@@ -1,0 +1,62 @@
+<resqml2:Grid2dRepresentation xmlns:eml="http://www.energistics.org/energyml/data/commonv2" xmlns:resqml2="http://www.energistics.org/energyml/data/resqmlv2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="2.0.1" uuid="be3dc02d-ed9d-45b1-b291-6edced323411" xsi:type="resqml2:obj_Grid2dRepresentation">
+  <eml:Citation>
+    <eml:Title>Demo grid</eml:Title>
+    <eml:Originator>&lt;name/username/email&gt;</eml:Originator>
+    <eml:Creation>2026-01-02T03:04:05Z</eml:Creation>
+    <eml:Format>equinor:pyetp:0.0.49.dev10+gee38ca7a1</eml:Format>
+  </eml:Citation>
+  <resqml2:SurfaceRole>map</resqml2:SurfaceRole>
+  <resqml2:Grid2dPatch>
+    <resqml2:PatchIndex>0</resqml2:PatchIndex>
+    <resqml2:FastestAxisCount>103</resqml2:FastestAxisCount>
+    <resqml2:SlowestAxisCount>101</resqml2:SlowestAxisCount>
+    <resqml2:Geometry>
+      <resqml2:LocalCrs>
+        <eml:ContentType>application/x-resqml+xml;version=2.0.1;type=obj_LocalDepth3dCrs</eml:ContentType>
+        <eml:Title>Demo crs</eml:Title>
+        <eml:UUID>dbe0e6ba-1ea6-4dd7-b541-9c4c14c16f62</eml:UUID>
+      </resqml2:LocalCrs>
+      <resqml2:Points xsi:type="resqml2:Point3dZValueArray">
+        <resqml2:SupportingGeometry xsi:type="resqml2:Point3dLatticeArray">
+          <resqml2:Origin>
+            <resqml2:Coordinate1>10.0</resqml2:Coordinate1>
+            <resqml2:Coordinate2>11.0</resqml2:Coordinate2>
+            <resqml2:Coordinate3>0.0</resqml2:Coordinate3>
+          </resqml2:Origin>
+          <resqml2:Offset>
+            <resqml2:Offset>
+              <resqml2:Coordinate1>0.8660254037844386</resqml2:Coordinate1>
+              <resqml2:Coordinate2>0.5</resqml2:Coordinate2>
+              <resqml2:Coordinate3>0.0</resqml2:Coordinate3>
+            </resqml2:Offset>
+            <resqml2:Spacing xsi:type="resqml2:DoubleConstantArray">
+              <resqml2:Value>1.0</resqml2:Value>
+              <resqml2:Count>100</resqml2:Count>
+            </resqml2:Spacing>
+          </resqml2:Offset>
+          <resqml2:Offset>
+            <resqml2:Offset>
+              <resqml2:Coordinate1>-0.5</resqml2:Coordinate1>
+              <resqml2:Coordinate2>0.8660254037844386</resqml2:Coordinate2>
+              <resqml2:Coordinate3>0.0</resqml2:Coordinate3>
+            </resqml2:Offset>
+            <resqml2:Spacing xsi:type="resqml2:DoubleConstantArray">
+              <resqml2:Value>0.9</resqml2:Value>
+              <resqml2:Count>102</resqml2:Count>
+            </resqml2:Spacing>
+          </resqml2:Offset>
+        </resqml2:SupportingGeometry>
+        <resqml2:ZValues xsi:type="resqml2:DoubleHdf5Array">
+          <resqml2:Values>
+            <eml:PathInHdfFile>/RESQML/be3dc02d-ed9d-45b1-b291-6edced323411/zvalues</eml:PathInHdfFile>
+            <eml:HdfProxy>
+              <eml:ContentType>application/x-eml+xml;version=2.0;type=obj_EpcExternalPartReference</eml:ContentType>
+              <eml:Title>Demo epc</eml:Title>
+              <eml:UUID>d53c9c04-e83a-4ad7-87fc-567a0dd5e660</eml:UUID>
+            </eml:HdfProxy>
+          </resqml2:Values>
+        </resqml2:ZValues>
+      </resqml2:Points>
+    </resqml2:Geometry>
+  </resqml2:Grid2dPatch>
+</resqml2:Grid2dRepresentation>

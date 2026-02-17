@@ -1,0 +1,19 @@
+obj_EpcExternalPartReference(
+    citation=Citation(
+        title='Demo epc',
+        originator='<name/username/email>',
+        creation=XmlDateTime(2026, 1, 2, 3, 4, 5, 0, 0),
+        format='equinor:pyetp:0.0.49.dev10+gee38ca7a1',
+        editor=None,
+        last_update=None,
+        version_string=None,
+        description=None,
+        descriptive_keywords=None
+    ),
+    aliases=[],
+    custom_data=None,
+    schema_version='2.0',
+    uuid='d53c9c04-e83a-4ad7-87fc-567a0dd5e660',
+    object_version=None,
+    mime_type='application/x-hdf5'
+)

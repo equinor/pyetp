@@ -1,0 +1,22 @@
+<resqml2:LocalDepth3dCrs xmlns:eml="http://www.energistics.org/energyml/data/commonv2" xmlns:resqml2="http://www.energistics.org/energyml/data/resqmlv2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="2.0.1" uuid="dbe0e6ba-1ea6-4dd7-b541-9c4c14c16f62" xsi:type="resqml2:obj_LocalDepth3dCrs">
+  <eml:Citation>
+    <eml:Title>Demo crs</eml:Title>
+    <eml:Originator>&lt;name/username/email&gt;</eml:Originator>
+    <eml:Creation>2026-01-02T03:04:05Z</eml:Creation>
+    <eml:Format>equinor:pyetp:0.0.49.dev10+gee38ca7a1</eml:Format>
+  </eml:Citation>
+  <resqml2:YOffset>0.0</resqml2:YOffset>
+  <resqml2:ZOffset>0.0</resqml2:ZOffset>
+  <resqml2:ArealRotation uom="rad">0.0</resqml2:ArealRotation>
+  <resqml2:ProjectedAxisOrder>easting northing</resqml2:ProjectedAxisOrder>
+  <resqml2:ProjectedUom>m</resqml2:ProjectedUom>
+  <resqml2:VerticalUom>m</resqml2:VerticalUom>
+  <resqml2:XOffset>0.0</resqml2:XOffset>
+  <resqml2:ZIncreasingDownward>true</resqml2:ZIncreasingDownward>
+  <resqml2:VerticalCrs xsi:type="eml:VerticalUnknownCrs">
+    <eml:Unknown>Mean sea level</eml:Unknown>
+  </resqml2:VerticalCrs>
+  <resqml2:ProjectedCrs xsi:type="eml:ProjectedCrsEpsgCode">
+    <eml:EpsgCode>23031</eml:EpsgCode>
+  </resqml2:ProjectedCrs>
+</resqml2:LocalDepth3dCrs>

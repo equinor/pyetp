@@ -16,6 +16,7 @@ nav:
       - api/etp_client/index.md
       - api/etp_client/etp_objects.md
     - RESQML objects:
+      - api/resqml_objects/serializers.md
       - v201:
         - api/resqml_objects/v201/index.md
 
