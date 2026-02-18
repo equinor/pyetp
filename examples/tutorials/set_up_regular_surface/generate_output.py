@@ -11,7 +11,7 @@ from set_up_regular_surface import epc, crs, gri
 
 
 p = pathlib.Path("examples") / "tutorials" / "set_up_regular_surface"
-width = 80
+width = 120
 
 
 with (

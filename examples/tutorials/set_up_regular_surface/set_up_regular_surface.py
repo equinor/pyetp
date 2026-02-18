@@ -36,8 +36,8 @@ crs = ro.obj_LocalDepth3dCrs(
 shape = (101, 103)
 origin = np.array([10.0, 11.0])
 spacing = np.array([1.0, 0.9])
-xu = np.array([np.sqrt(3.0) / 2.0, 0.5])
-yu = np.array([-0.5, np.sqrt(3.0) / 2.0])
+u1 = np.array([np.sqrt(3.0) / 2.0, 0.5])
+u2 = np.array([-0.5, np.sqrt(3.0) / 2.0])
 
 gri = ro.obj_Grid2dRepresentation.from_regular_surface(
     citation=ro.Citation(
@@ -51,8 +51,8 @@ gri = ro.obj_Grid2dRepresentation.from_regular_surface(
     shape=shape,
     origin=origin,
     spacing=spacing,
-    unit_vec_1=xu,
-    unit_vec_2=yu,
+    unit_vec_1=u1,
+    unit_vec_2=u2,
 )
 
 X, Y = gri.get_xy_grid(crs=crs)

@@ -3,7 +3,7 @@ obj_EpcExternalPartReference(
         title='Demo epc',
         originator='<name/username/email>',
         creation=XmlDateTime(2026, 1, 2, 3, 4, 5, 0, 0),
-        format='equinor:pyetp:0.0.49.dev10+gee38ca7a1',
+        format='equinor:pyetp:0.0.49.dev12+ga521a78a1',
         editor=None,
         last_update=None,
         version_string=None,
