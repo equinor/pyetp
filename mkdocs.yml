@@ -10,6 +10,7 @@ nav:
   - Tutorials:
     - tutorials/index.md
     - tutorials/set_up_regular_surface.md
+    - tutorials/using_the_rddms_client.md
   - API:
     - RDDMS Client: api/rddms_client.md
     - ETP v1.2 Client:
