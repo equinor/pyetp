@@ -1,14 +1,10 @@
-import importlib
 import pathlib
 
 import numpy as np
 from lxml import etree
 
+import examples.tutorials.set_up_regular_surface.set_up_regular_surface as mod
 from resqml_objects.parsers import parse_resqml_v201_object
-
-mod = importlib.import_module(
-    "examples.tutorials.set_up_regular_surface.set_up_regular_surface"
-)
 
 p = pathlib.Path("examples") / "tutorials" / "set_up_regular_surface"
 
