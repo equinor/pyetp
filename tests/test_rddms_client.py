@@ -4,7 +4,6 @@ import pathlib
 import numpy as np
 import numpy.typing as npt
 import pytest
-from conftest import etp_server_url, skip_decorator
 
 import resqml_objects.v201 as ro
 from pyetp.client import ETPError
@@ -17,6 +16,7 @@ from resqml_objects.epc_readers import (
     get_resqml_v201_objects,
 )
 from resqml_objects.surface_helpers import RegularGridParameters
+from tests.conftest import etp_server_url, skip_decorator
 
 
 def get_random_surface() -> tuple[

@@ -9,11 +9,6 @@ import pytest
 import pytest_asyncio
 import websockets
 import xtgeo
-from conftest import (
-    check_if_server_is_accesible,
-    construct_2d_resqml_grid_from_array,
-    etp_server_url,
-)
 
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes.data_array_types import (
@@ -26,6 +21,11 @@ from pyetp.utils_xml import (
     parse_xtgeo_surface_to_resqml_grid,
 )
 from resqml_objects.surface_helpers import angle_to_unit_vectors
+from tests.conftest import (
+    check_if_server_is_accesible,
+    construct_2d_resqml_grid_from_array,
+    etp_server_url,
+)
 
 
 def create_surface(ncol: int, nrow: int, rotation: float):
