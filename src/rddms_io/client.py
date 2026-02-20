@@ -180,6 +180,7 @@ class RDDMSClient:
         other_relevant_data_countries: list[str] = [],
         owners: list[str] = [],
         viewers: list[str] = [],
+        ignore_if_exists: bool = False,
     ) -> None:
         """
         Method creating a new dataspace on the ETP server. This function is
@@ -188,20 +189,24 @@ class RDDMSClient:
 
         Parameters
         ----------
-        dataspace_uri: str | DataspaceURI
+        dataspace_uri
             The ETP dataspace uri, or path, to create. If it is a dataspace
             path (on the form `'foo/bar'`) it will be converted to the
             dataspace uri `"eml:///dataspace('foo/bar')"`.
-        legal_tags: list[str]
-            A list of legal tag strings for the ACL. The default is an empty
+        legal_tags
+            List of legal tag strings for the ACL. The default is an empty
             list.
         other_relevant_data_countries: list[str]
-            A list of data countries for the ACL. The default is an empty list.
-        owners: list[str]
-            A list of owners ACL. The default is an empty list.
-        viewers: list[str]
-            A list of viewers ACL. The default is an empty list.
-
+            List of data countries for the ACL. The default is an empty list.
+        owners
+            List of owners ACL. The default is an empty list.
+        viewers
+            List of viewers ACL. The default is an empty list.
+        ignore_if_exists
+            When `True` the method silently ignores any `ETPError` with error
+            code `5` (`EINVALID_ARGUMENT`). This error occurs if the dataspace
+            already exists on the server. Otherwise, all errors are raised.
+            Default is `False`.
         """
         dataspace_uri = DataspaceURI.from_any(dataspace_uri)
 
@@ -220,19 +225,28 @@ class RDDMSClient:
             **acl_parsing("viewers", viewers),
         }
 
-        responses = await self.etp_client.send(
-            PutDataspaces(
-                dataspaces={
-                    str(dataspace_uri): Dataspace(
-                        uri=str(dataspace_uri),
-                        path=dataspace_uri.dataspace,
-                        store_created=now,
-                        store_last_write=now,
-                        custom_data=custom_data,
-                    )
-                }
+        try:
+            responses = await self.etp_client.send(
+                PutDataspaces(
+                    dataspaces={
+                        str(dataspace_uri): Dataspace(
+                            uri=str(dataspace_uri),
+                            path=dataspace_uri.dataspace,
+                            store_created=now,
+                            store_last_write=now,
+                            custom_data=custom_data,
+                        )
+                    }
+                )
             )
-        )
+        except ETPError as e:
+            if ignore_if_exists and e.code == 5:
+                logger.info(
+                    f"Ignoring error in RDDMSClient.create_dataspace with message '{e}'"
+                )
+                return
+
+            raise
 
         parse_and_raise_response_errors(
             responses, PutDataspacesResponse, "RDDMSClient.create_dataspace"

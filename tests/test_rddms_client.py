@@ -102,24 +102,25 @@ async def test_rddms_connect() -> None:
 async def test_create_and_delete_dataspaces() -> None:
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         ds_1 = "rddms-io/test-1"
-        try:
-            await rddms_client.create_dataspace(
-                ds_1,
-            )
-        except ETPError:
-            pass
+
+        await rddms_client.create_dataspace(ds_1, ignore_if_exists=True)
+        await rddms_client.create_dataspace(ds_1, ignore_if_exists=True)
+
+        with pytest.raises(ETPError):
+            await rddms_client.create_dataspace(ds_1)
+
+        with pytest.raises(ETPError):
+            await rddms_client.create_dataspace(ds_1, ignore_if_exists=False)
 
         ds_2 = "rddms-io/test-2"
-        try:
-            await rddms_client.create_dataspace(
-                ds_2,
-                legal_tags=["foo"],
-                other_relevant_data_countries=["bar"],
-                owners=["baz"],
-                viewers=["bor"],
-            )
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(
+            ds_2,
+            legal_tags=["foo"],
+            other_relevant_data_countries=["bar"],
+            owners=["baz"],
+            viewers=["bor"],
+            ignore_if_exists=True,
+        )
 
         dataspaces = await rddms_client.list_dataspaces()
 
@@ -139,10 +140,7 @@ async def test_upload_and_download_model() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -231,10 +229,7 @@ async def test_list_linked_objects() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -314,10 +309,7 @@ async def test_list_array_metadata() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_1_uri, gri_2_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -427,10 +419,7 @@ async def test_partial_deletion() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_1_uri, gri_2_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -589,10 +578,7 @@ async def test_debouncing() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
     async def task(debounce: bool | float, sleep_time: float) -> None:
         async with rddms_connect(uri=etp_server_url) as rddms_client:
@@ -672,10 +658,7 @@ async def test_debouncing_on_upload() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
     async def task(
         crs: ro.obj_LocalDepth3dCrs,
@@ -753,10 +736,7 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         casted_data_arrays[k] = v.astype(get_valid_dtype_cast(v))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         ml_uris = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
