@@ -33,7 +33,7 @@ crs = ro.obj_LocalDepth3dCrs(
     projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
 )
 
-shape = (101, 103)
+z = np.random.random((101, 103))
 origin = np.array([10.0, 11.0])
 spacing = np.array([1.0, 0.9])
 u1 = np.array([np.sqrt(3.0) / 2.0, 0.5])
@@ -48,7 +48,7 @@ gri = ro.obj_Grid2dRepresentation.from_regular_surface(
     uuid=gri_uuid,
     crs=crs,
     epc_external_part_reference=epc,
-    shape=shape,
+    shape=z.shape,
     origin=origin,
     spacing=spacing,
     unit_vec_1=u1,

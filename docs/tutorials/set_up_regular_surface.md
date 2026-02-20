@@ -208,7 +208,7 @@ angle_ or a pair of _orthonormal vectors_.
     unique `path_in_hdf_file`-keys.
 
 
-In this example we use the following values for the coordinates:
+In this example we set up a random height map `z` and coordinates defined by
 ```python
 --8<--
 examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:36:40
@@ -233,10 +233,12 @@ first axis and the second axis.
     where $\mathbf{r}_0$ corresponds to the `origin`, $\delta_1$ and $\delta_2$
     the first and second component of the `spacing`-array, $\mathbf{u}_1$ and
     $\mathbf{u}_2$ the two unit vectors, and $i$ and $j$ are integers limited
-    to the `shape` of the surface array.
+    to the shape (`z.shape`) of the surface array.
     In total this will give coordinates $\mathbf{r}_{ij}$ represented in the
     given local coordinate system.
 
+Note that the height map `z` is not included in any of the objects, only the
+shape is stored in the `gri`-object.
 
 ???+ Warning
 
