@@ -18,6 +18,13 @@ def test_set_up_regular_surface() -> None:
     ret_crs = parse_resqml_v201_object(crs_xml)
     ret_gri = parse_resqml_v201_object(gri_xml)
 
+    # The format string depends on the version of pyetp, and changes for each
+    # commit. We ignore this field in the tests below by setting them to the
+    # same value.
+    ret_epc.citation.format = mod.epc.citation.format
+    ret_crs.citation.format = mod.crs.citation.format
+    ret_gri.citation.format = mod.gri.citation.format
+
     assert ret_epc == mod.epc
     assert ret_crs == mod.crs
     assert ret_gri == mod.gri
