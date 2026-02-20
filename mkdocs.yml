@@ -68,6 +68,7 @@ theme:
         name: Switch to system preference
   features:
     - navigation.indexes
+    - content.code.copy
 
 
 markdown_extensions:
