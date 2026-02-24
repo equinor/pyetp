@@ -618,7 +618,7 @@ class RDDMSClient:
 
         See Also
         --------
-        RDDMSClient.list_object_array_metadata
+        [`RDDMSClient.list_object_array_metadata`][rddms_io.client.RDDMSClient.list_object_array_metadata]:
             A similar method that fetches the metadata from the objects
             themselves along with a dataspace uri. It is recommended to use
             `list_object_array_metadata` if you already have the objects in
@@ -678,7 +678,7 @@ class RDDMSClient:
 
         See Also
         --------
-        RDDMSClient.list_array_metadata
+        [`RDDMSClient.list_array_metadata`][rddms_io.client.RDDMSClient.list_array_metadata]:
             A similar method that looks up array metadata needing only the uris
             of the objects.
         """
@@ -759,7 +759,7 @@ class RDDMSClient:
 
         See Also
         --------
-        RDDMSClient.upload_model
+        [`RDDMSClient.upload_model`][rddms_io.client.RDDMSClient.upload_model]:
             A higher-level method that wraps transaction handling, data object
             uploading and array uploading in one go.
         """
