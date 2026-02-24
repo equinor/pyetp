@@ -1,6 +1,6 @@
 # Using the RDDMS Client
 
-In this tutorial we will upload, inspect, download, and delete the regular
+In this tutorial we will upload, search, download, and delete the regular
 surface model from the tutorial ["Setting up a regular
 surface"](set_up_regular_surface.md).
 
@@ -110,7 +110,7 @@ communicated alongside ids and potential secrets needed to get a token.
 The following example will use the local ETP server, but we will make a note on
 where the access token and data partition id should be included.
 
-## Connecting to the ETP server with [`RDDMSClient`][rddms_io.client.RDDMSClient]
+### Connecting to the ETP server with [`RDDMSClient`][rddms_io.client.RDDMSClient]
 
 To set up a connection we recommend using the
 [`rddms_connect`][rddms_io.client.rddms_connect]-class as an _asynchronous
@@ -135,62 +135,28 @@ the context manager.
     starting the Python REPL with `#!bash python -m asyncio`, you can avoid the
     wrapper function, and instead use `#!python await` directly.
 
-### Creating a dataspace
-We start by importing [`rddms_connect`][rddms_io.client.rddms_connect] and
-defining a `main`-function for the asynchronous code.
-Next, we set up the `uri` of the RDDMS server.
-In this example we use the local ETP server discussed in the previous section.
+
+## Uploading a regular surface to the ETP server
+We start by importing the necesary libraries, and [set up a regular
+surface](set_up_regular_surface.md).
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py::40
+--8<--
+```
+Next, we define an `async def main`-function to wrap the asynchronous code.
+In this example we use the local ETP server discussed in the previous section
+as seen in the `uri` variable.
 As such there is no `data_partition_id` and no `access_token` needed.
 See the previous section for what these should be set to if the server is set
 up in the cloud.
-
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py::15
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:43:47
 --8<--
 ```
-
-We use `rddms_connect` as a context manager using `#!python async with` to
-connect to the RDDMS server, viz.:
-```python
---8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:12:12
---8<--
-    ...
---8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:17:21
---8<--
-```
-where `rddms_client` is an instance of
-[`RDDMSClient`][rddms_io.client.RDDMSClient].
-
-??? "Use of `...` in examples"
-
-    We use the ellipsis, `...`, to denote omitted code in the examples.
-
-Next, we create a dataspace called `eml:///dataspace('rddms_io/demo')` using
-the method
-[`RDDMSClient.create_dataspace`][rddms_io.client.RDDMSClient.create_dataspace].
-
-```python
---8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:12:12
---8<--
-    ...
---8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:17:17
---8<--
-        ...
---8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:21:29
---8<--
-```
-
-We have included dummy values for the [access control lists
-(ACL)](https://community.opengroup.org/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server#osdu-integration),
-but they are only needed when the server is integrated with OSDU.
-The flag `#!python ignore_if_exists=True` ensures that the program does not
-crash if the dataspace already exists.
+The variable `dataspace_path = "rddms_io/demo"` corresponds to the full
+dataspace uri `eml:///dataspace('rddms_io/demo')`.
 
 ???+ "ETP v1.2 dataspaces"
 
@@ -203,6 +169,86 @@ crash if the dataspace already exists.
     1. The default dataspace `eml:///` is not supported.
     2. The path is on the form `project/scenario`, and is limited to a single
         separator `/`.
+
+    All methods in [`RDDMSClient`][rddms_io.client.RDDMSClient] that takes in a
+    dataspace uri _will also accept a dataspace path_.
+
+
+### Connecting to the server and creating a dataspace
+We use `rddms_connect` as a context manager using `#!python async with` to
+connect to the RDDMS server, viz.:
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:49:53
+--8<--
+```
+where `rddms_client` is an instance of
+[`RDDMSClient`][rddms_io.client.RDDMSClient].
+
+Having connected we can create our dataspace using the method
+[`RDDMSClient.create_dataspace`][rddms_io.client.RDDMSClient.create_dataspace].
+
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:54:61
+--8<--
+```
+
+We have included dummy values for the [access control lists
+(ACL)](https://community.opengroup.org/osdu/platform/domain-data-mgmt-services/reservoir/open-etp-server#osdu-integration),
+but they are only needed when the server is integrated with OSDU.
+The flag `#!python ignore_if_exists=True` ensures that the program does not
+crash if the dataspace already exists.
+
+??? Warning "Altering a dataspace"
+
+    A dataspace, once created, can not be altered directly.
+    Instead it must be emptied, deleted, and then re-created if the ACLs have
+    been set up incorrectly.
+
+
+### Uploading the surface
+To upload the regular surface we call the method
+[`RDDMSClient.upload_model`][rddms_io.client.RDDMSClient.upload_model],
+and pass in the `dataspace_path`, a list of the three objects, and a dictionary
+(this can be any `#!python dict`-like mapping) where the key is the
+`path_in_hdf_file` for the surface array and the array as the value.
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:63:69
+--8<--
+```
+
+???+ "Multiple writers to the same dataspace"
+
+    The open-etp-server has a limitation where there can only be one writer to
+    a dataspace at the same time.
+    This is enforced via _transactions_.
+    In cases where there is contention of write-access, the optional argument
+    `debounce` in
+    [`RDDMSClient.upload_model`][rddms_io.client.RDDMSClient.upload_model] can
+    be used to have the client wait until the dataspace is free for writing instead
+    of crashing.
+    Either set `debounce` to a non-zero `#!python float`-value or the boolean
+    `#!python True`.
+    In the former case this the `#!python float`-value will be the maximum
+    number of seconds that the client will wait for a transaction before crashing.
+    In the latter the client will not time out, and keep waiting until a
+    transaction is available.
+
+
+### Searching on the ETP server
+Searching using ETP can roughly be divided into two kinds, search for
+dataspaces and search for data objects.
+The search for dataspaces will look for all available dataspaces on the server,
+with an optional filter based on time for when the dataspace was last written
+to.
+The method
+[`RDDMSClient.list_dataspaces`][rddms_io.client.RDDMSClient.list_dataspaces]
+applies this kind of search.
+For data objects we can apply more filters, and apply more involved patterns.
+
+
 
 ### Running the script
 ```python
