@@ -1,6 +1,37 @@
 import typing
 
+import numpy.typing as npt
+
+import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes.object import Edge, Resource
+from pyetp import utils_arrays
+
+
+class RDDMSModel(typing.NamedTuple):
+    """
+    Container for results after calling
+    [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models].
+
+    Attributes
+    ----------
+    obj
+        The main object in the model, i.e., the object that is referenced by a
+        passed in uri in the pargument `ml_uris` in
+        [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models].
+    arrays
+        A dictionary with arrays referenced by `obj` (if any). The keys are
+        found in the field `path_in_hdf_file` of any
+        [`Hdf5Dataset`][resqml_objects.v201.generated.Hdf5Dataset]-objects
+        occuring in `obj`.
+    linked_models
+        A list of `RDDMSModel`-objects where the `RDDMSModel.obj`-field is an
+        object referenced by the current `obj`. These linked models might also
+        contain arrays and linked models themselves.
+    """
+
+    obj: ro.AbstractCitedDataObject
+    arrays: dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]]
+    linked_models: list["RDDMSModel"]
 
 
 class LinkedObjects(typing.NamedTuple):

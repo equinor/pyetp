@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import pathlib
 
 import numpy as np
@@ -162,14 +163,25 @@ async def test_upload_and_download_model() -> None:
         assert gri_uri == gri.get_etp_data_object_uri(dataspace_path)
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        (ret_crs, ret_epc, ret_gri), ret_Z = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[crs_uri, epc_uri, gri_uri],
             download_arrays=True,
         )
 
+    ret_crs = ret_models[0].obj
+    ret_epc = ret_models[1].obj
+    ret_gri = ret_models[2].obj
+
     assert ret_crs == crs
     assert ret_epc == epc
     assert ret_gri == gri
+    assert not ret_models[0].arrays
+    assert not ret_models[0].linked_models
+    assert not ret_models[1].arrays
+    assert not ret_models[1].linked_models
+    assert not ret_models[2].linked_models
+
+    ret_Z = ret_models[2].arrays
 
     np.testing.assert_equal(
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
@@ -177,23 +189,26 @@ async def test_upload_and_download_model() -> None:
 
     # Test downloading linked objects.
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_objs, ret_Z = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[gri_uri],
             download_arrays=True,
             download_linked_objects=True,
         )
 
-    assert len(ret_objs) == 2
-    assert len(ret_Z) == 1
+    assert len(ret_models) == 1
 
-    ret_gri = next(
-        filter(lambda o: isinstance(o, ro.obj_Grid2dRepresentation), ret_objs)
-    )
-    ret_crs = next(filter(lambda o: isinstance(o, ro.obj_LocalDepth3dCrs), ret_objs))
+    ret_model = ret_models[0]
+
+    assert len(ret_model.linked_models) == 1
+    assert len(ret_model.arrays) == 1
+
+    ret_gri = ret_model.obj
+    ret_crs = ret_model.linked_models[0].obj
 
     assert ret_crs == crs
     assert ret_gri == gri
 
+    ret_Z = ret_model.arrays
     np.testing.assert_equal(
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
     )
@@ -320,7 +335,7 @@ async def test_list_array_metadata() -> None:
         )
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_crs, ret_epc, ret_gri_1, ret_gri_2 = await rddms_client.download_model(
+        ret_crs, ret_epc, ret_gri_1, ret_gri_2 = await rddms_client.download_models(
             ml_uris=[crs_uri, epc_uri, gri_1_uri, gri_2_uri],
             download_arrays=False,
         )
@@ -463,7 +478,7 @@ async def test_partial_deletion() -> None:
         # Verify that the object has been deleted.
         with pytest.raises(ETPError):
             try:
-                await rddms_client.download_model(
+                await rddms_client.download_models(
                     ml_uris=[epc_uri],
                     download_arrays=False,
                 )
@@ -474,17 +489,22 @@ async def test_partial_deletion() -> None:
                 raise
 
         # Check that we can still download the array (both directly and via the
-        # `download_model`-method), even if the `obj_EpcExternalPartReference`
+        # `download_models`-method), even if the `obj_EpcExternalPartReference`
         # is gone.
         gri_1_array = await rddms_client.download_array(
             epc_uri=epc_uri,
             path_in_resource=gri_1_pir,
         )
         np.testing.assert_equal(gri_1_array, Z)
-        ret_gri_1, ret_arrays = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[gri_1_uri],
             download_arrays=True,
         )
+
+        assert len(ret_models) == 1
+        ret_model = ret_models[0]
+        ret_arrays = ret_model.arrays
+
         np.testing.assert_equal(
             Z,
             ret_arrays[gri_1_pir],
@@ -736,10 +756,14 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         )
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_ml_objects, ret_data_arrays = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=ml_uris,
             download_arrays=True,
+            download_linked_objects=False,
         )
+
+    ret_ml_objects = [rm.obj for rm in ret_models]
+    ret_data_arrays = collections.ChainMap(*[rm.arrays for rm in ret_models])
 
     assert ml_objects == ret_ml_objects
     assert sorted(ret_data_arrays) == sorted(casted_data_arrays)

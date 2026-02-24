@@ -3,6 +3,7 @@ import datetime
 import logging
 import typing
 import uuid
+import warnings
 from collections.abc import AsyncGenerator, Sequence
 from types import TracebackType
 
@@ -62,7 +63,7 @@ from pyetp.errors import (
     parse_and_raise_response_errors,
 )
 from pyetp.uri import DataObjectURI, DataspaceURI
-from rddms_io.data_types import LinkedObjects
+from rddms_io.data_types import LinkedObjects, RDDMSModel
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 from resqml_objects.v201.utils import find_data_object_references, find_hdf5_datasets
 
@@ -624,9 +625,10 @@ class RDDMSClient:
             `list_object_array_metadata` if you already have the objects in
             memory.
         """
-        ml_objects = await self.download_model(
+        ml_objects = await self.download_models(
             ml_uris=ml_uris,
             download_arrays=False,
+            download_linked_objects=False,
         )
 
         if not ml_objects:
@@ -639,7 +641,7 @@ class RDDMSClient:
             *[
                 self.list_object_array_metadata(
                     dataspace_uri=dataspace_uri,
-                    ml_objects=[ml_object],
+                    ml_objects=[ml_object.obj],
                 )
                 for dataspace_uri, ml_object in zip(dataspace_uris, ml_objects)
             ]
@@ -769,6 +771,66 @@ class RDDMSClient:
             data=data,
         )
 
+    async def download_object_arrays(
+        self,
+        dataspace_uri: str | DataspaceURI,
+        ml_object: ro.AbstractCitedDataObject,
+    ) -> dict[str, npt.NDArray[utils_arrays.LogicalArrayDTypes]]:
+        """
+        Method accepting a `dataspace_uri` (or dataspace path) and a
+        RESQML-object, and downloading all attached arrays (if any). This
+        method is mainly used as a helper method for
+        [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models].
+
+        Parameters
+        ----------
+        dataspace_uri
+            An ETP dataspace uri or path. This can be a string or a
+            [`DataspaceURI`][pyetp.uri.DataspaceURI]-object.
+        ml_object
+            An instance of a RESQML-object.
+
+        Returns
+        -------
+        dict[str, npt.NDArray[utils_arrays.LogicalArrayDTypes]]
+            A dictionary mapping the `path_in_hdf_file`-keys in `ml_object` to
+            the corresponding array. Empty if `ml_object` does not reference
+            any arrays.
+
+        See Also
+        --------
+        [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models]:
+            The "full" method downloading objects, arrays and potentially
+            linked objects.
+        """
+        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        ml_hds = find_hdf5_datasets(ml_object)
+
+        if len(ml_hds) == 0:
+            logger.info(
+                f"Object {type(ml_object).__name__}, titled "
+                f"'{ml_object.citation.title}', does not reference any arrays."
+            )
+
+            return {}
+
+        tasks = []
+        for hdf5_dataset in ml_hds:
+            path_in_resource = hdf5_dataset.path_in_hdf_file
+            epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
+                dataspace_path_or_uri=dataspace_uri
+            )
+            task = self.download_array(
+                epc_uri=epc_uri,
+                path_in_resource=path_in_resource,
+            )
+            tasks.append(task)
+
+        arrays = await asyncio.gather(*tasks)
+        data_arrays = {hdf.path_in_hdf_file: arr for hdf, arr in zip(ml_hds, arrays)}
+
+        return data_arrays
+
     async def download_array(
         self,
         epc_uri: str | DataObjectURI,
@@ -777,7 +839,7 @@ class RDDMSClient:
         """
         Method used for downloading a single array from an ETP server. It
         should not be necessary for a user to call this method, prefer
-        `RDDMSClient.download_model` instead.
+        `RDDMSClient.download_models` instead.
 
         Parameters
         ----------
@@ -796,7 +858,7 @@ class RDDMSClient:
 
         See Also
         --------
-        RDDMSClient.download_model
+        [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models]:
             A higher-level method that wraps, data object and array downloading
             in one go.
         """
@@ -851,8 +913,16 @@ class RDDMSClient:
 
         See Also
         --------
-        RDDMSClient.download_model
-        RDDMSClient.start_transaction
+        [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models]:
+            The reverse operation.
+
+        [`RDDMSClient.start_transaction`][rddms_io.client.RDDMSClient.start_transaction]:
+            Method for setting up a transaction. It is only necessary to
+            interact with this method if `handle_transaction=False`.
+
+        [`RDDMSClient.commit_transaction`][rddms_io.client.RDDMSClient.commit_transaction]:
+            Method for committing a transaction. It is only necessary to
+            interact with this method if `handle_transaction=False`.
         """
         if not ml_objects:
             return []
@@ -1035,7 +1105,20 @@ class RDDMSClient:
         DownloadModelType
             See the `download_arrays`-argument for an explanation on which part
             of the union is returned when.
+
+        Warns
+        -----
+        DeprecationWarning
+            This method is superseded by
+            [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models].
         """
+        warnings.warn(
+            "This method is deprecated and will be removed in a later version. "
+            "The replacement method is called `RDDMSClient.download_models`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         if not ml_uris:
             return ([], {}) if download_arrays else []
 
@@ -1094,13 +1177,13 @@ class RDDMSClient:
 
             return ml_objects, {}
 
-        dataspace_path = DataspaceURI.from_any(ml_uris[0]).dataspace
+        dataspace_uri = str(DataspaceURI.from_any(ml_uris[0]))
 
         tasks = []
         for hdf5_dataset in ml_hds:
             path_in_resource = hdf5_dataset.path_in_hdf_file
             epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
-                dataspace_path_or_uri=dataspace_path
+                dataspace_path_or_uri=dataspace_uri
             )
             task = self.download_array(
                 epc_uri=epc_uri,
@@ -1112,6 +1195,134 @@ class RDDMSClient:
         data_arrays = {hdf.path_in_hdf_file: arr for hdf, arr in zip(ml_hds, arrays)}
 
         return ml_objects, data_arrays
+
+    async def download_models(
+        self,
+        ml_uris: list[str | DataObjectURI],
+        download_arrays: bool = False,
+        download_linked_objects: bool = False,
+    ) -> list[RDDMSModel]:
+        """
+        Download RESQML-models from the RDDMS server.
+        A model in this sense is a RESQML-object (with a given uri) and
+        possibly with any connected arrays and referenced objects.
+
+        Parameters
+        ----------
+        ml_uris
+            A list of ETP data object uris.
+        download_arrays
+            A flag to toggle if any referenced arrays should be download
+            alongside the RESQML-objects. Setting to `True` will populate
+            [`RDDMSModel.arrays`][rddms_io.data_types.RDDMSModel.arrays]-field
+            with a dictionary with the `path_in_hdf_file` as the key, and the
+            arrays as the values. If the flag is set to `False` no arrays will
+            be downloaded, and the corresponding field will be empty. Default
+            is `False`.
+        download_linked_objects
+            Flag to toggle if linked objects (target-objects), i.e., objects
+            referenced by objects from `ml_uris`. For example, setting the flag
+            to `True` and passing in a single `obj_Grid2dRepresentation`-uri in
+            the `ml_uris` will try to download any linked coordinate systems or
+            any other referenced objects. The linked objects will be added to
+            [`RDDMSModel.linked_models`][rddms_io.data_types.RDDMSModel.linked_models],
+            along with arrays if `download_arrays=True`.
+            Note that if any of the linked objects are already in `ml_uris`
+            they will be included both as a top-level `RDDMSModel`, and as a
+            linked-model under a model that references it. The method only
+            looks for objects linked one level down (corresponding to `depth =
+            1` in `GetResources`), and it will ignore
+            `obj_EpcExternalPartReference`- and
+            `EpcExternalPartReference`-objects.  Default is `False` meaning no
+            linked objects will be downloaded.
+
+        Returns
+        -------
+        list[RDDMSModel]
+            A list of [`RDDMSModel`][rddms_io.data_types.RDDMSModel]-objects.
+        """
+        if len(ml_uris) == 0:
+            raise ValueError("No uris in input 'ml_uris'")
+
+        return await asyncio.gather(
+            *[
+                self._download_model(
+                    ml_uri=ml_uri,
+                    download_arrays=download_arrays,
+                    download_linked_objects=download_linked_objects,
+                )
+                for ml_uri in ml_uris
+            ]
+        )
+
+    async def _download_model(
+        self,
+        ml_uri: str,
+        download_arrays: bool,
+        download_linked_objects: bool,
+    ) -> RDDMSModel:
+        dataspace_uri = str(DataspaceURI.from_any(ml_uri))
+
+        responses = await self.etp_client.send(GetDataObjects(uris={ml_uri: ml_uri}))
+
+        parse_and_raise_response_errors(
+            responses, GetDataObjectsResponse, "RDDMSClient.download_model"
+        )
+
+        # This should be true when chunking is used as well. The ETP-client
+        # should construct a (too large) `GetDataObjectsResponse`-message from
+        # the different chunks.
+        assert len(responses) == 1
+        response = responses[0]
+
+        assert len(response.data_objects) == 1
+        data_object = response.data_objects[ml_uri]
+        ml_object = parse_resqml_v201_object(data_object.data)
+
+        linked_models = []
+        if download_linked_objects:
+            dors = find_data_object_references(ml_object)
+            additional_uris = [
+                dor.get_etp_data_object_uri(dataspace_uri) for dor in dors
+            ]
+
+            # Remove any `EpcExternalPartReference`-objects from the extra
+            # uris.
+            additional_uris = list(
+                filter(lambda a: "EpcExternalPartReference" not in a, additional_uris)
+            )
+
+            if additional_uris:
+                logger.info(f"Downloading linked objects with uris: {additional_uris}")
+                linked_models = await asyncio.gather(
+                    *[
+                        self._download_model(
+                            ml_uri=au,
+                            download_arrays=download_arrays,
+                            # TODO: Allow downloading objects at a lower depth?
+                            download_linked_objects=False,
+                        )
+                        for au in additional_uris
+                    ]
+                )
+
+        if not download_arrays:
+            return RDDMSModel(
+                obj=ml_object,
+                arrays={},
+                linked_models=linked_models,
+            )
+
+        arrays = await self.download_object_arrays(
+            dataspace_uri=dataspace_uri,
+            ml_object=ml_object,
+        )
+
+        return RDDMSModel(
+            obj=ml_object,
+            arrays=arrays,
+            linked_models=linked_models,
+        )
 
     async def delete_model(
         self,
