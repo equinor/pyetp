@@ -563,8 +563,25 @@ class RDDMSClient:
             for r in grr.resources
         ]
 
+        self_resource = next(filter(lambda sr: sr.uri == start_uri, source_resources))
+
+        # Remove "self" from list of resources.
+        source_resources = list(
+            filter(
+                lambda sr: sr.uri != start_uri,
+                source_resources,
+            )
+        )
+        target_resources = list(
+            filter(
+                lambda tr: tr.uri != start_uri,
+                target_resources,
+            )
+        )
+
         return LinkedObjects(
             start_uri=start_uri,
+            self_resource=self_resource,
             source_resources=source_resources,
             source_edges=source_edges,
             target_resources=target_resources,

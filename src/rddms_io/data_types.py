@@ -15,6 +15,9 @@ class LinkedObjects(typing.NamedTuple):
     ----------
     start_uri
         The uri of the object that we are looking for links to.
+    self_resource
+        The [`Resource`][energistics.etp.v12.datatypes.object.Resource] of the
+        object identified by `start_uri`.
     source_resources
         A list of
         [`Resource`][energistics.etp.v12.datatypes.object.Resource]-objects
@@ -34,6 +37,7 @@ class LinkedObjects(typing.NamedTuple):
     """
 
     start_uri: str
+    self_resource: Resource
     source_resources: list[Resource]
     source_edges: list[Edge]
     target_resources: list[Resource]

@@ -245,9 +245,8 @@ async def test_list_linked_objects() -> None:
 
         assert gri_uri == gri_lo.start_uri
 
-        assert gri_uri in [r.uri for r in gri_lo.source_resources]
+        assert gri_uri == gri_lo.self_resource.uri
         assert crs_uri in [r.uri for r in gri_lo.target_resources]
-        assert gri_uri in [e.target_uri for e in gri_lo.source_edges]
         assert gri_uri in [e.source_uri for e in gri_lo.target_edges]
         assert crs_uri in [e.target_uri for e in gri_lo.target_edges]
 
@@ -498,13 +497,11 @@ async def test_partial_deletion() -> None:
 
         # Sort out source uris for the first grid.
         source_uris = [r.uri for r in gri_1_lo.source_resources]
-        # Verify that the grid uri is included in the source uris.
-        assert gri_1_uri in source_uris
-        assert len(source_uris) == 2
+        assert len(source_uris) == 1
 
         # Delete the first grid and the sources pointing to the grid.
         await rddms_client.delete_model(
-            ml_uris=source_uris,
+            ml_uris=[gri_1_lo.start_uri, *source_uris],
         )
         resources = await rddms_client.list_objects_under_dataspace(dataspace_path)
 
@@ -517,15 +514,12 @@ async def test_partial_deletion() -> None:
             start_uri=gri_2_uri,
         )
 
-        source_uris = [r.uri for r in gri_2_lo.source_resources]
-
-        # Verify that there are no sources except the second grid itself.
-        assert len(source_uris) == 1
-        assert gri_2_uri == source_uris[0]
+        # Verify that there are no sources left.
+        assert len(gri_2_lo.source_resources) == 0
 
         # Delete the second grid.
         await rddms_client.delete_model(
-            ml_uris=source_uris,
+            ml_uris=[gri_2_uri],
         )
 
         resources = await rddms_client.list_objects_under_dataspace(dataspace_path)
@@ -549,11 +543,8 @@ async def test_partial_deletion() -> None:
             start_uri=crs_uri,
         )
 
-        source_uris = [r.uri for r in crs_lo.source_resources]
-
         # Confirm that the crs no longer has any sources attached to it.
-        assert len(source_uris) == 1
-        assert crs_uri == source_uris[0]
+        assert len(crs_lo.source_resources) == 0
 
         # Delete the crs.
         await rddms_client.delete_model(
