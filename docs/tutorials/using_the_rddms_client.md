@@ -141,7 +141,7 @@ We start by importing the necesary libraries, and [set up a regular
 surface](set_up_regular_surface.md).
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py::40
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py::39
 --8<--
 ```
 Next, we define an `async def main`-function to wrap the asynchronous code.
@@ -152,7 +152,7 @@ See the previous section for what these should be set to if the server is set
 up in the cloud.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:43:47
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:42:46
 --8<--
 ```
 The variable `dataspace_path = "rddms_io/demo"` corresponds to the full
@@ -179,7 +179,7 @@ We use `rddms_connect` as a context manager using `#!python async with` to
 connect to the RDDMS server, viz.:
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:49:53
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:48:52
 --8<--
 ```
 where `rddms_client` is an instance of
@@ -190,7 +190,7 @@ Having connected we can create our dataspace using the method
 
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:54:61
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:53:60
 --8<--
 ```
 
@@ -215,7 +215,7 @@ and pass in the `dataspace_path`, a list of the three objects, and a dictionary
 `path_in_hdf_file` for the surface array and the array as the value.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:63:69
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:62:68
 --8<--
 ```
 
@@ -240,13 +240,51 @@ examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:63:69
 ### Searching on the ETP server
 Searching using ETP can roughly be divided into two kinds, search for
 dataspaces and search for data objects.
+
 The search for dataspaces will look for all available dataspaces on the server,
 with an optional filter based on time for when the dataspace was last written
 to.
 The method
 [`RDDMSClient.list_dataspaces`][rddms_io.client.RDDMSClient.list_dataspaces]
 applies this kind of search.
-For data objects we can apply more filters, and apply more involved patterns.
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:70:70
+--8<--
+```
+An example output using `#!python rich.print` on the results gives:
+```
+--8<--
+examples/tutorials/using_the_rddms_client/dataspaces.txt
+--8<--
+```
+The returned results is a `#!python list` of
+[`Dataspace`][energistics.etp.v12.datatypes.object.Dataspace]-objects.
+This object is described in section 23.34.10 in the ETP v1.2 standard.
+
+For data objects we can apply more filters and more involved patterns.
+To list all data objects under a dataspace use the method
+[`RDDMSClient.list_objects_under_dataspace`][rddms_io.client.RDDMSClient.list_objects_under_dataspace].
+A useful filter to apply on this method is the `data_object_types`-argument.
+This lets you limit the results to only certain kinds of RESQML-objects.
+Below is an example where we search for all `obj_Grid2dRepresentation`-objects
+under the dataspace.
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:72:75
+--8<--
+```
+Printing the `gri_resources` we get a description of the `gri`-object that we
+uploaded.
+```
+--8<--
+examples/tutorials/using_the_rddms_client/gri_resources.txt
+--8<--
+```
+The result is a `#!python list` of
+[`Resource`][energistics.etp.v12.datatypes.object.Resource]-objects.
+
+
 
 
 

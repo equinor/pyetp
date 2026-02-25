@@ -1,6 +1,5 @@
 import asyncio
 
-import rich
 import numpy as np
 
 from rddms_io import rddms_connect
@@ -69,26 +68,33 @@ async def main() -> None:
         )
 
         dataspaces = await rddms_client.list_dataspaces()
-        rich.print(dataspaces)
 
         gri_resources = await rddms_client.list_objects_under_dataspace(
             dataspace_path,
             data_object_types=[ro.obj_Grid2dRepresentation],
         )
-        rich.print(gri_resources)
+
+        assert len(gri_resources) == 1
 
         gri_lo = await rddms_client.list_linked_objects(
             start_uri=gri_resources[0].uri,
         )
-        rich.print(gri_lo)
 
-        ret_objs, ret_arrays = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[gri_lo.start_uri],
             download_arrays=True,
             download_linked_objects=True,
         )
-        ret_gri, ret_crs = ret_objs
-        ret_z = ret_arrays[
+
+        assert len(ret_models) == 1
+
+        ret_model = ret_models[0]
+        ret_gri = ret_model.obj
+
+        assert len(ret_model.linked_models) == 1
+
+        ret_crs = ret_model.linked_models[0].obj
+        ret_z = ret_model.arrays[
             ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
         ]
 
@@ -100,6 +106,9 @@ async def main() -> None:
             dataspace_path,
         )
         await rddms_client.delete_model(ml_uris=[a.uri for a in all_resources])
+        await rddms_client.delete_dataspace(dataspace_path)
+
+    return dataspaces, gri_resources
 
 
-asyncio.run(main())
+dataspaces, gri_resources = asyncio.run(main())

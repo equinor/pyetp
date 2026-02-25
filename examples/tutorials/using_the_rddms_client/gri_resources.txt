@@ -1,0 +1,14 @@
+[
+    Resource(
+        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(485cc0e7-268f-4866-ad73-9f2f1cc88f3e)",
+        name='Demo grid',
+        source_count=1,
+        target_count=1,
+        last_changed=1772001887607492,
+        store_last_write=1772001887739168,
+        store_created=1772001887739168,
+        active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
+        alternate_uris=[],
+        custom_data={'created': DataValue(item=1772001887607492), 'creator': DataValue(item='<name/username/email>')}
+    )
+]
