@@ -1,64 +1,57 @@
 LinkedObjects(
-    start_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(bad79ac6-f802-4598-8b39-a92836a707cb)
-",
+    start_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(e8a58c7e-d870-43d3-87d9-81ae18d8df7b)",
     self_resource=Resource(
-        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(bad79ac6-f802-4598-8b39-a92836a707cb)",
+        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(e8a58c7e-d870-43d3-87d9-81ae18d8df7b)",
         name='Demo grid',
         source_count=1,
         target_count=1,
-        last_changed=1772029253799088,
-        store_last_write=1772029253807586,
-        store_created=1772029253807586,
+        last_changed=1772049333565385,
+        store_last_write=1772049333694683,
+        store_created=1772049333694683,
         active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
         alternate_uris=[],
-        custom_data={'created': DataValue(item=1772029253799088), 'creator': DataValue(item='<name/username/email>')}
+        custom_data={'created': DataValue(item=1772049333565385), 'creator': DataValue(item='<name/username/email>')}
     ),
     source_resources=[
         Resource(
-            uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Activity(e6b97243-d889-41d5-9602-e3450778bb27)",
-            name='Scenario_automated_import_2026-02-25T14:20:53.917Z',
+            uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Activity(df7f8af1-6de4-4745-a484-1db55c55bed2)",
+            name='Scenario_automated_import_2026-02-25T19:55:33.803Z',
             source_count=0,
             target_count=2,
-            last_changed=1772029253917000,
-            store_last_write=1772029253807586,
-            store_created=1772029253807586,
+            last_changed=1772049333803000,
+            store_last_write=1772049333694683,
+            store_created=1772049333694683,
             active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
             alternate_uris=[],
-            custom_data={'created': DataValue(item=1772029253917000), 'creator': DataValue(item='osdu_user')}
+            custom_data={'created': DataValue(item=1772049333803000), 'creator': DataValue(item='osdu_user')}
         )
     ],
     source_edges=[
         Edge(
-            source_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Activity(e6b97243-d889-41d5-9602-e3450778bb27)",
-            target_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(bad79ac6-f802-4598-8b39-a928
-36a707cb)",
+            source_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Activity(df7f8af1-6de4-4745-a484-1db55c55bed2)",
+            target_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(e8a58c7e-d870-43d3-87d9-81ae18d8df7b)",
             relationship_kind=<RelationshipKind.PRIMARY: 'Primary'>,
             custom_data={'path': DataValue(item='rsq:Parameter/rsq:DataObject')}
         )
     ],
     target_resources=[
         Resource(
-            uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_LocalDepth3dCrs(4d06bb07-cb57-4515-823a-a5230e96fb49)",
+            uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_LocalDepth3dCrs(515450e2-2f75-41ba-b1cb-3a268c7ed9ce)",
             name='Demo crs',
             source_count=1,
             target_count=0,
-            last_changed=1772029253799053,
-            store_last_write=1772029253807586,
-            store_created=1772029253807586,
+            last_changed=1772049333565355,
+            store_last_write=1772049333694683,
+            store_created=1772049333694683,
             active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
             alternate_uris=[],
-            custom_data={
-                'created': DataValue(item=1772029253799053),
-                'creator': DataValue(item='<name/username/email>')
-            }
+            custom_data={'created': DataValue(item=1772049333565355), 'creator': DataValue(item='<name/username/email>')}
         )
     ],
     target_edges=[
         Edge(
-            source_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(bad79ac6-f802-4598-8b39-a928
-36a707cb)",
-            target_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_LocalDepth3dCrs(4d06bb07-cb57-4515-823a-a5230e96f
-b49)",
+            source_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(e8a58c7e-d870-43d3-87d9-81ae18d8df7b)",
+            target_uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_LocalDepth3dCrs(515450e2-2f75-41ba-b1cb-3a268c7ed9ce)",
             relationship_kind=<RelationshipKind.PRIMARY: 'Primary'>,
             custom_data={'path': DataValue(item='rsq:Grid2dPatch/rsq:Geometry/rsq:LocalCrs')}
         )

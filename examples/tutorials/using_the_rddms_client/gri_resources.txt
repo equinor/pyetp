@@ -1,38 +1,14 @@
 [
     Resource(
-        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(bad79ac6-f802-4598-8b39-a92836a707cb)",
+        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(e8a58c7e-d870-43d3-87d9-81ae18d8df7b)",
         name='Demo grid',
         source_count=1,
         target_count=1,
-        last_changed=1772029253799088,
-        store_last_write=1772029253807586,
-        store_created=1772029253807586,
+        last_changed=1772049333565385,
+        store_last_write=1772049333694683,
+        store_created=1772049333694683,
         active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
         alternate_uris=[],
-        custom_data={'created': DataValue(item=1772029253799088), 'creator': DataValue(item='<name/username/email>')}
-    ),
-    Resource(
-        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(f43bc348-1cce-4940-a186-5fcdfc04bc9e)",
-        name='Demo grid',
-        source_count=1,
-        target_count=1,
-        last_changed=1772013139697712,
-        store_last_write=1772013139838334,
-        store_created=1772013139838334,
-        active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
-        alternate_uris=[],
-        custom_data={'created': DataValue(item=1772013139697712), 'creator': DataValue(item='<name/username/email>')}
-    ),
-    Resource(
-        uri="eml:///dataspace('rddms_io/demo')/resqml20.obj_Grid2dRepresentation(f78087b9-8395-4c96-9426-91a50e2dd020)",
-        name='Demo grid',
-        source_count=1,
-        target_count=1,
-        last_changed=1772029230932590,
-        store_last_write=1772029230941297,
-        store_created=1772029230941297,
-        active_status=<ActiveStatusKind.ACTIVE: 'Active'>,
-        alternate_uris=[],
-        custom_data={'created': DataValue(item=1772029230932590), 'creator': DataValue(item='<name/username/email>')}
+        custom_data={'created': DataValue(item=1772049333565385), 'creator': DataValue(item='<name/username/email>')}
     )
 ]

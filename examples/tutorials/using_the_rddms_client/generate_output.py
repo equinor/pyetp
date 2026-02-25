@@ -5,7 +5,7 @@ import rich
 from using_the_rddms_client import dataspaces, gri_resources, gri_lo
 
 p = pathlib.Path("examples") / "tutorials" / "using_the_rddms_client"
-width = 120
+width = 200
 
 with open(p / "dataspaces.txt", "w") as f:
     rich.console.Console(width=width, file=f).print(dataspaces)

@@ -357,10 +357,65 @@ The `Edge`-objects describe the relationship between grid-object and its
 sources and targets.
 See section 23.34.13 in the ETP v1.2 standard for the full description of the
 `Edge`-object.
+Below we show the output of running `#!python rich.print(gri_lo)`.
+```
+--8<--
+examples/tutorials/using_the_rddms_client/gri_lo.txt
+--8<--
+```
+If you need to see the sources of sources, or targets of targets (or more
+levels), this can be adjusted with the `depth`-parameter in the method
+`RDDMSClient.list_linked_objects`. A depth of `1` (the default) lists only the
+closest sources and targets.
 
+
+### Downloading the surface
+To download data from the ETP server we use the method
+[`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models].
+This method takes in a list of data object uris to identify the objects, and
+will optionally download any connected arrays and any referenced objects (the
+method only looks for targets one level down).
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:81:85
+--8<--
+```
+The returned object is an instance of
+[`RDDMSModel`][rddms_io.data_types.RDDMSModel] which contains the object itself
+(in the field `obj`), a dictionary of arrays with `path_in_hdf_file` as keys
+(under the field `arrays`), and a list of `RDDMSModel` for any linked objects
+(under the field `linked_models`).
+There will be one `RDDMSModel` per data object uri passed in to the
+`RDDMSClient.download_models`-method, in the same order as the uris.
+
+
+### Deleting objects and dataspaces
+To finish of this example we will delete all the objects we wrote, and delete
+the dataspace.
+To do that we list all objects under the dataspace, delete these objects, and
+then delete the dataspace.
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:103:107
+--8<--
+```
+
+???+ Tip
+
+    If you only need to update an object already on the ETP server, it is
+    enough to write a replacement object with the same uuid.
 
 
 ### Running the script
+The `#!python main`-function ends by returning objects that are used as example
+output in this notebook.
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:109:109
+--8<--
+```
+To run the function in a script you need to call `#!python
+asyncio.run(main())`, viz,.
 ```python
 --8<--
 examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:-2:
@@ -369,6 +424,10 @@ examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:-2:
 
 
 ### Full script
+The full script contains some `#!python assert`-checks that are not included in
+the example above.
+They are in place to verify that the example code runs as expected, and can be
+ignored in other circumstances.
 ```python
 --8<--
 examples/tutorials/using_the_rddms_client/using_the_rddms_client.py
