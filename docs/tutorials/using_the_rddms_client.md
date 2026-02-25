@@ -4,7 +4,7 @@ In this tutorial we will upload, search, download, and delete the regular
 surface model from the tutorial ["Setting up a regular
 surface"](set_up_regular_surface.md).
 
-???+ "Nomenclature"
+???+ Info "Nomenclature"
 
     The _Reservoir Domain Data Management Services_ (RDDMS) is a category under
     the OSDU data platform for working with reservoir related models.
@@ -25,7 +25,7 @@ depends on how and where the server is hosted.
 This library uses a local ETP server for testing purposes.
 In this case the server is open, and no authentication is needed.
 
-??? "Connecting to the local server"
+??? Example "Connecting to the local server"
 
     The local ETP server can be started via the Docker compose file
     [`tests/compose.yml`](https://github.com/equinor/pyetp/blob/main/tests/compose.yml).
@@ -59,7 +59,7 @@ The `data-partition-id` is part of the configuration of the server and must be
 communicated alongside ids and potential secrets needed to get a token.
 
 
-??? "Geting access token from [`msal`](https://learn.microsoft.com/en-us/entra/msal/python/)"
+??? Example "Geting access token from [`msal`](https://learn.microsoft.com/en-us/entra/msal/python/)"
 
     Below follows an example on how to get an access token using the
     [`msal.PublicClientApplication`](https://learn.microsoft.com/python/api/msal/msal.application.publicclientapplication)-class.
@@ -120,7 +120,7 @@ This ensures that the connection is properly closed after the program leaves
 the context manager.
 
 
-???+ "Asynchronous Python in scripts"
+???+ Info "Asynchronous Python in scripts"
 
     Both `RDDMSClient` and `ETPClient` uses an asynchronous
     [`websockets`-client](https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#websockets.asyncio.client.ClientConnection)
@@ -129,7 +129,8 @@ the context manager.
     in a script, unless it is wrapped in an `#!python async def` and called via
     `#!python asyncio.run`.
     This is why the following tutorial is wrapped inside an `#!python async def
-     main()`-function that is called by `#!python asyncio.run(main()) at the end.
+     main()`-function that is called by `#!python asyncio.run(main())` at the
+    end.
 
     In a [Jupyter notebook](https://jupyter.org/), an IPython shell, or
     starting the Python REPL with `#!bash python -m asyncio`, you can avoid the
@@ -155,10 +156,10 @@ up in the cloud.
 examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:42:46
 --8<--
 ```
-The variable `dataspace_path = "rddms_io/demo"` corresponds to the full
-dataspace uri `eml:///dataspace('rddms_io/demo')`.
+The variable `#!python dataspace_path = "rddms_io/demo"` corresponds to the
+full dataspace uri `eml:///dataspace('rddms_io/demo')`.
 
-???+ "ETP v1.2 dataspaces"
+???+ Info "ETP v1.2 dataspaces"
 
     A named dataspace in ETP v1.2 is on the form `eml:///dataspace('{path}')`,
     where `{path}` is a string.
@@ -175,8 +176,8 @@ dataspace uri `eml:///dataspace('rddms_io/demo')`.
 
 
 ### Connecting to the server and creating a dataspace
-We use `rddms_connect` as a context manager using `#!python async with` to
-connect to the RDDMS server, viz.:
+We use [`rddms_connect`][rddms_io.client.rddms_connect] as a context manager
+using `#!python async with` to connect to the RDDMS server, viz.:
 ```python
 --8<--
 examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:48:52
@@ -219,7 +220,7 @@ examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:62:68
 --8<--
 ```
 
-???+ "Multiple writers to the same dataspace"
+???+ Info "Multiple writers to the same dataspace"
 
     The open-etp-server has a limitation where there can only be one writer to
     a dataspace at the same time.
@@ -260,15 +261,20 @@ examples/tutorials/using_the_rddms_client/dataspaces.txt
 ```
 The returned results is a `#!python list` of
 [`Dataspace`][energistics.etp.v12.datatypes.object.Dataspace]-objects.
-This object is described in section 23.34.10 in the ETP v1.2 standard.
+Note that the ACLs are filled into the `custom_data`-field as it is not apart
+of the ETP-standard, but added on top of the open-etp-server when running in an
+OSDU context.
+The `Dataspace` object is described in section 23.34.10 in the ETP v1.2
+standard.
 
 For data objects we can apply more filters and more involved patterns.
 To list all data objects under a dataspace use the method
 [`RDDMSClient.list_objects_under_dataspace`][rddms_io.client.RDDMSClient.list_objects_under_dataspace].
 A useful filter to apply on this method is the `data_object_types`-argument.
-This lets you limit the results to only certain kinds of RESQML-objects.
+This lets you limit the results to only certain kinds of RESQML-objects (it is
+an empty `#!python list` by default, and will return all objects).
 Below is an example where we search for all `obj_Grid2dRepresentation`-objects
-under the dataspace.
+under our dataspace.
 ```python
 --8<--
 examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:72:75
@@ -283,8 +289,74 @@ examples/tutorials/using_the_rddms_client/gri_resources.txt
 ```
 The result is a `#!python list` of
 [`Resource`][energistics.etp.v12.datatypes.object.Resource]-objects.
+A full description of the `Resource`-object can be found under section 23.34.11
+in the ETP v1.2 standard.
+Beyond the `uri` and `name` (corresponding to the `title`-field in the
+[`Citation`][resqml_objects.v201.generated.Citation]-object), we note the
+`source_count` and `target_count` fields.
+In RESQML (and the other \*ML-standards from Energistics) the data is laid out
+as a _directed graph_.
+If we have a node $A$ pointing to a node $B$, then we say that $A$ acts as a
+_source_ to $B$, and $B$ acts as a _target_ to $A$.
 
+Looking back to the output from `gri_resources` we can then infer that the
+`obj_Grid2dRepresentation`-object points to one other object but there is also
+something pointing to it.
 
+When setting up our regular surface we know that the `gri`-object references a
+local coordinate system (a `obj_LocalDepth3dCrs`-object), but also an
+`obj_EpcExternalPartReference`, so we would expect the `target_count` to be
+`2`.
+However, the open-etp-server does not include the
+`obj_EpcExternalPartReference`-object in this count, which is fine as we rarely
+need it after it has been uploaded (we would only need it if we were to write
+the model to disk in the `.epc`-format).
+
+??? Info "Necessity of `obj_EpcExternalPartReference`"
+
+    The purpose of
+    [`obj_EpcExternalPartReference`][resqml_objects.v201.generated.obj_EpcExternalPartReference]
+    is to tell that array data is stored alongside the RESQML-objects.
+    The typical use case is when a RESQML-model is stored to disk in the
+    `.epc`-format with a corresponding `.h5`-file with the array data.
+    In this case the `obj_EpcExternalPartReference` informs us how the array
+    data is stored via the `mime_type`-field.
+    On the open-etp-server we do not need to know how the objects and arrays
+    are stored, so we do not read the information contained in the
+    `obj_EpcExternalPartReference`-object.
+    However, it is still necessary as an array is referenced via two keys, the
+    data object uri of the referenced `obj_EpcExternalPartReference` and the
+    `path_in_hdf_file`-field in the
+    [`Hdf5Dataset`][resqml_objects.v201.generated.Hdf5Dataset]-object.
+    These two keys are constructed directly from the `Hdf5Dataset` and we do
+    not actually need the realization of the `obj_EpcExternalPartReference`-object.
+    As such, the object is only needed when uploading to the open-etp-server,
+    but after that it is only used indirectly.
+
+For the `source_count` the open-etp-server will automatically add an
+[`obj_Activity`][resqml_objects.v201.generated.obj_Activity]-object (and an
+[`obj_ActivityTemplate`][resqml_objects.v201.generated.obj_ActivityTemplate]-object
+that is referenced by the `obj_Activity`-object) referencing the grid-object.
+
+Using the method
+[`RDDMSClient.list_linked_objects`][rddms_io.client.RDDMSClient.list_linked_objects]
+we can get an overview on how an object links to its sources and targets.
+```python
+--8<--
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:77:79
+--8<--
+```
+In this case we fetch the grid-uri from the `gri_resources` from the call to
+[`RDDMSClient.list_objects_under_dataspace`][rddms_io.client.RDDMSClient.list_objects_under_dataspace].
+From `RDDMSClient.list_linked_objects` we get a
+[`LinkedObjects`][rddms_io.data_types.LinkedObjects]-object with
+`Resource`-objects for the grid-object and for the sources and targets, as well
+as [`Edge`][energistics.etp.v12.datatypes.object.Edge]-objects for the sources
+and targets.
+The `Edge`-objects describe the relationship between grid-object and its
+sources and targets.
+See section 23.34.13 in the ETP v1.2 standard for the full description of the
+`Edge`-object.
 
 
 

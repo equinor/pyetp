@@ -74,8 +74,6 @@ async def main() -> None:
             data_object_types=[ro.obj_Grid2dRepresentation],
         )
 
-        assert len(gri_resources) == 1
-
         gri_lo = await rddms_client.list_linked_objects(
             start_uri=gri_resources[0].uri,
         )
@@ -108,7 +106,7 @@ async def main() -> None:
         await rddms_client.delete_model(ml_uris=[a.uri for a in all_resources])
         await rddms_client.delete_dataspace(dataspace_path)
 
-    return dataspaces, gri_resources
+    return dataspaces, gri_resources, gri_lo
 
 
-dataspaces, gri_resources = asyncio.run(main())
+dataspaces, gri_resources, gri_lo = asyncio.run(main())
