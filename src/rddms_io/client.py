@@ -125,7 +125,7 @@ class RDDMSClient:
         ----------
         store_last_write_filter: datetime.datetime | int | None
             A parameter that can be used to limit the results to only include
-            dataspaces that were created after the time specified in the
+            dataspaces that were written to after the time specified in the
             filter. The default is `None`, meaning all dataspaces will be
             included.
 
