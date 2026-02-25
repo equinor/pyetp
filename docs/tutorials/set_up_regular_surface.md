@@ -3,7 +3,7 @@
 In this tutorial we will show how to represent a regular surface in RESQML
 v2.0.1 using `resqml_objects` which is installed alongside `pyetp`.
 
-???+ Note
+???+ Warning
     Due to the flexibility of RESQML there are multiple ways to represent a
     regular surface.
     Different providers make different choices, and there is no guarantee that
@@ -43,7 +43,7 @@ active transformations.
 
 We will demonstrate a few variations for setting up these objects below.
 
-???+ Nomenclature
+???+ Info Nomenclature
 
     We call a collection of linked RESQML objects a _model_.
     For example, a regular surface consisting of an
@@ -86,7 +86,7 @@ examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:16:23
 --8<--
 ```
 
-???+ "Printing the `obj_EpcExternalPartReference`-object"
+??? Example "Printing the `obj_EpcExternalPartReference`-object"
 
     We can use `#!python print(epc)` directly, or `#!python rich.print(epc)`
     from the [`rich`](https://github.com/Textualize/rich) library to get an
@@ -123,7 +123,7 @@ In this example we have chosen a nondescript `"Mean sea level"` for the
 vertical coordinate system, and the EPSG code 23031 covering much of Europe and
 the North Sea.
 
-???+ "Choosing a global coordinate system"
+???+ Info "Choosing a global coordinate system"
 
     A global coordinate system is described by the two fields `vertical_crs`
     and `projected_crs`, and the local coordinate system describes additional
@@ -159,7 +159,7 @@ the North Sea.
     for a wider discussion of coordinate systems in RESQML and their relation
     to OSDU coordinate systems.
 
-???+ "Printing the `obj_LocalDepth3dCrs`-object"
+??? Example "Printing the `obj_LocalDepth3dCrs`-object"
 
     Printing the `crs`-object with `#!python rich.print(crs)` we get:
     ```
@@ -190,7 +190,7 @@ The height map will be given as a dense array whereas the coordinates can be
 compactly represented as an _origin_, a _shape_, a _spacing_, and a _rotation
 angle_ or a pair of _orthonormal vectors_.
 
-???+ "Arrays in RESQML"
+???+ Info "Arrays in RESQML"
 
     In RESQML the array data is stored alongside the objects, and the objects
     keep a reference to the arrays.
@@ -223,7 +223,7 @@ The origin of the surface is placed in $(10, 11)$ relative to the offset in the
 Finally, the `#!python spacing`-array gives the spacing between points for the
 first axis and the second axis.
 
-???+ "Mapping out the coordinates"
+???+ Info "Mapping out the coordinates"
 
     The coordinates of the regular surface, $\mathbf{r}_{ij}$, are given by
     $$
@@ -268,7 +268,7 @@ examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:42:56
 --8<--
 ```
 
-???+ "Printing the `obj_Grid2dRepresentation`-object"
+??? Example "Printing the `obj_Grid2dRepresentation`-object"
 
     Printing the `gri`-object with `#!python rich.print(gri)` we get:
     ```
