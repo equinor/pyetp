@@ -1,0 +1,9 @@
+<eml:EpcExternalPartReference xmlns:eml="http://www.energistics.org/energyml/data/commonv2" xmlns:resqml2="http://www.energistics.org/energyml/data/resqmlv2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="2.0" uuid="d53c9c04-e83a-4ad7-87fc-567a0dd5e660" xsi:type="eml:obj_EpcExternalPartReference">
+  <eml:Citation>
+    <eml:Title>Demo epc</eml:Title>
+    <eml:Originator>&lt;name/username/email&gt;</eml:Originator>
+    <eml:Creation>2026-01-02T03:04:05Z</eml:Creation>
+    <eml:Format>equinor:pyetp:0.0.49.dev12+ga521a78a1</eml:Format>
+  </eml:Citation>
+  <eml:MimeType>application/x-hdf5</eml:MimeType>
+</eml:EpcExternalPartReference>

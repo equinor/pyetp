@@ -41,6 +41,11 @@ dev = [
     "ruff>=0.13.2",
 ]
 
+docs = [
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings-python>=2.0.1",
+]
+
 [tool.pytest.ini_options]
 addopts = "-ra -v --color=yes"
 testpaths = ["tests"]

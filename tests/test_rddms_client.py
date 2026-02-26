@@ -1,10 +1,10 @@
 import asyncio
+import collections
 import pathlib
 
 import numpy as np
 import numpy.typing as npt
 import pytest
-from conftest import etp_server_url, skip_decorator
 
 import resqml_objects.v201 as ro
 from pyetp.client import ETPError
@@ -17,6 +17,7 @@ from resqml_objects.epc_readers import (
     get_resqml_v201_objects,
 )
 from resqml_objects.surface_helpers import RegularGridParameters
+from tests.conftest import etp_server_url, skip_decorator
 
 
 def get_random_surface() -> tuple[
@@ -102,24 +103,25 @@ async def test_rddms_connect() -> None:
 async def test_create_and_delete_dataspaces() -> None:
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         ds_1 = "rddms-io/test-1"
-        try:
-            await rddms_client.create_dataspace(
-                ds_1,
-            )
-        except ETPError:
-            pass
+
+        await rddms_client.create_dataspace(ds_1, ignore_if_exists=True)
+        await rddms_client.create_dataspace(ds_1, ignore_if_exists=True)
+
+        with pytest.raises(ETPError):
+            await rddms_client.create_dataspace(ds_1)
+
+        with pytest.raises(ETPError):
+            await rddms_client.create_dataspace(ds_1, ignore_if_exists=False)
 
         ds_2 = "rddms-io/test-2"
-        try:
-            await rddms_client.create_dataspace(
-                ds_2,
-                legal_tags=["foo"],
-                other_relevant_data_countries=["bar"],
-                owners=["baz"],
-                viewers=["bor"],
-            )
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(
+            ds_2,
+            legal_tags=["foo"],
+            other_relevant_data_countries=["bar"],
+            owners=["baz"],
+            viewers=["bor"],
+            ignore_if_exists=True,
+        )
 
         dataspaces = await rddms_client.list_dataspaces()
 
@@ -139,10 +141,7 @@ async def test_upload_and_download_model() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -164,14 +163,25 @@ async def test_upload_and_download_model() -> None:
         assert gri_uri == gri.get_etp_data_object_uri(dataspace_path)
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        (ret_crs, ret_epc, ret_gri), ret_Z = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[crs_uri, epc_uri, gri_uri],
             download_arrays=True,
         )
 
+    ret_crs = ret_models[0].obj
+    ret_epc = ret_models[1].obj
+    ret_gri = ret_models[2].obj
+
     assert ret_crs == crs
     assert ret_epc == epc
     assert ret_gri == gri
+    assert not ret_models[0].arrays
+    assert not ret_models[0].linked_models
+    assert not ret_models[1].arrays
+    assert not ret_models[1].linked_models
+    assert not ret_models[2].linked_models
+
+    ret_Z = ret_models[2].arrays
 
     np.testing.assert_equal(
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
@@ -179,23 +189,26 @@ async def test_upload_and_download_model() -> None:
 
     # Test downloading linked objects.
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_objs, ret_Z = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[gri_uri],
             download_arrays=True,
             download_linked_objects=True,
         )
 
-    assert len(ret_objs) == 2
-    assert len(ret_Z) == 1
+    assert len(ret_models) == 1
 
-    ret_gri = next(
-        filter(lambda o: isinstance(o, ro.obj_Grid2dRepresentation), ret_objs)
-    )
-    ret_crs = next(filter(lambda o: isinstance(o, ro.obj_LocalDepth3dCrs), ret_objs))
+    ret_model = ret_models[0]
+
+    assert len(ret_model.linked_models) == 1
+    assert len(ret_model.arrays) == 1
+
+    ret_gri = ret_model.obj
+    ret_crs = ret_model.linked_models[0].obj
 
     assert ret_crs == crs
     assert ret_gri == gri
 
+    ret_Z = ret_model.arrays
     np.testing.assert_equal(
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
     )
@@ -231,10 +244,7 @@ async def test_list_linked_objects() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -250,9 +260,8 @@ async def test_list_linked_objects() -> None:
 
         assert gri_uri == gri_lo.start_uri
 
-        assert gri_uri in [r.uri for r in gri_lo.source_resources]
+        assert gri_uri == gri_lo.self_resource.uri
         assert crs_uri in [r.uri for r in gri_lo.target_resources]
-        assert gri_uri in [e.target_uri for e in gri_lo.source_edges]
         assert gri_uri in [e.source_uri for e in gri_lo.target_edges]
         assert crs_uri in [e.target_uri for e in gri_lo.target_edges]
 
@@ -314,10 +323,7 @@ async def test_list_array_metadata() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_1_uri, gri_2_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -329,7 +335,7 @@ async def test_list_array_metadata() -> None:
         )
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_crs, ret_epc, ret_gri_1, ret_gri_2 = await rddms_client.download_model(
+        ret_crs, ret_epc, ret_gri_1, ret_gri_2 = await rddms_client.download_models(
             ml_uris=[crs_uri, epc_uri, gri_1_uri, gri_2_uri],
             download_arrays=False,
         )
@@ -427,10 +433,7 @@ async def test_partial_deletion() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         crs_uri, epc_uri, gri_1_uri, gri_2_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -475,7 +478,7 @@ async def test_partial_deletion() -> None:
         # Verify that the object has been deleted.
         with pytest.raises(ETPError):
             try:
-                await rddms_client.download_model(
+                await rddms_client.download_models(
                     ml_uris=[epc_uri],
                     download_arrays=False,
                 )
@@ -486,17 +489,22 @@ async def test_partial_deletion() -> None:
                 raise
 
         # Check that we can still download the array (both directly and via the
-        # `download_model`-method), even if the `obj_EpcExternalPartReference`
+        # `download_models`-method), even if the `obj_EpcExternalPartReference`
         # is gone.
         gri_1_array = await rddms_client.download_array(
             epc_uri=epc_uri,
             path_in_resource=gri_1_pir,
         )
         np.testing.assert_equal(gri_1_array, Z)
-        ret_gri_1, ret_arrays = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=[gri_1_uri],
             download_arrays=True,
         )
+
+        assert len(ret_models) == 1
+        ret_model = ret_models[0]
+        ret_arrays = ret_model.arrays
+
         np.testing.assert_equal(
             Z,
             ret_arrays[gri_1_pir],
@@ -509,13 +517,11 @@ async def test_partial_deletion() -> None:
 
         # Sort out source uris for the first grid.
         source_uris = [r.uri for r in gri_1_lo.source_resources]
-        # Verify that the grid uri is included in the source uris.
-        assert gri_1_uri in source_uris
-        assert len(source_uris) == 2
+        assert len(source_uris) == 1
 
         # Delete the first grid and the sources pointing to the grid.
         await rddms_client.delete_model(
-            ml_uris=source_uris,
+            ml_uris=[gri_1_lo.start_uri, *source_uris],
         )
         resources = await rddms_client.list_objects_under_dataspace(dataspace_path)
 
@@ -528,15 +534,12 @@ async def test_partial_deletion() -> None:
             start_uri=gri_2_uri,
         )
 
-        source_uris = [r.uri for r in gri_2_lo.source_resources]
-
-        # Verify that there are no sources except the second grid itself.
-        assert len(source_uris) == 1
-        assert gri_2_uri == source_uris[0]
+        # Verify that there are no sources left.
+        assert len(gri_2_lo.source_resources) == 0
 
         # Delete the second grid.
         await rddms_client.delete_model(
-            ml_uris=source_uris,
+            ml_uris=[gri_2_uri],
         )
 
         resources = await rddms_client.list_objects_under_dataspace(dataspace_path)
@@ -560,11 +563,8 @@ async def test_partial_deletion() -> None:
             start_uri=crs_uri,
         )
 
-        source_uris = [r.uri for r in crs_lo.source_resources]
-
         # Confirm that the crs no longer has any sources attached to it.
-        assert len(source_uris) == 1
-        assert crs_uri == source_uris[0]
+        assert len(crs_lo.source_resources) == 0
 
         # Delete the crs.
         await rddms_client.delete_model(
@@ -589,10 +589,7 @@ async def test_debouncing() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
     async def task(debounce: bool | float, sleep_time: float) -> None:
         async with rddms_connect(uri=etp_server_url) as rddms_client:
@@ -672,10 +669,7 @@ async def test_debouncing_on_upload() -> None:
     dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
     async def task(
         crs: ro.obj_LocalDepth3dCrs,
@@ -753,10 +747,7 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         casted_data_arrays[k] = v.astype(get_valid_dtype_cast(v))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        try:
-            await rddms_client.create_dataspace(dataspace_path)
-        except ETPError:
-            pass
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         ml_uris = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
@@ -765,10 +756,14 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         )
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_ml_objects, ret_data_arrays = await rddms_client.download_model(
+        ret_models = await rddms_client.download_models(
             ml_uris=ml_uris,
             download_arrays=True,
+            download_linked_objects=False,
         )
+
+    ret_ml_objects = [rm.obj for rm in ret_models]
+    ret_data_arrays = collections.ChainMap(*[rm.arrays for rm in ret_models])
 
     assert ml_objects == ret_ml_objects
     assert sorted(ret_data_arrays) == sorted(casted_data_arrays)

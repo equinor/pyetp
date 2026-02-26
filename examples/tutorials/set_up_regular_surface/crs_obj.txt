@@ -1,0 +1,29 @@
+obj_LocalDepth3dCrs(
+    citation=Citation(
+        title='Demo crs',
+        originator='<name/username/email>',
+        creation=XmlDateTime(2026, 1, 2, 3, 4, 5, 0, 0),
+        format='equinor:pyetp:0.0.49.dev12+ga521a78a1',
+        editor=None,
+        last_update=None,
+        version_string=None,
+        description=None,
+        descriptive_keywords=None
+    ),
+    aliases=[],
+    custom_data=None,
+    schema_version='2.0.1',
+    uuid='dbe0e6ba-1ea6-4dd7-b541-9c4c14c16f62',
+    object_version=None,
+    extra_metadata=[],
+    yoffset=0.0,
+    zoffset=0.0,
+    areal_rotation=PlaneAngleMeasure(value=0.0, uom=<PlaneAngleUom.RAD: 'rad'>),
+    projected_axis_order=<AxisOrder2d.EASTING_NORTHING: 'easting northing'>,
+    projected_uom=<LengthUom.M: 'm'>,
+    vertical_uom=<LengthUom.M: 'm'>,
+    xoffset=0.0,
+    zincreasing_downward=True,
+    vertical_crs=VerticalUnknownCrs(unknown='Mean sea level'),
+    projected_crs=ProjectedCrsEpsgCode(epsg_code=23031)
+)

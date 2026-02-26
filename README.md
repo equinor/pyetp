@@ -10,12 +10,14 @@ for working with RESQML v2.0.1 models.
 > The following Energistics (c) products were used in the creation of this work:
 > Energistics Transfer Protocol (ETP) v1.2 and RESQML v2.0.1
 
+
 # Installing the library
 This package is published to PyPI, and can be installed via:
 ```bash
 pip install pyetp
 ```
 The library is tested against Python versions 3.11, 3.12 and 3.13.
+
 
 ## Local development
 Locally we suggest setting up a virtual environment, and installing the latest
@@ -43,6 +45,27 @@ Or if you just want to check what could have been formatted:
 ```bash
 ruff format --check
 ```
+
+
+## Building the documentation
+We use [Material for Mkdocs](https://squidfunk.github.io/mkdocs-material/) for
+the documentation.
+To install the documentation dependencies run
+```bash
+pip install --group docs
+```
+While developing the documentation run
+```bash
+mkdocs serve --livereload
+```
+for hot-reloading.
+The pages are served at [http://localhost:8000](https://localhost:8000).
+To build the documentation for publication run
+```bash
+mkdocs build
+```
+which create a directory `site/` with the pages.
+Open `site/index.html` to see the result.
 
 
 # RESQML versions

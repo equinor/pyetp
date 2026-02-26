@@ -1,0 +1,17 @@
+[
+    Dataspace(
+        uri="eml:///dataspace('rddms_io/demo')",
+        store_last_write=1772049333806932,
+        store_created=1772049333683418,
+        path='rddms_io/demo',
+        custom_data={
+            'legaltags': DataValue(item=ArrayOfString(values=['legal-tag-1', 'legal-tag-2'])),
+            'locked': DataValue(item=False),
+            'otherRelevantDataCountries': DataValue(item=ArrayOfString(values=['country-code'])),
+            'owners': DataValue(item=ArrayOfString(values=['owners'])),
+            'read-only': DataValue(item=False),
+            'size': DataValue(item='544 kB'),
+            'viewers': DataValue(item=ArrayOfString(values=['viewers-1', 'viewers-2']))
+        }
+    )
+]
