@@ -8,7 +8,6 @@ repo_url: "https://github.com/equinor/pyetp"
 nav:
   - Introduction: index.md
   - Tutorials:
-    - tutorials/index.md
     - tutorials/set_up_regular_surface.md
     - tutorials/using_the_rddms_client.md
   - API:
