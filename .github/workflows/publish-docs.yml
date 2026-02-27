@@ -11,7 +11,7 @@ permissions: {}
 jobs:
   build:
     name: Build
-    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@feat/mkdocs/install-dependency-group
+    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.34.0
     permissions:
       contents: read
     with:
@@ -22,7 +22,7 @@ jobs:
     name: Deploy
     needs: build
     if: needs.build.outputs.artifact_uploaded == 'true'
-    uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.33.0
+    uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.34.0
     permissions:
       pages: write
       id-token: write
