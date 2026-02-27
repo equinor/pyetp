@@ -11,11 +11,11 @@ permissions: {}
 jobs:
   build:
     name: Build
-    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.33.0
+    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@feat/mkdocs/install-dependency-group
     permissions:
       contents: read
     with:
-      requirements: .[docs]
+      dependency_group: docs
       upload_artifact: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
   deploy:
