@@ -1,0 +1,31 @@
+name: Publish docs
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build
+    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.34.0
+    permissions:
+      contents: read # Required to checkout the repository
+    with:
+      python_version: 3.13
+      dependency_group: docs
+      upload_artifact: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+  deploy:
+    name: Deploy
+    needs: build
+    if: needs.build.outputs.artifact_uploaded == 'true'
+    uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.34.0
+    permissions:
+      id-token: write # Required to authenticate to GitHub Pages
+      pages: write # Required to publish to GitHub Pages
+    with:
+      artifact_name: ${{ needs.build.outputs.artifact_name }}
