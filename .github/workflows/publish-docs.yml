@@ -1,0 +1,36 @@
+name: Publish docs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - mkdocs.yml
+      - docs/**
+  push:
+    branches: [main]
+    paths:
+      - mkdocs.yml
+      - docs/**
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build
+    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.33.0
+    permissions:
+      contents: read
+    with:
+      requirements: .[docs]
+      upload_artifact: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+  deploy:
+    name: Deploy
+    needs: build
+    if: needs.build.outputs.artifact_uploaded == 'true'
+    uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.33.0
+    permissions:
+      pages: write
+      id-token: write
+    with:
+      artifact_name: ${{ needs.build.outputs.artifact_name }}
