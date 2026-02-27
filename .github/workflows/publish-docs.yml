@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
     with:
+      python_version: 3.13
       dependency_group: docs
       upload_artifact: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
