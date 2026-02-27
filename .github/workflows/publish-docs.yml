@@ -3,14 +3,8 @@ name: Publish docs
 on:
   pull_request:
     branches: [main]
-    paths:
-      - mkdocs.yml
-      - docs/**
   push:
     branches: [main]
-    paths:
-      - mkdocs.yml
-      - docs/**
 
 permissions: {}
 
