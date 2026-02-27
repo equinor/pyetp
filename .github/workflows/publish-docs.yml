@@ -13,7 +13,7 @@ jobs:
     name: Build
     uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.34.0
     permissions:
-      contents: read
+      contents: read # Required to checkout the repository
     with:
       python_version: 3.13
       dependency_group: docs
@@ -25,7 +25,7 @@ jobs:
     if: needs.build.outputs.artifact_uploaded == 'true'
     uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.34.0
     permissions:
-      pages: write
-      id-token: write
+      id-token: write # Required to authenticate to GitHub Pages
+      pages: write # Required to publish to GitHub Pages
     with:
       artifact_name: ${{ needs.build.outputs.artifact_name }}
