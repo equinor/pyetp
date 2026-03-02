@@ -1,6 +1,6 @@
 site_name: pyetp & rddms-io
 site_description: Documentation for pyetp and rddms-io
-# TODO: Set `site_url`
+site_url: "https://equinor.github.io/pyetp/"
 
 repo_name: "equinor/pyetp"
 repo_url: "https://github.com/equinor/pyetp"
