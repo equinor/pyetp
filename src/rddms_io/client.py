@@ -607,7 +607,7 @@ class RDDMSClient:
 
         Parameters
         ----------
-        ml_uris: list[str | DataObjectURI]
+        ml_uris
             A list of ETP data object uris.
 
         Returns
@@ -615,7 +615,9 @@ class RDDMSClient:
         dict[str, dict[str, DataArrayMetadata]]
             A dictionary indexed by the data object uri, containing a new
             dictionary with the path in resource as the key and the metadata
-            (the ETP datatype `DataArrayMetadata`) as the value.
+            (the ETP datatype `DataArrayMetadata`) as the value. Note that if
+            there is no array connected to a data object uri, there will be no
+            entry in the returned dict for this uri.
 
         See Also
         --------
