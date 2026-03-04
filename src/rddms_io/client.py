@@ -716,7 +716,10 @@ class RDDMSClient:
                 tasks.append(task)
 
         if not tasks:
-            logger.info("There were no arrays connected to input objects")
+            logger.info(
+                "There were no arrays connected to input objects with uris: "
+                f"{[obj.get_etp_data_object_uri(dataspace_uri) for obj in ml_objects]}"
+            )
             return {}
 
         task_responses = await asyncio.gather(*tasks)
