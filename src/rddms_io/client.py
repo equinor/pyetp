@@ -123,7 +123,7 @@ class RDDMSClient:
 
         Parameters
         ----------
-        store_last_write_filter: datetime.datetime | int | None
+        store_last_write_filter
             A parameter that can be used to limit the results to only include
             dataspaces that were written to after the time specified in the
             filter. The default is `None`, meaning all dataspaces will be
@@ -158,7 +158,7 @@ class RDDMSClient:
 
         Parameters
         ----------
-        dataspace_uri: str | DataspaceURI
+        dataspace_uri
             The ETP dataspace uri, or path, for the dataspace to delete. If it
             is a dataspace path (on the form `'foo/bar'`) it will be converted
             to the dataspace uri `"eml:///dataspace('foo/bar')"`.
@@ -405,9 +405,9 @@ class RDDMSClient:
 
         Parameters
         ----------
-        dataspace_uri: DataspaceURI | str
+        dataspace_uri
             The uri of the dataspace to list objects.
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]]
+        data_object_types
             Object types to look for. This can either be a list of strings,
             e.g., `["eml20.*", "resqml20.obj_Grid2dRepresentation"]` to query
             all Energistic Common version 2.0-objects and
@@ -416,7 +416,20 @@ class RDDMSClient:
             `[ro.obj_Grid2dRepresentation, ro.obj_LocalDepth3dCrs]`. Default is
             `[]`, i.e., an empty list which means that all data object types
             will be returned.
-        count_objects: bool
+        count_objects
+            Toggle if the number of target and source objects should be
+            counted. Default is `True`.
+        store_last_write_filter
+            Filter to only include objects that are written after the provided
+            datetime or timestamp. Default is `None`, meaning no filter is
+            applied. Note that the timestamp should be in microsecond
+            resolution.
+
+        Returns
+        -------
+        list[Resource]
+            A list of
+            [`Resource`][energistics.etp.v12.datatypes.object.Resource]-objects.
         """
         dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
         data_object_types = [
