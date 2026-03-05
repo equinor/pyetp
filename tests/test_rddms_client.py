@@ -344,7 +344,7 @@ async def test_list_array_metadata() -> None:
             len(
                 await rddms_client.list_object_array_metadata(
                     dataspace_uri=dataspace_uri,
-                    ml_objects=[ret_crs, ret_epc],
+                    ml_objects=[ret_crs.obj, ret_epc.obj],
                 )
             )
             == 0
