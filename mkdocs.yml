@@ -28,7 +28,7 @@ plugins:
               options:
                   docstring_style: numpy
                   docstring_section_style: spacy
-                  line_length: 88
+                  line_length: 80
                   unwrap_annotated: true
                   heading_level: 3
                   inherited_members: true
