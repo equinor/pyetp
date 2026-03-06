@@ -7,6 +7,31 @@ import numpy.typing as npt
 DType = typing.TypeVar("DType", bound=np.float32 | np.float64)
 
 
+@dataclass
+class AngleVec2d:
+    angle_in_rad: float
+    unit_vec: npt.NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        angle = float(np.atan2(self.unit_vec[1], self.unit_vec[0]))
+        if not abs(angle - self.angle_in_rad) < 1e-12:
+            raise ValueError("Angle from unit vectors does not match the stored angle")
+
+        if not np.abs(np.linalg.norm(self.unit_vec) - 1) < 1e-12:
+            raise ValueError("The unit vector does not have unit norm")
+
+    @classmethod
+    def from_unit_vec(cls, vec: npt.NDArray[np.float64]) -> typing.Self:
+        unit_vec = vec / np.linalg.norm(vec)
+        angle = float(np.atan2(unit_vec[1], unit_vec[0]))
+        return cls(angle_in_rad=angle, unit_vec=unit_vec)
+
+    @classmethod
+    def from_angle_in_rad(cls, angle_in_rad: float) -> typing.Self:
+        unit_vec = rotate_2d_vector(np.array([1.0, 0.0]), angle=angle_in_rad)
+        return cls(angle_in_rad=angle_in_rad, unit_vec=unit_vec)
+
+
 def rotate_2d_vector(
     r: typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))], angle: float
 ) -> typing.Annotated[npt.NDArray[DType] :, dict(shape=(2, None))]:
