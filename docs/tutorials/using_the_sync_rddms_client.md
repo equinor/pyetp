@@ -13,7 +13,6 @@ the user call the main functionality from
 and close the connection.
 Furthermore, this also avoids the need for using `async` and `await`.
 
-
 ??? Info
 
     Even though `RDDMSClientSync` is made synchronous, the methods wrap the
@@ -118,8 +117,85 @@ examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:48
     ```
 
 
-### TODO
-- Add listing of the methods in the synchronous client to demonstrate how they
-wrap the asynchronous client.
-- Add comment on missing parameters when they do not make sense, e.g., the
-  `handle_transaction`-flag.
+### Uploading the surface
+We upload the surface using
+[`RDDMSClientSync.upload_model`][rddms_io.sync_client.RDDMSClientSync.upload_model]
+similarly to how it is done in the [previous
+tutorial](using_the_rddms_client.md#uploading-the-surface).
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:57:63
+--8<--
+```
+
+
+### Searching on the ETP server
+We can search using [`RDDMSClientSync`][rddms_io.sync_client.RDDMSClientSync]
+in the same way we did the concurrent client.
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:65:71
+--8<--
+```
+See the [previous
+tutorial](using_the_sync_rddms_client.md#searching-on-the-etp-server) for
+example output and a wider discussion on how these three different searching
+methods work.
+
+
+### Downloading the surface
+We download the surface using
+[`RDDMSClientSync.download_models`][rddms_io.sync_client.RDDMSClientSync].
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:73:77
+--8<--
+```
+As we only asked for a single uri (the `gri_lo.start_uri`) in the
+`RDDMSClientSync.download_models`-call, we get a list containing a single
+[`RDDMSModel`][rddms_io.data_types.RDDMSModel] in return.
+The `obj_Grid2dRepresentation`-object is then found via:
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:81:82
+--8<--
+```
+Since we used the flags `download_arrays=True` and
+`download_linked_objects=True`, the fields `RDDMSModel.arrays` and
+`RDDMSModel.linked_models` (respectively) will also be populated (if there are
+any linked objects and arrays).
+Our uploaded `obj_Grid2dRepresentation` only links to a
+`obj_LocalDepth3dCrs`-object (the `obj_EpcExternalPartReference`-objects are
+excluded from being added to the `RDDMSModel.linked_models`), and to get it we
+run:
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:86:86
+--8<--
+```
+The array is found using the `path_in_hdf_file` from the grid-object:
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:87:89
+--8<--
+```
+
+### Delete objects and dataspaces
+Here as in the previous tutorial we end by deleting all the objects and then
+delete the dataspace.
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:95:97
+--8<--
+```
+
+### Full script
+Finally, we list the full script used throughout this tutorial.
+Here as well there are a few extra `#!python assert`-statements that were not
+included in the examples above, but are kept to ensure that the tutorial
+example is kept up to date.
+```python
+--8<--
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py
+--8<--
+```
