@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 
 import resqml_objects.v201.generated as ro
-from resqml_objects.surface_helpers import angle_to_unit_vectors
+from resqml_objects.surface_helpers import rotate_2d_vector
 
 Vec2D: typing.TypeAlias = typing.Annotated[
     npt.NDArray[np.float64],
@@ -17,24 +17,20 @@ SurfaceArrayType: typing.TypeAlias = typing.Annotated[
 ]
 
 
-class RegularSurfaceModel:
-    # class Rotation:
-    #     pass
-
+class RegularSurfaceModels:
     @staticmethod
     def get_depth_model(
         originator: str,
         title: str,
         origin: Vec2D,
         spacing: Vec2D,
+        angle_in_rad: float | np.float64,
         surf: SurfaceArrayType,
         vertical_epsg_code: int,
         projected_epsg_code: int,
-        # rotation: Rotation,
-        unit_vec_1: Vec2D | None = None,
-        unit_vec_2: Vec2D | None = None,
-        angle_in_rad: float | np.float64 | None = None,
         zincreasing_downward: bool = True,
+        projected_uom: ro.LengthUom = ro.LengthUom.M,
+        vertical_uom: ro.LengthUom = ro.LengthUom.M,
         uuid_epc: str | uuid.UUID | None = None,
         uuid_crs: str | uuid.UUID | None = None,
         uuid_gri: str | uuid.UUID | None = None,
@@ -46,19 +42,8 @@ class RegularSurfaceModel:
         ],
         dict[str, SurfaceArrayType],
     ]:
-        if angle_in_rad is None and (unit_vec_1 is None or unit_vec_2 is None):
-            raise ValueError(
-                "Specify either an angle (in radians) or a pair of unit vectors"
-            )
-
-        if angle_in_rad is not None:
-            unit_vectors = angle_to_unit_vectors(angle=angle_in_rad)
-            # The `x`- and `y`-coordinates lie in the columns of
-            # `unit_vectors`. Hence, the first unit vector corresponds to the
-            # first row (`unit_vectors[0]`), and the second unit vector the
-            # second row (`unit_vectors[1]`).
-            unit_vec_1 = unit_vectors[0]
-            unit_vec_2 = unit_vectors[1]
+        unit_vec_1 = rotate_2d_vector(np.array([1.0, 0.0]), angle=angle_in_rad)
+        unit_vec_2 = rotate_2d_vector(np.array([0.0, 1.0]), angle=angle_in_rad)
 
         uuid_epc = uuid_epc or str(uuid.uuid4())
         uuid_crs = uuid_crs or str(uuid.uuid4())
@@ -80,6 +65,8 @@ class RegularSurfaceModel:
             vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=vertical_epsg_code),
             projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=projected_epsg_code),
             zincreasing_downward=zincreasing_downward,
+            projected_uom=projected_uom,
+            vertical_uom=vertical_uom,
         )
 
         gri = ro.obj_Grid2dRepresentation.from_regular_surface(
