@@ -42,8 +42,12 @@ class RegularSurfaceModels:
         ],
         dict[str, SurfaceArrayType],
     ]:
-        unit_vec_1 = rotate_2d_vector(np.array([1.0, 0.0]), angle=angle_in_rad)
-        unit_vec_2 = rotate_2d_vector(np.array([0.0, 1.0]), angle=angle_in_rad)
+        unit_vec_1 = np.squeeze(
+            rotate_2d_vector(np.array([1.0, 0.0]), angle=angle_in_rad)
+        )
+        unit_vec_2 = np.squeeze(
+            rotate_2d_vector(np.array([0.0, 1.0]), angle=angle_in_rad)
+        )
 
         uuid_epc = uuid_epc or str(uuid.uuid4())
         uuid_crs = uuid_crs or str(uuid.uuid4())
