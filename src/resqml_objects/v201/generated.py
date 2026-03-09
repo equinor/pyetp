@@ -12318,6 +12318,17 @@ class PlaneAngleMeasure:
         }
     )
 
+    def get_angle_in_rad(self) -> float:
+        match self.uom:
+            case PlaneAngleUom.RAD:
+                return self.value
+            case PlaneAngleUom.DEGA:
+                return float(np.deg2rad(self.value))
+            case _:
+                raise NotImplementedError(
+                    f"No conversion for {self.uom} to radian implemented yet"
+                )
+
 
 @dataclass(slots=True, kw_only=True)
 class PotentialDifferencePerPowerDropMeasure:
@@ -24106,17 +24117,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             crs_offset[0] = crs.xoffset
             crs_offset[1] = crs.yoffset
 
-            crs_angle_unit = PlaneAngleUom(crs.areal_rotation.uom)
-
-            match crs_angle_unit:
-                case PlaneAngleUom.RAD:
-                    crs_angle = crs.areal_rotation.value
-                case PlaneAngleUom.DEGA:
-                    crs_angle = np.deg2rad(crs.areal_rotation.value)
-                case _:
-                    raise NotImplementedError(
-                        f"No conversion from {crs_angle_unit} to radians implemented"
-                    )
+            crs_angle = crs.areal_rotation.get_angle_in_rad()
 
         rgp = RegularGridParameters(
             shape=shape,
