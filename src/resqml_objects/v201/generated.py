@@ -18,6 +18,8 @@ import numpy as np
 import numpy.typing as npt
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
+from resqml_objects.data_types import RegularSurfaceParameters
+
 resqml_schema_version = "2.0.1"
 common_schema_version = "2.0"
 OBJ_TYPE_PATTERN = re.compile(r"type=(?P<obj_type>\w+)$")
@@ -24022,6 +24024,69 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             "required": True,
         }
     )
+
+    def get_regular_surface_parameters(
+        self, crs: AbstractLocal3dCrs | None = None
+    ) -> RegularSurfaceParameters:
+
+        crs_angle = 0.0
+        crs_origin = np.zeros(2)
+
+        if crs is not None:
+            crs_angle = crs.areal_rotation.get_angle_in_rad()
+            crs_origin = np.array([crs.xoffset, crs.yoffset])
+
+        points = self.grid2d_patch.geometry.points
+
+        if not isinstance(points, Point3dZValueArray):
+            raise NotImplementedError(
+                "We do not support getting the regular surface parameters for points "
+                f"of type {points.__class__.__name__}"
+            )
+
+        sg = points.supporting_geometry
+        if not isinstance(sg, Point3dLatticeArray):
+            raise NotImplementedError(
+                "We do not support getting the regular surface parameters for a "
+                f"supporting geometry of type {sg.__class__.__name__}"
+            )
+
+        shape = (
+            self.grid2d_patch.slowest_axis_count,
+            self.grid2d_patch.fastest_axis_count,
+        )
+
+        origin = np.array(
+            [
+                sg.origin.coordinate1,
+                sg.origin.coordinate2,
+            ]
+        )
+
+        offsets = sg.offset
+
+        spacing = np.array(
+            [
+                offsets[0].spacing.value,
+                offsets[1].spacing.value,
+            ]
+        )
+        unit_vec_1 = np.array(
+            [offsets[0].offset.coordinate1, offsets[0].offset.coordinate2]
+        )
+
+        # Here we assume that the axis order is EASTING_NORTHING, and that the
+        # second unit vector lies 90 degrees counter-clockwise of the first
+        # unit vector.
+
+        angle = float(np.atan2(unit_vec_1[1], unit_vec_1[0]))
+
+        return RegularSurfaceParameters(
+            shape=shape,
+            origin=origin + crs_origin,
+            spacing=spacing,
+            angle=angle + crs_angle,
+        )
 
     def get_xy_grid(
         self, crs: AbstractLocal3dCrs | None = None
