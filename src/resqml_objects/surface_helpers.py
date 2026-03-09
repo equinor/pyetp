@@ -9,7 +9,7 @@ DType = typing.TypeVar("DType", bound=np.float32 | np.float64)
 
 def rotate_2d_vector(
     r: typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))], angle: float
-) -> typing.Annotated[npt.NDArray[DType] :, dict(shape=(2, None))]:
+) -> typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))]:
     """
     Function used to rotate a set of `N` 2d-vectors stacked in an array of
     shape `(2, N)` by an angle `angle` (in radians) counter-clockwise. This
