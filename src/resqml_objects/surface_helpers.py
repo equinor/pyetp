@@ -7,16 +7,25 @@ import numpy.typing as npt
 DType = typing.TypeVar("DType", bound=np.float32 | np.float64)
 
 
-def rotate_2d_vector(r: npt.NDArray[DType], angle: float) -> npt.NDArray[DType]:
+def rotate_2d_vector(
+    r: typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))], angle: float
+) -> typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))]:
     """
     Function used to rotate a set of `N` 2d-vectors stacked in an array of
     shape `(2, N)` by an angle `angle` (in radians) counter-clockwise. This
     function does not remove the origin of the vectors, so that is up to the
     user if this should be done.
 
+    Parameters
+    ----------
+    r
+        Input 2d-vectors where the coordinates lie in the rows, and the vectors
+        lie in the columns. That is, `r[:, 0]` gives a 2d vector, and `r[0]`
+        gives the first element of all the vectors.
+
     Returns
     -------
-    npt.NDArray[DType]
+    typing.Annotated[npt.NDArray[DType] :, dict(shape=(2, None))]
         The rotated 2d vector with the same shape as the input vector.
     """
     if not np.shape(r)[0] == 2:
@@ -28,7 +37,7 @@ def rotate_2d_vector(r: npt.NDArray[DType], angle: float) -> npt.NDArray[DType]:
     c = np.cos(angle / 2.0)
     s = np.sin(angle / 2.0)
 
-    return (c**2 - s**2) * r + 2 * c * s * np.vstack([-r[1], r[0]])
+    return (c**2 - s**2) * r + 2 * c * s * np.stack([-r[1], r[0]])
 
 
 def angle_to_unit_vectors(

@@ -10,6 +10,7 @@ nav:
   - Tutorials:
     - tutorials/set_up_regular_surface.md
     - tutorials/using_the_rddms_client.md
+    - tutorials/using_the_sync_rddms_client.md
   - API:
     - RDDMS Client: api/rddms_client.md
     - ETP v1.2 Client:
@@ -28,7 +29,7 @@ plugins:
               options:
                   docstring_style: numpy
                   docstring_section_style: spacy
-                  line_length: 88
+                  line_length: 80
                   unwrap_annotated: true
                   heading_level: 3
                   inherited_members: true
