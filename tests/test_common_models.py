@@ -2,14 +2,11 @@ import uuid
 
 import numpy as np
 
-from rddms_io import RDDMSClientSync
-from resqml_objects.v201.common_models import RegularSurfaceModels
 import resqml_objects.v201 as ro
+from resqml_objects.surface_helpers import RegularGridParameters
+from resqml_objects.v201.common_models import RegularSurfaceModels
 
-from tests.conftest import etp_server_url, skip_decorator
 
-
-@skip_decorator
 def test_regular_surface_depth_model() -> None:
     originator = "resqml-objects-tester"
     title = "Test surface"
@@ -63,3 +60,16 @@ def test_regular_surface_depth_model() -> None:
     assert crs.projected_uom == ro.LengthUom.FT_BN_B
     assert crs.vertical_uom == ro.LengthUom.FT_BN_A
     assert not crs.zincreasing_downward
+
+    rsp = gri.get_regular_surface_parameters(crs=crs)
+
+    assert shape == rsp.shape
+    np.testing.assert_allclose(origin, rsp.origin)
+    np.testing.assert_allclose(spacing, rsp.spacing)
+    assert abs(grid_angle - rsp.angle) < 1e-12
+
+    X, Y = gri.get_xy_grid(crs=crs)
+    rgp = RegularGridParameters.from_xy_grid(X, Y)
+    assert rgp.shape == shape
+    np.testing.assert_allclose(rgp.origin, origin)
+    np.testing.assert_allclose(rgp.spacing, spacing)
