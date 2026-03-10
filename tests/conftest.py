@@ -11,15 +11,9 @@ from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as resqml_objects
 from pyetp.client import ETPClient, etp_connect
-from pyetp.config import SETTINGS
 
 etp_server_url = "ws://localhost:9100"
 
-SETTINGS.application_name = "geomin_testing"
-SETTINGS.etp_url = etp_server_url
-SETTINGS.etp_timeout = 30
-# The max size comes from the websockets library on received messages!
-SETTINGS.MaxWebSocketMessagePayloadSize = 2**20
 dataspace = "test/test"
 
 

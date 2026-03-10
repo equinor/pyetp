@@ -97,7 +97,6 @@ from energistics.etp.v12.protocol.transaction import (
 )
 from pyetp import utils_arrays, utils_xml
 from pyetp._version import version
-from pyetp.config import SETTINGS
 from pyetp.errors import ETPTransactionFailure
 from pyetp.uri import DataObjectURI, DataspaceURI
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
@@ -1292,63 +1291,6 @@ class ETPClient(ETPConnection):
         )
         assert len(response.success) == 1, "expected one success"
         return response.success
-
-
-# define an asynchronous context manager
-class connect:
-    def __init__(self, authorization: T.Optional[SecretStr] = None):
-        self.server_url = SETTINGS.etp_url
-        self.authorization = authorization
-        self.data_partition = SETTINGS.data_partition
-        self.timeout = SETTINGS.etp_timeout
-
-    # ... = await connect(...)
-
-    def __await__(self):
-        # The caller is response for calling `close()` on the client.
-        return self.__aenter__().__await__()
-
-    # async with connect(...) as ...:
-
-    async def __aenter__(self):
-        headers = {}
-        if isinstance(self.authorization, str):
-            headers["Authorization"] = self.authorization
-        elif isinstance(self.authorization, SecretStr):
-            headers["Authorization"] = self.authorization.get_secret_value()
-        if self.data_partition is not None:
-            headers["data-partition-id"] = self.data_partition
-
-        ws = await websockets.connect(
-            self.server_url,
-            subprotocols=[ETPClient.SUB_PROTOCOL],  # type: ignore
-            additional_headers=headers,
-            max_size=SETTINGS.MaxWebSocketMessagePayloadSize,
-            ping_timeout=self.timeout,
-            open_timeout=None,
-        )
-
-        self.client = ETPClient(
-            ws=ws,
-            etp_timeout=self.timeout,
-            max_message_size=SETTINGS.MaxWebSocketMessagePayloadSize,
-            application_name=SETTINGS.application_name,
-            application_version=SETTINGS.application_version,
-        )
-
-        try:
-            await self.client.request_session()
-        except Exception as e:
-            # aexit not called if raised in aenter - so manual cleanup here needed
-            await self.client.close("Failed to request session")
-            raise e
-
-        return self.client
-
-    # exit the async context manager
-    async def __aexit__(self, exc_type, exc: Exception, tb: TracebackType):
-        # The `ETPClient.close`-method also closes the websockets connection.
-        await self.client.close()
 
 
 class etp_connect:
