@@ -2,19 +2,17 @@ import typing as T
 
 import numpy as np
 import numpy.typing as npt
-from etptypes.energistics.etp.v12.datatypes.any_array import AnyArray
-from etptypes.energistics.etp.v12.datatypes.any_array_type import AnyArrayType
-from etptypes.energistics.etp.v12.datatypes.any_logical_array_type import (
+from energistics.etp.v12.datatypes import (
+    AnyArray,
+    AnyArrayType,
     AnyLogicalArrayType,
+    ArrayOfBoolean,
+    ArrayOfDouble,
+    ArrayOfFloat,
+    ArrayOfInt,
+    ArrayOfLong,
 )
-from etptypes.energistics.etp.v12.datatypes.array_of_boolean import ArrayOfBoolean
-from etptypes.energistics.etp.v12.datatypes.array_of_double import ArrayOfDouble
-from etptypes.energistics.etp.v12.datatypes.array_of_float import ArrayOfFloat
-from etptypes.energistics.etp.v12.datatypes.array_of_int import ArrayOfInt
-from etptypes.energistics.etp.v12.datatypes.array_of_long import ArrayOfLong
-from etptypes.energistics.etp.v12.datatypes.data_array_types.data_array import (
-    DataArray,
-)
+from energistics.etp.v12.datatypes.data_array_types import DataArray
 
 SUPPORTED_ARRAY_TYPES: T.TypeAlias = (
     ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
