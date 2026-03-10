@@ -19,13 +19,13 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "numpy >= 1.26.0",
+    "numpy >= 2.3.4",
     "websockets >= 15.0",
     "lxml >=4.9.4",
-    "pydantic >= 1.10",
+    "pydantic >= 2.11.9",
     "xtgeo >= 4.0.0",
     "xsdata >= 25.4",
-    "etpproto >= 1.0.7",
+    "fastavro>=1.12.1",
 ]
 
 [project.urls]
