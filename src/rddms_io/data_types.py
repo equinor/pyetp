@@ -16,7 +16,7 @@ class RDDMSModel(typing.NamedTuple):
     ----------
     obj
         The main object in the model, i.e., the object that is referenced by a
-        passed in uri in the pargument `ml_uris` in
+        passed in uri in the argument `ml_uris` in
         [`RDDMSClient.download_models`][rddms_io.client.RDDMSClient.download_models].
     arrays
         A dictionary with arrays referenced by `obj` (if any). The keys are
