@@ -1,12 +1,13 @@
 import enum
 import typing
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 import energistics.base
 
 
 class MessageHeaderFlags(enum.IntFlag):
+    NOFLAG = 0x00
     FIN = 0x02
     COMPRESSED = 0x08
     ACK = 0x10
@@ -36,6 +37,16 @@ class MessageHeader(energistics.base.ETPBaseModel):
     message_id: int = Field(alias="messageId")
     message_flags: MessageHeaderFlags = Field(alias="messageFlags")
 
+    @model_validator(mode="after")
+    def check_allowed_compression(self) -> typing.Self:
+        if (
+            self.protocol == energistics.base.Protocol.CORE
+            or self.message_type in [1000, 1001]
+        ) and self.is_compressed():
+            raise ValueError("Messages from core must not be compressed")
+
+        return self
+
     @field_validator("message_id", mode="after")
     @classmethod
     def validate_message_id(cls, value: int) -> int:
@@ -49,8 +60,8 @@ class MessageHeader(energistics.base.ETPBaseModel):
         cls,
         body: typing.Type[energistics.base.ETPBaseProtocolModel],
         message_id: int,
+        message_flags: MessageHeaderFlags,
         correlation_id: int = 0,
-        message_flags: MessageHeaderFlags = MessageHeaderFlags.FIN,
     ) -> typing.Self:
         return cls(
             protocol=body._protocol,
