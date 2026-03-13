@@ -351,3 +351,10 @@ def test_messsage_header() -> None:
     assert not mh.is_compressed()
     assert not mh.requests_acknowledgement()
     assert not mh.uses_extension_header()
+
+    with pytest.raises(pydantic.ValidationError):
+        MessageHeader.from_etp_protocol_body(
+            CloseSession(),
+            message_id=12,
+            message_flags=MessageHeaderFlags.FIN | MessageHeaderFlags.COMPRESSED,
+        )
