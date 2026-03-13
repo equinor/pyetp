@@ -20,6 +20,9 @@ from energistics.etp.v12.datatypes.data_object_capability_kind import (
     DataObjectCapabilityKind,
 )
 from energistics.etp.v12.datatypes.data_value import DataValue
+from energistics.etp.v12.datatypes.endpoint_capability_kind import (
+    EndpointCapabilityKind,
+)
 from energistics.etp.v12.datatypes.error_info import ErrorCode, ErrorInfo
 from energistics.etp.v12.datatypes.message_header import MessageHeader
 from energistics.etp.v12.datatypes.protocol_capability_kind import (
@@ -59,4 +62,5 @@ __all__ = [
     "SupportedProtocol",
     "Uuid",
     "Version",
+    "EndpointCapabilityKind",
 ]
