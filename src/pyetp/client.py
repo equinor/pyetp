@@ -6,26 +6,30 @@ import typing as T
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator, Sequence
 from types import TracebackType
 
 import numpy as np
 import numpy.typing as npt
 import websockets
 import websockets.client
-from etpproto.connection import CommunicationProtocol, ConnectionType, ETPConnection
-from etpproto.messages import Message, MessageFlags
-from etptypes import ETPModel
 from pydantic import SecretStr
-from xtgeo import RegularSurface
 
 import resqml_objects.v201 as ro
+from energistics.avro_handler import (
+    encode_message,
+    CompressionAlgorithm,
+    GzipCompression,
+)
+from energistics.base import ETPBaseProtocolModel, Protocol, Role
 from energistics.etp.v12.datatypes import (
     AnyArrayType,
     AnyLogicalArrayType,
     ArrayOfString,
     DataValue,
+    EndpointCapabilityKind,
     ErrorInfo,
+    MessageHeader,
     SupportedDataObject,
     SupportedProtocol,
     Uuid,
@@ -39,6 +43,7 @@ from energistics.etp.v12.datatypes.data_array_types import (
     PutDataSubarraysType,
     PutUninitializedDataArrayType,
 )
+from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags
 from energistics.etp.v12.datatypes.object import (
     ContextInfo,
     ContextScopeKind,
@@ -95,10 +100,10 @@ from energistics.etp.v12.protocol.transaction import (
     StartTransaction,
     StartTransactionResponse,
 )
-from pyetp import utils_arrays, utils_xml
+from energistics.uris import DataObjectURI, DataspaceURI
+from pyetp import utils_arrays
 from pyetp._version import version
 from pyetp.errors import ETPTransactionFailure
-from pyetp.uri import DataObjectURI, DataspaceURI
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 
 logger = logging.getLogger(__name__)
@@ -116,7 +121,7 @@ class ETPError(Exception):
         return cls(error.message, error.code)
 
     @classmethod
-    def from_protos(cls, errors: T.Iterable[ErrorInfo]):
+    def from_protos(cls, errors: Sequence[ErrorInfo]):
         return list(map(cls.from_proto, errors))
 
 
@@ -124,79 +129,202 @@ class ReceiveWorkerExited(Exception):
     pass
 
 
-def get_all_etp_protocol_classes():
-    """Update protocol - all exception protocols are now per message"""
-
-    pddict = ETPConnection.generic_transition_table
-    # protocol exception
-    pexec = ETPConnection.generic_transition_table["0"]["1000"]
-
-    for v in pddict.values():
-        v["1000"] = pexec
-
-    return pddict
+class ETPMessageTooLarge(Exception):
+    def __init__(self, message: str, message_size: int):
+        self.message_size = message_size
+        super().__init__(message)
 
 
-class ETPClient(ETPConnection):
-    generic_transition_table = get_all_etp_protocol_classes()
-
-    _recv_events: T.Dict[int, asyncio.Event]
-    _recv_buffer: T.Dict[int, T.List[ETPModel]]
-
+class ETPClient:
     def __init__(
         self,
         ws: websockets.ClientConnection,
         etp_timeout: float | None = 10.0,
-        max_message_size: float = 2**20,
-        application_name: str = "pyetp",
-        application_version: str = version,
     ) -> None:
-        super().__init__(connection_type=ConnectionType.CLIENT)
-
-        self.application_name = application_name
-        self.application_version = application_version
-
-        self._recv_events = {}
-        self._recv_buffer = defaultdict(lambda: list())  # type: ignore
         self.ws = ws
+        self.max_size = self.ws.protocol.max_size
+        # We need to add some slack to the array messages to handle the rest of
+        # the message body. This size is a guess! The only way to be absolutely
+        # sure is to encode the message, and then check if it is too large.
+        self.max_array_size_margin = 3000
+
+        self.message_id = 2
+
+        self.application_name = "pyetp"
+        self.application_version = version
+
+        self.client_instance_id = uuid.uuid4()
+
+        # We request all protocols that we support.
+        self.requested_protocols = [
+            self.get_default_server_supported_protocols(rp)
+            for rp in [
+                Protocol.DISCOVERY,
+                Protocol.STORE,
+                Protocol.DATA_ARRAY,
+                Protocol.TRANSACTION,
+                Protocol.DATASPACE,
+            ]
+        ]
+        # This is done for the initial `RequestSession`-message. When we get a
+        # corresponding `OpenSession` we populate `negotiated_protocols`
+        # appropriately.
+        self.negotiated_protocols = self.requested_protocols
+
+        self.supported_data_objects = [
+            SupportedDataObject(qualified_type="eml20.*"),
+            SupportedDataObject(qualified_type="resqml20."),
+        ]
+
+        self.supported_compression = [GzipCompression]
+        self.negotiated_compression = None
+        self.supported_formats = ["xml"]
+
+        self.endpoint_capabilities = {
+            EndpointCapabilityKind.MAX_WEB_SOCKET_MESSAGE_PAYLOAD_SIZE: DataValue(
+                item=self.max_size
+            ),
+        }
+
+        self._recv_events: dict[int, asyncio.Event] = {}
+        self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(
+            lambda: list()
+        )
 
         # Ensure a minimum timeout of 10 seconds.
         self.etp_timeout = (
             etp_timeout if etp_timeout is None or etp_timeout > 10.0 else 10.0
         )
-        self.client_info.endpoint_capabilities["MaxWebSocketMessagePayloadSize"] = (
-            max_message_size
-        )
         self.__recvtask = asyncio.create_task(self.__recv())
 
-    #
-    # client
-    #
+    @staticmethod
+    def get_default_server_supported_protocols(
+        protocol: int | Protocol,
+    ) -> SupportedProtocol:
+        match Protocol(protocol):
+            case Protocol.CORE:
+                return SupportedProtocol(protocol=protocol, role=Role.SERVER)
+            case Protocol.CHANNEL_STREAMING:
+                return SupportedProtocol(protocol=protocol, role=Role.PRODUCER)
+            case _:
+                return SupportedProtocol(protocol=protocol, role=Role.STORE)
 
-    async def send(self, body: ETPModel) -> list[ETPModel]:
-        correlation_id = await self._send(body)
-        return await self._recv(correlation_id)
+    @staticmethod
+    def get_server_capabilities_url(url: str) -> str:
+        url = urllib.parse.urlparse(url)
+        if url.scheme == "ws":
+            url = url._replace(scheme="http")
+        elif url.scheme == "wss":
+            url = url._replace(scheme="https")
 
-    async def _send(self, body: ETPModel) -> int:
-        msg = Message.get_object_message(body, message_flags=MessageFlags.FINALPART)
-        if msg is None:
-            raise TypeError(f"{type(body)} not valid etp protocol")
+        url = urllib.parse.urljoin(
+            url.geturl(),
+            (
+                ".well-known/etp-server-capabilities"
+                "?GetVersion=etp12.energistics.org&$format=binary"
+            ),
+        )
 
-        msg.header.message_id = self.consume_msg_id()
-        logger.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
+        return url
 
-        # create future recv event
-        self._recv_events[msg.header.message_id] = asyncio.Event()
+    def get_message_id(self) -> int:
+        ret_id = self.message_id
+        self.message_id += 2
 
-        tasks = []
-        for msg_part in msg.encode_message_generator(self.max_size, self):
-            tasks.append(self.ws.send(msg_part))
+        return ret_id
+
+    async def send_and_recv(
+        self,
+        body: ETPBaseProtocolModel,
+        multi_part_bodies: list[ETPBaseProtocolModel] = [],
+    ) -> list[ETPBaseProtocolModel]:
+        correlation_id = await self.send(body=body, multi_part_bodies=multi_part_bodies)
+        return await self.recv(correlation_id)
+
+    async def send(
+        self,
+        body: ETPBaseProtocolModel,
+        multi_part_bodies: list[ETPBaseProtocolModel] = [],
+    ) -> int:
+        # The core protocol is _always_ supported.
+        if (
+            body._protocol != Protocol.CORE
+            # Consider checking the role in the body as well. The
+            # negotiated_protocols-list contains a list of the protocols and
+            # roles that the _server uses_.
+            and body._protocol not in self.negotiated_protocols.protocol
+        ):
+            raise ValueError(
+                f"Message '{body.__class__.__name}' belongs to protocol "
+                f"{body._protocol} which is not included in the negotiated protocols "
+                f"{self.negotiated_protocols}."
+            )
+
+        message_id = self.get_message_id()
+
+        compression_flag = (
+            MessageHeaderFlags.COMPRESSED
+            if self.negotiated_compression is not None
+            and body._protocol != Protocol.CORE
+            else 0x0
+        )
+        fin_flag = MessageHeaderFlags.FIN if len(multi_part_bodies) == 0 else 0x0
+
+        header = MessageHeader.from_etp_protocol_body(
+            body=body,
+            message_id=message_id,
+            message_flags=fin_flag | compression_flag,
+        )
+
+        message = encode_message(
+            header=header,
+            body=body,
+            compression_func=self.negotiated_compression.compress,
+        )
+
+        if len(message) > self.max_size:
+            raise ETPMessageTooLarge(
+                message=(
+                    f"Message with header {header} is too large: {len(message) = } "
+                    f"> max_size = {self.max_size}"
+                ),
+                message_size=len(message),
+            )
+
+        self._recv_events[header.message_id] = asyncio.Event()
+
+        tasks = [self.ws.send(message)]
+        for i, mpb in enumerate(multi_part_bodies):
+            fin_flag = 0x0
+            if i == len(multi_part_bodies) - 1:
+                fin_flag = MessageHeaderFlags.FIN
+            mpb_header = MessageHeader.from_etp_protocol_body(
+                body=mpb,
+                message_id=self.get_message_id(),
+                message_flags=fin_flag | compression_flag,
+                correlation_id=header.message_id,
+            )
+            message = encode_message(
+                header=mpb_header,
+                body=mpb,
+                compression_func=self.negotiated_compression.compress,
+            )
+
+            if len(message) > self.max_size:
+                raise ETPMessageTooLarge(
+                    message=(
+                        f"Message with header {mpb_header} is too large: "
+                        f"{len(message) = } > max_size = {self.max_size}"
+                    ),
+                    message_size=len(message),
+                )
+            tasks.append(self.ws_send(message))
 
         await asyncio.gather(*tasks)
 
-        return msg.header.message_id
+        return header.message_id
 
-    async def _recv(self, correlation_id: int) -> list[ETPModel]:
+    async def recv(self, correlation_id: int) -> list[ETPBaseProtocolModel]:
         assert correlation_id in self._recv_events, (
             "Trying to receive a response on non-existing message"
         )
@@ -235,13 +363,13 @@ class ETPClient(ETPConnection):
                 f"Receiver task did not set event within {self.etp_timeout} seconds"
             )
 
-        # Remove event from list of events
+        # Remove event from list of events.
         del self._recv_events[correlation_id]
         # Read message bodies from buffer.
         bodies = self._recv_buffer.pop(correlation_id)
 
         # Check if there are errors in the received messages.
-        errors = self._parse_error_info(bodies)
+        errors = self.parse_error_info(bodies)
 
         # Raise errors in case there are any.
         if len(errors) == 1:
@@ -253,8 +381,120 @@ class ETPClient(ETPConnection):
 
         return bodies
 
+    async def __recv(self):
+        logger.debug("Starting receiver loop")
+
+        # Using `async for` makes the receiver task exit without errors on a
+        # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
+        # smoother clean-up in case the main-task errors resulting in a closed
+        # websockets connection down the line.
+        async for msg_data in self.ws:
+            msg = Message.decode_binary_message(
+                T.cast(bytes, msg_data),  # ETPClient.generic_transition_table
+            )
+
+            if msg is None:
+                logger.error(f"Could not parse {msg_data}")
+                continue
+
+            logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
+            self._recv_buffer[msg.header.correlation_id].append(msg.body)
+
+            if msg.is_final_msg():
+                # set response on send event
+                self._recv_events[msg.header.correlation_id].set()
+
+        logger.info("Websockets connection closed and receiver task stopped")
+
+    async def __aenter__(self) -> None:
+        rs = RequestSession(
+            application_name=self.application_name,
+            application_version=self.application_version,
+            client_instance_id=self.client_instance_id,
+            requested_protocols=self.requested_protocols,
+            supported_data_objects=self.supported_data_objects,
+            supported_compression=[sc.name for sc in self.supported_compression],
+            supported_formats=self.supported_formats,
+            endpoint_capabilities=self.endpoint_capabilities,
+        )
+
+        responses = await self.send_and_recv(rs)
+        assert len(responses) == 1
+        os = responses[0]
+        assert_response(os, OpenSession)
+        logger.info(f"Session opened:\n{os}")
+
+        self.server_application_name = os.application_name
+        self.server_application_version = os.application_version
+        self.server_instance_id = os.server_instance_id
+        self.negotiated_protocols = os.supported_protocols
+        # We currently do not use this information, but should in the future.
+        # The way to use it is to limit which type of objects can be passed in
+        # the client.
+        self.negotiated_data_objects = os.supported_data_objects
+
+        # There should only be a single compression algorithm in the
+        # `OpenSession.supported_compression`-field corresponding to the first
+        # hit in the requested compression list. We therefore locate the
+        # algorithm that first matches.
+        if self.supported_compression and os.supported_compression:
+            for sc in self.supported_compression:
+                if sc.name in os.supported_compression:
+                    self.negotiated_compression = sc
+                    break
+
+        elif self.supported_compression and not os.supported_compression:
+            logger.info(
+                "The server does not support any of the compression algorithms "
+                "requested. Continuing without compression."
+            )
+
+        # We don't use the negotiated_formats for anything yet, as we only
+        # support XML for now.
+        assert "xml" in os.negotiated_formats
+        self.negotiated_formats = os.negotiated_formats
+
+        self.session_id = os.session_id
+
+        server_max_size = os.endpoint_capabilities[
+            EndpointCapabilityKind.MAX_WEB_SOCKET_MESSAGE_PAYLOAD_SIZE
+        ].item
+
+        if server_max_size < self.max_size:
+            self.max_size = server_max_size
+
+        # We currently do not use this capability as it is quite large for the
+        # open-etp-server. Most likely the limit will be the max size of the
+        # web socket message. However, both should ideally be checked.
+        self.max_uncompressed_size = os.endpoint_capabilities[
+            EndpointCapabilityKind.MAX_MESSAGE_PAYLOAD_UNCOMPRESSED_SIZE
+        ].item
+
+    async def send(self, body: ETPBaseProtocolModel) -> list[ETPBaseProtocolModel]:
+        correlation_id = await self._send(body)
+        return await self._recv(correlation_id)
+
+    async def _send(self, body: ETPBaseProtocolModel) -> int:
+        msg = Message.get_object_message(body, message_flags=MessageFlags.FINALPART)
+        if msg is None:
+            raise TypeError(f"{type(body)} not valid etp protocol")
+
+        msg.header.message_id = self.consume_msg_id()
+        logger.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
+
+        # create future recv event
+        self._recv_events[msg.header.message_id] = asyncio.Event()
+
+        tasks = []
+        for msg_part in msg.encode_message_generator(self.max_size, self):
+            tasks.append(self.ws.send(msg_part))
+
+        await asyncio.gather(*tasks)
+
+        return msg.header.message_id
+
     @staticmethod
-    def _parse_error_info(bodies: list[ETPModel]) -> list[ErrorInfo]:
+    def parse_error_info(bodies: list[ETPBaseProtocolModel]) -> list[ErrorInfo]:
         # returns all error infos from bodies
         errors = []
         for body in bodies:
@@ -352,31 +592,6 @@ class ETPClient(ETPConnection):
         # closed.
         await self.ws.close()
 
-    async def __recv(self):
-        logger.debug("Starting receiver loop")
-
-        # Using `async for` makes the receiver task exit without errors on a
-        # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
-        # smoother clean-up in case the main-task errors resulting in a closed
-        # websockets connection down the line.
-        async for msg_data in self.ws:
-            msg = Message.decode_binary_message(
-                T.cast(bytes, msg_data), ETPClient.generic_transition_table
-            )
-
-            if msg is None:
-                logger.error(f"Could not parse {msg_data}")
-                continue
-
-            logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
-            self._recv_buffer[msg.header.correlation_id].append(msg.body)
-
-            if msg.is_final_msg():
-                # set response on send event
-                self._recv_events[msg.header.correlation_id].set()
-
-        logger.info("Websockets connection closed and receiver task stopped")
-
     async def __aenter__(self) -> T.Self:
         return await self.request_session()
 
@@ -448,22 +663,21 @@ class ETPClient(ETPConnection):
         return msg
 
     @staticmethod
-    def assert_response(response: ETPModel, expected_type: T.Type[ETPModel]) -> None:
+    def assert_response(
+        response: ETPBaseProtocolModel, expected_type: T.Type[ETPBaseProtocolModel]
+    ) -> None:
         assert isinstance(response, expected_type), (
             f"Expected {expected_type}, got {type(response)} with content {response}"
         )
 
     @property
-    def max_size(self):
-        return self.client_info.getCapability("MaxWebSocketMessagePayloadSize")
-
-    @property
     def max_array_size(self):
-        if self.max_size <= 3000:
+        if self.max_size <= self.max_array_size_margin:
             raise AttributeError(
-                "The maximum size of a websocket message must be greater than 3000"
+                "The maximum size of a websocket message must be greater than "
+                f"{self.max_array_size_margin}"
             )
-        return self.max_size - 3000  # maxsize - 3000 bytes for header and body
+        return self.max_size - self.max_array_size_margin
 
     @property
     def timestamp(self):
@@ -1417,7 +1631,6 @@ class etp_connect:
                 ETPClient(
                     ws=ws,
                     etp_timeout=self.etp_timeout,
-                    max_message_size=self.max_message_size,
                 )
             )
         except BaseException:
@@ -1444,7 +1657,6 @@ class etp_connect:
             async with ETPClient(
                 ws=ws,
                 etp_timeout=self.etp_timeout,
-                max_message_size=self.max_message_size,
             ) as etp_client:
                 yield etp_client
 
