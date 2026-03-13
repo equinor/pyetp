@@ -1,7 +1,6 @@
 import uuid
 
 import numpy as np
-from tests.test_etp_objects.conftest import avro_roundtrip
 
 import energistics.base
 from energistics.etp.v12.datatypes import ArrayOfString
@@ -15,6 +14,7 @@ from energistics.etp.v12.protocol.store import (
     PutDataObjects,
     PutDataObjectsResponse,
 )
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 def test_get_data_objects() -> None:

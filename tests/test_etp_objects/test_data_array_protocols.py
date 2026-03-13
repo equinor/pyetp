@@ -1,7 +1,6 @@
 import uuid
 
 import numpy as np
-from tests.test_etp_objects.conftest import avro_roundtrip
 
 import energistics.base
 from energistics.etp.v12.datatypes import (
@@ -34,6 +33,7 @@ from energistics.etp.v12.protocol.data_array import (
     PutUninitializedDataArraysResponse,
 )
 from energistics.types import ETPBasicArrayType
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 def test_get_data_array_metadata() -> None:

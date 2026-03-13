@@ -1,7 +1,6 @@
 import datetime
 
 import pytest
-from tests.test_etp_objects.conftest import avro_roundtrip
 
 import energistics.base
 from energistics.etp.v12.datatypes.object import Dataspace
@@ -13,6 +12,7 @@ from energistics.etp.v12.protocol.dataspace import (
     PutDataspaces,
     PutDataspacesResponse,
 )
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 def test_get_dataspaces() -> None:

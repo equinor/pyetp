@@ -2,7 +2,6 @@ import uuid
 
 import pydantic
 import pytest
-from tests.test_etp_objects.conftest import avro_roundtrip
 
 import energistics.base
 from energistics.etp.v12.datatypes import (
@@ -22,6 +21,7 @@ from energistics.etp.v12.protocol.core import (
     ProtocolException,
     RequestSession,
 )
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 def test_request_session() -> None:

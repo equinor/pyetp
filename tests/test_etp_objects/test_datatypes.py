@@ -5,7 +5,6 @@ import uuid
 import numpy as np
 import pydantic
 import pytest
-from tests.test_etp_objects.conftest import avro_roundtrip
 
 from energistics.etp.v12.datatypes import (
     AnyArray,
@@ -36,6 +35,7 @@ from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags
 from energistics.etp.v12.datatypes.object import DataObject, Dataspace, Resource
 from energistics.etp.v12.protocol.core import CloseSession
 from energistics.types import ETPArrayType, ETPBasicArrayType
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 @pytest.mark.parametrize(

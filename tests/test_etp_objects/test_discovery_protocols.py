@@ -1,7 +1,5 @@
 import uuid
 
-from tests.test_etp_objects.conftest import avro_roundtrip
-
 import energistics.base
 from energistics.etp.v12.datatypes.object import (
     ContextInfo,
@@ -16,6 +14,7 @@ from energistics.etp.v12.protocol.discovery import (
     GetResourcesEdgesResponse,
     GetResourcesResponse,
 )
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 def test_get_resources() -> None:

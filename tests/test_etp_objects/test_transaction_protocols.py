@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from tests.test_etp_objects.conftest import avro_roundtrip
 
 import energistics.base
 from energistics.etp.v12.protocol.transaction import (
@@ -12,6 +11,7 @@ from energistics.etp.v12.protocol.transaction import (
     StartTransaction,
     StartTransactionResponse,
 )
+from tests.test_etp_objects.conftest import avro_roundtrip
 
 
 def test_start_transaction() -> None:
