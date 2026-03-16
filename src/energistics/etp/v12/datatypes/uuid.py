@@ -1,3 +1,4 @@
+import uuid
 import typing
 
 import pydantic
@@ -10,7 +11,25 @@ UUIDType: typing.TypeAlias = (
 
 
 def serialize_uuid(value: UUIDType) -> bytes:
+    if isinstance(value, bytes):
+        return value
     return value.bytes
+
+
+def validate_uuid(value: typing.Any) -> typing.Any:
+    if isinstance(value, bytes):
+        return uuid.UUID(bytes=value)
+    if isinstance(value, str):
+        return uuid.UUID(value)
+    if isinstance(value, uuid.UUID):
+        return uuid.UUID(str(value))
+    if isinstance(value, int):
+        return uuid.UUID(int=value)
+
+    raise ValueError(
+        f"Unable to coerce uuid '{value}' of type '{type(value)}' into a "
+        "uuid.UUID-object"
+    )
 
 
 @energistics.base.add_avro_metadata
@@ -27,4 +46,5 @@ class Uuid(pydantic.RootModel[UUIDType], energistics.base.ETPMetaData):
     root: typing.Annotated[
         UUIDType,
         pydantic.PlainSerializer(serialize_uuid),
+        pydantic.PlainValidator(validate_uuid),
     ]
