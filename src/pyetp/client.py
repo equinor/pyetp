@@ -425,7 +425,7 @@ class ETPClient:
         responses = await self.send_and_recv(rs)
         assert len(responses) == 1
         os = responses[0]
-        assert_response(os, OpenSession)
+        self.assert_response(os, OpenSession)
         logger.info(f"Session opened:\n{os}")
 
         self.server_application_name = os.application_name
