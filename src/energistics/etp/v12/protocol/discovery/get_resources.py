@@ -50,6 +50,10 @@ class GetResources(energistics.base.ETPBaseProtocolModel):
     context: ContextInfo
     scope: ContextScopeKind
     count_objects: bool = Field(alias="countObjects", default=False)
-    store_last_write_filter: int | None = Field(alias="storeLastWriteFilter")
-    active_status_filter: ActiveStatusKind | None = Field(alias="activeStatusFilter")
+    store_last_write_filter: int | None = Field(
+        alias="storeLastWriteFilter", default=None
+    )
+    active_status_filter: ActiveStatusKind | None = Field(
+        alias="activeStatusFilter", default=None
+    )
     include_edges: bool = Field(alias="includeEdges", default=False)
