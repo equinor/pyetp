@@ -7,8 +7,7 @@ import energistics.etp.v12.protocol.transaction
 from energistics.avro_handler import (
     decode_message,
     encode_message,
-    gunzip_encoded_object,
-    gzip_encoded_object,
+    GzipCompression,
 )
 from energistics.etp.v12.datatypes import MessageHeader
 from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags
@@ -16,7 +15,9 @@ from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags
 
 def test_encode_decode_roundtrip() -> None:
     body = energistics.etp.v12.protocol.core.CloseSession(reason="roundtrip-test")
-    header = MessageHeader.from_etp_protocol_body(body, message_id=4)
+    header = MessageHeader.from_etp_protocol_body(
+        body, message_flags=MessageHeaderFlags.FIN, message_id=4
+    )
 
     message = encode_message(header, body)
 
@@ -39,14 +40,14 @@ def test_encode_decode_gzip_roundtrip() -> None:
     with pytest.raises(ValueError):
         encode_message(header, body)
 
-    message = encode_message(header, body, compression_func=gzip_encoded_object)
+    message = encode_message(header, body, compression_func=GzipCompression.compress)
     assert message == encode_message(header, body, compression_func=gzip.compress)
 
     with pytest.raises(ValueError):
         decode_message(message)
 
     ret_header, ret_body = decode_message(
-        message, decompression_func=gunzip_encoded_object
+        message, decompression_func=GzipCompression.decompress
     )
     assert ret_header == header
     assert ret_body == body
