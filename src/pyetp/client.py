@@ -252,7 +252,7 @@ class ETPClient:
             # Consider checking the role in the body as well. The
             # negotiated_protocols-list contains a list of the protocols and
             # roles that the _server uses_.
-            and body._protocol not in self.negotiated_protocols.protocol
+            and body._protocol not in [np.protocol for np in self.negotiated_protocols]
         ):
             raise ValueError(
                 f"Message '{body.__class__.__name}' belongs to protocol "
@@ -279,7 +279,9 @@ class ETPClient:
         message = encode_message(
             header=header,
             body=body,
-            compression_func=self.negotiated_compression.compress,
+            compression_func=self.negotiated_compression.compress
+            if self.negotiated_compression is not None
+            else None,
         )
 
         if len(message) > self.max_size:
