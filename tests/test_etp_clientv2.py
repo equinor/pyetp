@@ -1,5 +1,5 @@
 import asyncio
-from contextlib import contextmanager
+import contextlib
 from typing import Tuple
 from unittest.mock import AsyncMock
 
@@ -8,41 +8,118 @@ import numpy.typing as npt
 import pytest
 import pytest_asyncio
 import websockets
-import xtgeo
 
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes.data_array_types import (
     DataArrayIdentifier,
 )
 from pyetp import etp_connect, utils_arrays
-from pyetp.client import ETPClient, ETPError, connect
-from pyetp.uri import DataspaceURI
-from pyetp.utils_xml import (
-    parse_xtgeo_surface_to_resqml_grid,
-)
+from pyetp.client import ETPClient, ETPError
+from energistics.uris import DataspaceURI
 from resqml_objects.surface_helpers import angle_to_unit_vectors
 from tests.conftest import (
     check_if_server_is_accesible,
-    construct_2d_resqml_grid_from_array,
     etp_server_url,
 )
 
+from energistics.etp.v12.protocol.dataspace import PutDataspaces, DeleteDataspaces
 
-def create_surface(ncol: int, nrow: int, rotation: float):
-    surface = xtgeo.RegularSurface(
-        ncol=ncol,
-        nrow=nrow,
-        xori=np.random.rand() * 1000,
-        yori=np.random.rand() * 1000,
-        xinc=np.random.rand() * 1000,
-        yinc=np.random.rand() * 1000,
-        rotation=rotation,
-        values=np.random.random((nrow, ncol)).astype(np.float32),
+
+def get_random_surface() -> tuple[
+    tuple[
+        ro.obj_LocalDepth3dCrs,
+        ro.obj_EpcExternalPartReference,
+        ro.obj_Grid2dRepresentation,
+    ],
+    npt.NDArray[np.float64],
+]:
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(
+        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
     )
-    return surface
+    y = np.linspace(
+        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
+    )
+    Z = np.exp(
+        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
+        - np.linspace(-1, 1, shape[1]) ** 2
+    )
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+
+    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
+    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
+
+    crs_angle = 2 * np.pi * (np.random.random() - 0.5)
+    crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(
+            title="Random crs",
+            originator="rddms-io-tester",
+        ),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+        areal_rotation=ro.PlaneAngleMeasure(
+            value=crs_angle,
+            uom=ro.PlaneAngleUom.RAD,
+        ),
+        xoffset=float(crs_offset[0]),
+        yoffset=float(crs_offset[1]),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
+    )
+
+    gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Random grid", originator="rddms-io-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=grid_unit_vectors[:, 0],
+        unit_vec_2=grid_unit_vectors[:, 1],
+    )
+    key = gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+
+    return (epc, crs, gri), {key: Z}
 
 
-@contextmanager
+@pytest_asyncio.fixture
+async def etp_client():
+    if not check_if_server_is_accesible():
+        pytest.skip(
+            reason="websocket for test server not open", allow_module_level=True
+        )
+
+    async with etp_connect(uri=etp_server_url) as etp_client:
+        yield etp_client
+
+
+@contextlib.asynccontextmanager
+async def create_and_delete_dataspace(
+    etp_client: ETPClient, dataspace_path: str
+) -> DataspaceURI:
+    uri = DataspaceURI.from_dataspace_path(dataspace_path)
+    # TODO: YOU ARE HERE.
+
+
+@pytest_asyncio.fixture
+async def dataspace_uri(etp_client: ETPClient):
+    uri = DataspaceURI.from_dataspace_path("test/test")
+    try:
+        resp = await etp_client.put_dataspaces_no_raise([""], [""], [""], [""], uri)
+        yield uri
+    finally:
+        resp = await etp_client.delete_dataspaces(uri)
+        assert len(resp) == 1, "should cleanup our test dataspace"
+
+
+@contextlib.contextmanager
 def temp_maxsize(etp_client: ETPClient, maxsize=10000):
     _maxsize_before = etp_client.client_info.endpoint_capabilities[
         "MaxWebSocketMessagePayloadSize"
@@ -167,37 +244,6 @@ async def test_persistent_connect_broken_receiver_task() -> None:
 
     # Check that the for-loop only iterates once.
     assert counter == 1
-
-
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_open_close(monkeypatch: pytest.MonkeyPatch):
-    mock_close = AsyncMock()
-
-    async with connect() as client:
-        assert client.is_connected, "should be connected"
-        await client.close()  # close
-
-        monkeypatch.setattr(client, "close", mock_close)
-    mock_close.assert_called_once()  # ensure close is called on aexit
-
-
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_manual_open_close_old():
-    client = await connect()
-    assert client.is_connected, "should be connected"
-    await client.close()  # close
-
-    assert not client.is_connected, "should be disconnected"
-    with pytest.raises(websockets.ConnectionClosedOK):
-        await client.ws.ping()
 
 
 @pytest.mark.skipif(
@@ -526,9 +572,7 @@ async def test_subarrays(
 
 @pytest.mark.asyncio
 async def test_resqml_objects(etp_client: ETPClient, dataspace_uri: DataspaceURI):
-    surf = create_surface(100, 50, 0)
-    epc, crs, gri = parse_xtgeo_surface_to_resqml_grid(surf, 23031)
-    data = surf.values.filled(np.nan).astype(np.float32)
+    (epc, crs, gri), data_arrays = get_random_surface()
 
     transaction_uuid = await etp_client.start_transaction(
         dataspace_uri=dataspace_uri, read_only=False
@@ -542,7 +586,7 @@ async def test_resqml_objects(etp_client: ETPClient, dataspace_uri: DataspaceURI
             gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
         ),
     )
-    resp = await etp_client.put_array(uid, data)
+    resp = await etp_client.put_array(uid, data_arrays[uid.path_in_resource])
     _ = await etp_client.commit_transaction(transaction_uuid=transaction_uuid)
 
     grr = await etp_client.list_objects(dataspace_uri)
@@ -573,54 +617,6 @@ async def test_resqml_objects(etp_client: ETPClient, dataspace_uri: DataspaceURI
     _ = await etp_client.commit_transaction(transaction_uuid=transaction_uuid)
 
     assert len(resp) == 4
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "surface", [create_surface(3, 4, 0), create_surface(100, 40, 0)]
-)
-async def test_rddms_roundtrip(
-    etp_client: ETPClient, surface: xtgeo.RegularSurface, dataspace_uri: DataspaceURI
-):
-    # NOTE: xtgeo calls the first axis (axis 0) of the values-array columns,
-    # and the second axis for rows.
-
-    epsg_code = 23031
-    epc_uri, gri_uri, crs_uri = await etp_client.put_xtgeo_surface(
-        surface, epsg_code, dataspace_uri
-    )
-    epc, crs, gri = await etp_client.get_resqml_objects(epc_uri, crs_uri, gri_uri)
-    newsurf = await etp_client.get_xtgeo_surface(epc_uri, gri_uri, crs_uri)
-    array = np.array(newsurf.values.filled(np.nan))
-
-    np.testing.assert_allclose(array, np.array(surface.values.filled(np.nan)))
-
-    assert isinstance(epc, ro.EpcExternalPartReference)
-    assert isinstance(crs, ro.LocalDepth3dCrs)
-    assert isinstance(gri, ro.Grid2dRepresentation)
-
-    assert crs.projected_crs.epsg_code == epsg_code
-    assert surface.rotation == crs.areal_rotation.value
-    assert (
-        array.shape[0]
-        == gri.grid2d_patch.slowest_axis_count
-        == surface.values.shape[0]
-        == surface.ncol
-    )
-    assert (
-        array.shape[1]
-        == gri.grid2d_patch.fastest_axis_count
-        == surface.values.shape[1]
-        == surface.nrow
-    )
-
-    supporting_geometry = gri.grid2d_patch.geometry.points.supporting_geometry
-    assert isinstance(supporting_geometry, ro.Point3dLatticeArray)
-
-    assert surface.xori == supporting_geometry.origin.coordinate1
-    assert surface.yori == supporting_geometry.origin.coordinate2
-    assert surface.xinc == supporting_geometry.offset[0].spacing.value
-    assert surface.yinc == supporting_geometry.offset[1].spacing.value
 
 
 @pytest.mark.asyncio
