@@ -15,6 +15,10 @@ from energistics.etp.v12.datatypes import ArrayOfString, DataValue, Uuid
 from energistics.etp.v12.datatypes.data_array_types import (
     DataArrayIdentifier,
     DataArrayMetadata,
+    GetDataSubarraysType,
+    PutDataArraysType,
+    PutDataSubarraysType,
+    PutUninitializedDataArrayType,
 )
 from energistics.etp.v12.datatypes.object import (
     ContextInfo,
@@ -27,6 +31,16 @@ from energistics.etp.v12.datatypes.object import (
 from energistics.etp.v12.protocol.data_array import (
     GetDataArrayMetadata,
     GetDataArrayMetadataResponse,
+    GetDataArrays,
+    GetDataArraysResponse,
+    GetDataSubarrays,
+    GetDataSubarraysResponse,
+    PutDataArrays,
+    PutDataArraysResponse,
+    PutDataSubarrays,
+    PutDataSubarraysResponse,
+    PutUninitializedDataArrays,
+    PutUninitializedDataArraysResponse,
 )
 from energistics.etp.v12.protocol.dataspace import (
     DeleteDataspaces,
@@ -62,7 +76,7 @@ from pyetp.errors import (
     ETPTransactionFailure,
     parse_and_raise_response_errors,
 )
-from pyetp.uri import DataObjectURI, DataspaceURI
+from energistics.uris import DataObjectURI, DataspaceURI
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 from resqml_objects.v201.utils import find_data_object_references, find_hdf5_datasets
@@ -141,7 +155,7 @@ class RDDMSClient:
             # Convert `datetime`-object to a microsecond resolution timestamp.
             store_last_write_filter = int(store_last_write_filter.timestamp() * 1e6)
 
-        responses = await self.etp_client.send(
+        responses = await self.etp_client.send_and_recv(
             GetDataspaces(store_last_write_filter=store_last_write_filter)
         )
         parse_and_raise_response_errors(
@@ -163,8 +177,8 @@ class RDDMSClient:
             is a dataspace path (on the form `'foo/bar'`) it will be converted
             to the dataspace uri `"eml:///dataspace('foo/bar')"`.
         """
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
-        responses = await self.etp_client.send(
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
+        responses = await self.etp_client.send_and_recv(
             DeleteDataspaces(uris={dataspace_uri: dataspace_uri})
         )
         parse_and_raise_response_errors(
@@ -209,7 +223,7 @@ class RDDMSClient:
             already exists on the server. Otherwise, all errors are raised.
             Default is `False`.
         """
-        dataspace_uri = DataspaceURI.from_any(dataspace_uri)
+        dataspace_uri = DataspaceURI.from_any_etp_uri(dataspace_uri)
 
         # A UTC timestamp in microseconds.
         now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
@@ -227,7 +241,7 @@ class RDDMSClient:
         }
 
         try:
-            responses = await self.etp_client.send(
+            responses = await self.etp_client.send_and_recv(
                 PutDataspaces(
                     dataspaces={
                         str(dataspace_uri): Dataspace(
@@ -288,7 +302,7 @@ class RDDMSClient:
             A standard library UUID with the transaction uuid.
         """
 
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
         total_timeout = debounce
 
         if isinstance(debounce, bool):
@@ -296,7 +310,7 @@ class RDDMSClient:
 
         for ti in timeout_intervals(total_timeout):
             try:
-                responses = await self.etp_client.send(
+                responses = await self.etp_client.send_and_recv(
                     StartTransaction(
                         read_only=read_only, dataspace_uris=[dataspace_uri]
                     ),
@@ -324,7 +338,7 @@ class RDDMSClient:
             if not response.successful:
                 raise ETPTransactionFailure(str(response.failure_reason))
 
-            transaction_uuid = uuid.UUID(str(response.transaction_uuid))
+            transaction_uuid = uuid.UUID(str(response.transaction_uuid.root))
             logger.debug("Started transaction with uuid: {transaction_uuid}")
             return transaction_uuid
 
@@ -352,7 +366,7 @@ class RDDMSClient:
         elif isinstance(transaction_uuid, str | bytes):
             transaction_uuid = Uuid(transaction_uuid)
 
-        responses = await self.etp_client.send(
+        responses = await self.etp_client.send_and_recv(
             CommitTransaction(transaction_uuid=transaction_uuid),
         )
 
@@ -384,7 +398,7 @@ class RDDMSClient:
         elif isinstance(transaction_uuid, bytes):
             transaction_uuid = Uuid(transaction_uuid)
 
-        response = await self.etp_client.send(
+        response = await self.etp_client.send_and_recv(
             RollbackTransaction(transaction_uuid=transaction_uuid)
         )
         parse_and_raise_response_errors(
@@ -431,7 +445,7 @@ class RDDMSClient:
             A list of
             [`Resource`][energistics.etp.v12.datatypes.object.Resource]-objects.
         """
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
         data_object_types = [
             dot if isinstance(dot, str) else dot.get_qualified_type()
             for dot in data_object_types
@@ -452,7 +466,7 @@ class RDDMSClient:
             include_edges=False,
         )
 
-        responses = await self.etp_client.send(gr)
+        responses = await self.etp_client.send_and_recv(gr)
 
         parse_and_raise_response_errors(
             responses, GetResourcesResponse, "RDDMSClient.list_objects_under_dataspace"
@@ -540,8 +554,8 @@ class RDDMSClient:
         )
 
         task_responses = await asyncio.gather(
-            self.etp_client.send(gr_sources),
-            self.etp_client.send(gr_targets),
+            self.etp_client.send_and_recv(gr_sources),
+            self.etp_client.send_and_recv(gr_targets),
         )
 
         sources_responses = task_responses[0]
@@ -649,8 +663,8 @@ class RDDMSClient:
         if not ml_objects:
             return {}
 
-        ml_uris = [DataObjectURI(str(uri)) for uri in ml_uris]
-        dataspace_uris = [DataspaceURI.from_any(uri) for uri in ml_uris]
+        ml_uris = [DataObjectURI.from_uri(uri) for uri in ml_uris]
+        dataspace_uris = [DataspaceURI.from_any_etp_uri(uri) for uri in ml_uris]
 
         array_metadata = await asyncio.gather(
             *[
@@ -699,7 +713,7 @@ class RDDMSClient:
             A similar method that looks up array metadata needing only the uris
             of the objects.
         """
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
 
         ml_uris = []
         tasks = []
@@ -721,7 +735,7 @@ class RDDMSClient:
                 ml_uris.append(
                     obj.get_etp_data_object_uri(dataspace_path_or_uri=dataspace_uri)
                 )
-                task = self.etp_client.send(
+                task = self.etp_client.send_and_recv(
                     GetDataArrayMetadata(
                         data_arrays={dai.path_in_resource: dai for dai in obj_dais},
                     )
@@ -783,11 +797,139 @@ class RDDMSClient:
             A higher-level method that wraps transaction handling, data object
             uploading and array uploading in one go.
         """
-        await self.etp_client.upload_array(
-            epc_uri=epc_uri,
-            path_in_resource=path_in_resource,
-            data=data,
+        # await self.etp_client.upload_array(
+        #     epc_uri=epc_uri,
+        #     path_in_resource=path_in_resource,
+        #     data=data,
+        # )
+        # Fetch ETP logical and transport array types
+        logical_array_type, transport_array_type = (
+            utils_arrays.get_logical_and_transport_array_types(data.dtype)
         )
+
+        # Create identifier for the data.
+        dai = DataArrayIdentifier(
+            uri=str(epc_uri),
+            path_in_resource=path_in_resource,
+        )
+
+        # Get current time as a UTC-timestamp.
+        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
+
+        # Allocate space on server for the array.
+        responses = await self.etp_client.send_and_recv(
+            PutUninitializedDataArrays(
+                data_arrays={
+                    dai.path_in_resource: PutUninitializedDataArrayType(
+                        uid=dai,
+                        metadata=DataArrayMetadata(
+                            dimensions=list(data.shape),
+                            transport_array_type=transport_array_type,
+                            logical_array_type=logical_array_type,
+                            store_last_write=now,
+                            store_created=now,
+                        ),
+                    ),
+                },
+            ),
+        )
+
+        assert len(responses) == 1
+        response = responses[0]
+
+        self.etp_client.assert_response(response, PutUninitializedDataArraysResponse)
+        assert len(response.success) == 1 and dai.path_in_resource in response.success
+
+        # Check if we can upload the entire array in go, or if we need to
+        # upload it in smaller blocks.
+
+        # TODO: Check if we should use `await` instead of `asyncio.gather`.
+        # This is to ensure that the websockets heartbeat gets to run once in a
+        # while.
+        if data.nbytes > self.etp_client.max_array_size:
+            tasks = []
+
+            # Get list with starting indices in each block, and a list with the
+            # number of elements along each axis for each block.
+            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+                data.shape, data.dtype, self.max_array_size
+            )
+
+            for starts, counts in zip(block_starts, block_counts):
+                # Create slice-objects for each block.
+                slices = tuple(
+                    map(
+                        lambda s, c: slice(s, s + c),
+                        np.array(starts).astype(int),
+                        np.array(counts).astype(int),
+                    )
+                )
+
+                # Slice the array, and convert to the relevant ETP-array type.
+                # Note in the particular the extra `.data`-after the call. The
+                # data should not be of type `DataArray`, but `AnyArray`, so we
+                # need to fetch it from the `DataArray`.
+                etp_subarray_data = utils_arrays.get_etp_data_array_from_numpy(
+                    data[slices]
+                ).data
+
+                # Create an asynchronous task to upload a block to the
+                # ETP-server.
+                task = self.etp_client.send_and_recv(
+                    PutDataSubarrays(
+                        data_subarrays={
+                            dai.path_in_resource: PutDataSubarraysType(
+                                uid=dai,
+                                data=etp_subarray_data,
+                                starts=starts,
+                                counts=counts,
+                            ),
+                        },
+                    ),
+                )
+                tasks.append(task)
+
+            # Upload all blocks.
+            task_responses = await asyncio.gather(*tasks)
+
+            # Flatten list of responses.
+            responses = [
+                response
+                for task_response in task_responses
+                for response in task_response
+            ]
+
+            # Check for successful responses.
+            for response in responses:
+                self.etp_client.assert_response(response, PutDataSubarraysResponse)
+                assert (
+                    len(response.success) == 1
+                    and dai.path_in_resource in response.success
+                )
+
+            # Return after uploading all sub arrays.
+            return
+
+        # Convert NumPy data-array to an ETP-transport array.
+        etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
+
+        # Pass entire array in one message.
+        responses = await self.etp_client.send_and_recv(
+            PutDataArrays(
+                data_arrays={
+                    dai.path_in_resource: PutDataArraysType(
+                        uid=dai,
+                        array=etp_array_data,
+                    ),
+                }
+            )
+        )
+
+        assert len(responses) == 1
+        response = responses[0]
+
+        self.etp_client.assert_response(response, PutDataArraysResponse)
+        assert len(response.success) == 1 and dai.path_in_resource in response.success
 
     async def download_object_arrays(
         self,
@@ -821,7 +963,7 @@ class RDDMSClient:
             The "full" method downloading objects, arrays and potentially
             linked objects.
         """
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
         ml_hds = find_hdf5_datasets(ml_object)
 
         if len(ml_hds) == 0:
@@ -880,9 +1022,139 @@ class RDDMSClient:
             A higher-level method that wraps, data object and array downloading
             in one go.
         """
-        return await self.etp_client.download_array(
-            epc_uri=epc_uri,
+        # Create identifier for the data.
+        dai = DataArrayIdentifier(
+            uri=str(epc_uri),
             path_in_resource=path_in_resource,
+        )
+
+        responses = await self.etp_client.send_and_recv(
+            GetDataArrayMetadata(data_arrays={dai.path_in_resource: dai}),
+        )
+
+        assert len(responses) == 1
+        response = responses[0]
+
+        self.etp_client.assert_response(response, GetDataArrayMetadataResponse)
+        assert (
+            len(response.array_metadata) == 1
+            and dai.path_in_resource in response.array_metadata
+        )
+
+        metadata = response.array_metadata[dai.path_in_resource]
+
+        # Check if we can download the full array in a single message.
+        if (
+            utils_arrays.get_transport_array_size(
+                metadata.transport_array_type, metadata.dimensions
+            )
+            >= self.etp_client.max_array_size
+        ):
+            transport_dtype = utils_arrays.get_dtype_from_any_array_type(
+                metadata.transport_array_type,
+            )
+            # NOTE: The logical array type is not yet supported by the
+            # open-etp-server. As such the transport array type will be actual
+            # array type used. We only add this call to prepare for when it
+            # will be used.
+            logical_dtype = utils_arrays.get_dtype_from_any_logical_array_type(
+                metadata.logical_array_type,
+            )
+            if logical_dtype != np.dtype(np.bool_):
+                # If this debug message is triggered we should test the
+                # mapping.
+                logger.debug(
+                    "Logical array type has changed: "
+                    f"{metadata.logical_array_type = }, with {logical_dtype = }"
+                )
+
+            # Create a buffer for the data.
+            data = np.zeros(metadata.dimensions, dtype=transport_dtype)
+
+            # Get list with starting indices in each block, and a list with the
+            # number of elements along each axis for each block.
+            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+                data.shape, data.dtype, self.etp_client.max_array_size
+            )
+
+            def data_subarrays_key(pir: str, i: int) -> str:
+                return pir + f" ({i})"
+
+            # TODO: Consider using `await` instead of `asyncio.gather` to give
+            # the websockets connection time to run the heartbeat
+            # communication.
+            tasks = []
+            for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
+                task = self.etp_client.send_and_recv(
+                    GetDataSubarrays(
+                        data_subarrays={
+                            data_subarrays_key(
+                                dai.path_in_resource, i
+                            ): GetDataSubarraysType(
+                                uid=dai,
+                                starts=starts,
+                                counts=counts,
+                            ),
+                        },
+                    ),
+                )
+                tasks.append(task)
+
+            task_responses = await asyncio.gather(*tasks)
+            responses = [
+                response
+                for task_response in task_responses
+                for response in task_response
+            ]
+
+            data_blocks = []
+            for i, response in enumerate(responses):
+                self.etp_client.assert_response(response, GetDataSubarraysResponse)
+                assert (
+                    len(response.data_subarrays) == 1
+                    and data_subarrays_key(dai.path_in_resource, i)
+                    in response.data_subarrays
+                )
+
+                data_block = utils_arrays.get_numpy_array_from_etp_data_array(
+                    response.data_subarrays[
+                        data_subarrays_key(dai.path_in_resource, i)
+                    ],
+                )
+                data_blocks.append(data_block)
+
+            for data_block, starts, counts in zip(
+                data_blocks, block_starts, block_counts
+            ):
+                # Create slice-objects for each block.
+                slices = tuple(
+                    map(
+                        lambda s, c: slice(s, s + c),
+                        np.array(starts).astype(int),
+                        np.array(counts).astype(int),
+                    )
+                )
+                data[slices] = data_block
+
+            # Return after fetching all sub arrays.
+            return data
+
+        # Download the full array in one go.
+        responses = await self.etp_client.send_and_recv(
+            GetDataArrays(data_arrays={dai.path_in_resource: dai}),
+        )
+
+        assert len(responses) == 1
+        response = responses[0]
+
+        self.etp_client.assert_response(response, GetDataArraysResponse)
+        assert (
+            len(response.data_arrays) == 1
+            and dai.path_in_resource in response.data_arrays
+        )
+
+        return utils_arrays.get_numpy_array_from_etp_data_array(
+            response.data_arrays[dai.path_in_resource]
         )
 
     async def upload_model(
@@ -945,7 +1217,7 @@ class RDDMSClient:
         if not ml_objects:
             return []
 
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
 
         if handle_transaction:
             transaction_uuid = await self.start_transaction(
@@ -1019,7 +1291,7 @@ class RDDMSClient:
                 data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
             )
 
-            tasks.append(self.etp_client.send(pdo))
+            tasks.append(self.etp_client.send_and_recv(pdo))
 
         task_responses = await asyncio.gather(*tasks)
         responses = [
@@ -1032,7 +1304,7 @@ class RDDMSClient:
 
         logger.debug("Done uploading model objects. Starting on upload of arrays.")
 
-        dataspace_path = DataspaceURI(dataspace_uri).dataspace
+        dataspace_path = DataspaceURI.from_uri(dataspace_uri).dataspace
 
         uploaded_data_keys = []
         tasks = []
@@ -1142,7 +1414,9 @@ class RDDMSClient:
 
         tasks = []
         for uri in ml_uris:
-            task = self.etp_client.send(GetDataObjects(uris={str(uri): str(uri)}))
+            task = self.etp_client.send_and_recv(
+                GetDataObjects(uris={str(uri): str(uri)})
+            )
             tasks.append(task)
 
         task_responses = await asyncio.gather(*tasks)
@@ -1161,7 +1435,7 @@ class RDDMSClient:
             additional_uris = []
 
             for u, obj in zip(ml_uris, ml_objects):
-                dataspace_uri = str(DataspaceURI.from_any(u))
+                dataspace_uri = str(DataspaceURI.from_any_etp_uri(u))
                 dors = find_data_object_references(obj)
                 additional_uris.extend(
                     [dor.get_etp_data_object_uri(dataspace_uri) for dor in dors]
@@ -1195,7 +1469,7 @@ class RDDMSClient:
 
             return ml_objects, {}
 
-        dataspace_uri = str(DataspaceURI.from_any(ml_uris[0]))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(ml_uris[0]))
 
         tasks = []
         for hdf5_dataset in ml_hds:
@@ -1279,9 +1553,11 @@ class RDDMSClient:
         download_arrays: bool,
         download_linked_objects: bool,
     ) -> RDDMSModel:
-        dataspace_uri = str(DataspaceURI.from_any(ml_uri))
+        dataspace_uri = str(DataspaceURI.from_any_etp_uri(ml_uri))
 
-        responses = await self.etp_client.send(GetDataObjects(uris={ml_uri: ml_uri}))
+        responses = await self.etp_client.send_and_recv(
+            GetDataObjects(uris={ml_uri: ml_uri})
+        )
 
         parse_and_raise_response_errors(
             responses, GetDataObjectsResponse, "RDDMSClient.download_model"
@@ -1385,13 +1661,13 @@ class RDDMSClient:
         )
 
         if handle_transaction:
-            dataspace_uris = [str(DataspaceURI.from_any(u)) for u in ml_uris]
+            dataspace_uris = [str(DataspaceURI.from_any_etp_uri(u)) for u in ml_uris]
             assert all([dataspace_uris[0] == du for du in dataspace_uris])
             transaction_uuid = await self.start_transaction(
                 dataspace_uri=dataspace_uris[0], read_only=False, debounce=debounce
             )
 
-        responses = await self.etp_client.send(ddo)
+        responses = await self.etp_client.send_and_recv(ddo)
 
         parse_and_raise_response_errors(
             responses,
