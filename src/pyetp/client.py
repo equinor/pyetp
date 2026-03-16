@@ -18,6 +18,7 @@ from pydantic import SecretStr
 import resqml_objects.v201 as ro
 from energistics.avro_handler import (
     encode_message,
+    decode_message,
     CompressionAlgorithm,
     GzipCompression,
 )
@@ -195,7 +196,7 @@ class ETPClient:
         self.etp_timeout = (
             etp_timeout if etp_timeout is None or etp_timeout > 10.0 else 10.0
         )
-        self.__recvtask = asyncio.create_task(self.__recv())
+        self.__recvtask = asyncio.create_task(self.__receiver_loop())
 
     @staticmethod
     def get_default_server_supported_protocols(
@@ -383,28 +384,29 @@ class ETPClient:
 
         return bodies
 
-    async def __recv(self):
+    async def __receiver_loop(self):
         logger.debug("Starting receiver loop")
 
         # Using `async for` makes the receiver task exit without errors on a
         # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
         # smoother clean-up in case the main-task errors resulting in a closed
         # websockets connection down the line.
-        async for msg_data in self.ws:
-            msg = Message.decode_binary_message(
-                T.cast(bytes, msg_data),  # ETPClient.generic_transition_table
+        async for message in self.ws:
+            header, body = decode_message(
+                message,
+                decompression_func=self.negotiated_compression.decompress
+                if self.negotiated_compression is not None
+                else None,
             )
 
-            if msg is None:
-                logger.error(f"Could not parse {msg_data}")
-                continue
+            logger.debug(
+                f"Receiver task got message type {body.__class__.__name__} with "
+                f"header {header}"
+            )
+            self._recv_buffer[header.correlation_id].append(body)
 
-            logger.debug(f"recv {msg.body.__class__.__name__} {repr(msg.header)}")
-            self._recv_buffer[msg.header.correlation_id].append(msg.body)
-
-            if msg.is_final_msg():
-                # set response on send event
-                self._recv_events[msg.header.correlation_id].set()
+            if header.is_final_message():
+                self._recv_events[header.correlation_id].set()
 
         logger.info("Websockets connection closed and receiver task stopped")
 
