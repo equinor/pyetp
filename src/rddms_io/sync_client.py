@@ -14,7 +14,7 @@ from energistics.etp.v12.datatypes.object import (
     Dataspace,
     Resource,
 )
-from pyetp.uri import DataObjectURI, DataspaceURI
+from energistics.uris import DataObjectURI, DataspaceURI
 from pyetp.utils_arrays import LogicalArrayDTypes
 from rddms_io.client import rddms_connect
 from rddms_io.data_types import LinkedObjects, RDDMSModel
