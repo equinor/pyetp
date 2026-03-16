@@ -410,7 +410,7 @@ class ETPClient:
 
         logger.info("Websockets connection closed and receiver task stopped")
 
-    async def __aenter__(self) -> None:
+    async def __aenter__(self) -> T.Self:
         rs = RequestSession(
             application_name=self.application_name,
             application_version=self.application_version,
