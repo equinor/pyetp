@@ -487,9 +487,13 @@ class ETPClient:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        # We catch and log a lot of errors instead of letting them be raised.
+        # The reason is that we are trying to close down the connection as fast
+        # as possible, and by raising an error it can take a while for the
+        # websockets connection to drop making the program hang.
         close_session_sent = False
         try:
-            await self._send(CloseSession(reason="Client exiting"))
+            await self.send(CloseSession(reason="Client exiting"))
             close_session_sent = True
         except websockets.ConnectionClosed:
             logger.error(
@@ -500,8 +504,6 @@ class ETPClient:
             # Check if the receive task is done, and if not, stop it.
             if not self.__recvtask.done():
                 self.__recvtask.cancel("stopped")
-
-            self.is_connected = False
 
         try:
             # Raise any potential exceptions that might have occured in the
@@ -557,9 +559,8 @@ class ETPClient:
         """Closing method that tears down the ETP-connection via the
         `ETPClient.__aexit__`-method, and closes the websockets connection.
         This method should _only_ be used if the user has set up a connection
-        via `etp_client = await connect(...)` or `etp_client = await
-        etp_connect(...)` and will handle the closing of the connection
-        manually.
+        via `etp_client = await etp_connect(...)` and will handle the closing
+        of the connection manually.
         """
 
         await self.__aexit__(None, None, None)
