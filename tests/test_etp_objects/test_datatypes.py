@@ -339,6 +339,7 @@ def test_messsage_header() -> None:
 
     mh = MessageHeader.from_etp_protocol_body(
         CloseSession(reason="test"),
+        message_flags=MessageHeaderFlags.FIN,
         message_id=46,
     )
 
