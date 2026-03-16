@@ -455,58 +455,31 @@ class ETPClient:
 
         # We don't use the negotiated_formats for anything yet, as we only
         # support XML for now.
-        assert "xml" in os.negotiated_formats
-        self.negotiated_formats = os.negotiated_formats
+        assert "xml" in os.supported_formats and len(os.supported_formats) == 1
+        self.negotiated_formats = os.supported_formats
 
         self.session_id = os.session_id
 
-        server_max_size = os.endpoint_capabilities[
+        server_max_size = self.max_size
+        dv = os.endpoint_capabilities.get(
             EndpointCapabilityKind.MAX_WEB_SOCKET_MESSAGE_PAYLOAD_SIZE
-        ].item
+        )
+        if dv is not None:
+            del os.endpoint_capabilities[
+                EndpointCapabilityKind.MAX_WEB_SOCKET_MESSAGE_PAYLOAD_SIZE
+            ]
+            server_max_size = dv.item
 
         if server_max_size < self.max_size:
             self.max_size = server_max_size
 
-        # We currently do not use this capability as it is quite large for the
-        # open-etp-server. Most likely the limit will be the max size of the
-        # web socket message. However, both should ideally be checked.
-        self.max_uncompressed_size = os.endpoint_capabilities[
-            EndpointCapabilityKind.MAX_MESSAGE_PAYLOAD_UNCOMPRESSED_SIZE
-        ].item
+        if len(os.endpoint_capabilities) > 0:
+            logger.info(
+                "Remaining unprocessed endpoint capabilities "
+                f"{os.endpoint_capabilities}"
+            )
 
-    async def send(self, body: ETPBaseProtocolModel) -> list[ETPBaseProtocolModel]:
-        correlation_id = await self._send(body)
-        return await self._recv(correlation_id)
-
-    async def _send(self, body: ETPBaseProtocolModel) -> int:
-        msg = Message.get_object_message(body, message_flags=MessageFlags.FINALPART)
-        if msg is None:
-            raise TypeError(f"{type(body)} not valid etp protocol")
-
-        msg.header.message_id = self.consume_msg_id()
-        logger.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
-
-        # create future recv event
-        self._recv_events[msg.header.message_id] = asyncio.Event()
-
-        tasks = []
-        for msg_part in msg.encode_message_generator(self.max_size, self):
-            tasks.append(self.ws.send(msg_part))
-
-        await asyncio.gather(*tasks)
-
-        return msg.header.message_id
-
-    @staticmethod
-    def parse_error_info(bodies: list[ETPBaseProtocolModel]) -> list[ErrorInfo]:
-        # returns all error infos from bodies
-        errors = []
-        for body in bodies:
-            if isinstance(body, ProtocolException):
-                if body.error is not None:
-                    errors.append(body.error)
-                errors.extend(body.errors.values())
-        return errors
+        return self
 
     async def __aexit__(
         self,
@@ -596,75 +569,109 @@ class ETPClient:
         # closed.
         await self.ws.close()
 
-    async def __aenter__(self) -> T.Self:
-        return await self.request_session()
+    # async def send(self, body: ETPBaseProtocolModel) -> list[ETPBaseProtocolModel]:
+    #     correlation_id = await self._send(body)
+    #     return await self._recv(correlation_id)
 
-    async def request_session(self):
-        # Handshake protocol
-        etp_version = Version(major=1, minor=2, revision=0, patch=0)
+    # async def _send(self, body: ETPBaseProtocolModel) -> int:
+    #     msg = Message.get_object_message(body, message_flags=MessageFlags.FINALPART)
+    #     if msg is None:
+    #         raise TypeError(f"{type(body)} not valid etp protocol")
 
-        def get_protocol_server_role(protocol: CommunicationProtocol) -> str:
-            match protocol:
-                case CommunicationProtocol.CORE:
-                    return "server"
-                case CommunicationProtocol.CHANNEL_STREAMING:
-                    return "producer"
+    #     msg.header.message_id = self.consume_msg_id()
+    #     logger.debug(f"sending {msg.body.__class__.__name__} {repr(msg.header)}")
 
-            return "store"
+    #     # create future recv event
+    #     self._recv_events[msg.header.message_id] = asyncio.Event()
 
-        msgs = await self.send(
-            RequestSession(
-                applicationName=self.application_name,
-                applicationVersion=self.application_version,
-                clientInstanceId=uuid.uuid4(),  # type: ignore
-                requestedProtocols=[
-                    SupportedProtocol(
-                        protocol=p.value,
-                        protocolVersion=etp_version,
-                        role=get_protocol_server_role(p),
-                    )
-                    for p in CommunicationProtocol
-                ],
-                supportedDataObjects=[
-                    SupportedDataObject(qualifiedType="resqml20.*"),
-                    SupportedDataObject(qualifiedType="eml20.*"),
-                ],
-                currentDateTime=self.timestamp,
-                earliestRetainedChangeTime=0,
-                endpointCapabilities=dict(
-                    MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size)
-                ),
-            )
-        )
+    #     tasks = []
+    #     for msg_part in msg.encode_message_generator(self.max_size, self):
+    #         tasks.append(self.ws.send(msg_part))
 
-        assert len(msgs) == 1
-        msg = msgs[0]
+    #     await asyncio.gather(*tasks)
 
-        assert msg and isinstance(msg, OpenSession)
+    #     return msg.header.message_id
 
-        self.is_connected = True
+    @staticmethod
+    def parse_error_info(bodies: list[ETPBaseProtocolModel]) -> list[ErrorInfo]:
+        # returns all error infos from bodies
+        errors = []
+        for body in bodies:
+            if isinstance(body, ProtocolException):
+                if body.error is not None:
+                    errors.append(body.error)
+                errors.extend(body.errors.values())
+        return errors
 
-        # ignore this endpoint
-        _ = msg.endpoint_capabilities.pop("MessageQueueDepth", None)
-        self.client_info.negotiate(msg)
+    # async def __aenter__(self) -> T.Self:
+    #     return await self.request_session()
 
-        return self
+    # async def request_session(self):
+    #     # Handshake protocol
+    #     etp_version = Version(major=1, minor=2, revision=0, patch=0)
 
-    async def authorize(
-        self, authorization: str, supplemental_authorization: T.Mapping[str, str] = {}
-    ):
-        msgs = await self.send(
-            Authorize(
-                authorization=authorization,
-                supplementalAuthorization=supplemental_authorization,
-            )
-        )
-        assert len(msgs) == 1
-        msg = msgs[0]
+    #     def get_protocol_server_role(protocol: CommunicationProtocol) -> str:
+    #         match protocol:
+    #             case CommunicationProtocol.CORE:
+    #                 return "server"
+    #             case CommunicationProtocol.CHANNEL_STREAMING:
+    #                 return "producer"
 
-        assert msg and isinstance(msg, AuthorizeResponse)
+    #         return "store"
 
-        return msg
+    #     msgs = await self.send(
+    #         RequestSession(
+    #             applicationName=self.application_name,
+    #             applicationVersion=self.application_version,
+    #             clientInstanceId=uuid.uuid4(),  # type: ignore
+    #             requestedProtocols=[
+    #                 SupportedProtocol(
+    #                     protocol=p.value,
+    #                     protocolVersion=etp_version,
+    #                     role=get_protocol_server_role(p),
+    #                 )
+    #                 for p in CommunicationProtocol
+    #             ],
+    #             supportedDataObjects=[
+    #                 SupportedDataObject(qualifiedType="resqml20.*"),
+    #                 SupportedDataObject(qualifiedType="eml20.*"),
+    #             ],
+    #             currentDateTime=self.timestamp,
+    #             earliestRetainedChangeTime=0,
+    #             endpointCapabilities=dict(
+    #                 MaxWebSocketMessagePayloadSize=DataValue(item=self.max_size)
+    #             ),
+    #         )
+    #     )
+
+    #     assert len(msgs) == 1
+    #     msg = msgs[0]
+
+    #     assert msg and isinstance(msg, OpenSession)
+
+    #     self.is_connected = True
+
+    #     # ignore this endpoint
+    #     _ = msg.endpoint_capabilities.pop("MessageQueueDepth", None)
+    #     self.client_info.negotiate(msg)
+
+    #     return self
+
+    # async def authorize(
+    #     self, authorization: str, supplemental_authorization: T.Mapping[str, str] = {}
+    # ):
+    #     msgs = await self.send(
+    #         Authorize(
+    #             authorization=authorization,
+    #             supplementalAuthorization=supplemental_authorization,
+    #         )
+    #     )
+    #     assert len(msgs) == 1
+    #     msg = msgs[0]
+
+    #     assert msg and isinstance(msg, AuthorizeResponse)
+
+    #     return msg
 
     @staticmethod
     def assert_response(
@@ -683,832 +690,832 @@ class ETPClient:
             )
         return self.max_size - self.max_array_size_margin
 
-    @property
-    def timestamp(self):
-        return int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-
-    def dataspace_uri(self, ds: str) -> DataspaceURI:
-        if ds.count("/") > 1:
-            raise Exception("Max one / in dataspace name")
-        return DataspaceURI.from_name(ds)
-
-    async def list_objects(
-        self, dataspace_uri: DataspaceURI | str, depth: int = 1
-    ) -> GetResourcesResponse:
-        responses = await self.send(
-            GetResources(
-                scope=ContextScopeKind.TARGETS_OR_SELF,
-                context=ContextInfo(
-                    uri=str(dataspace_uri),
-                    depth=depth,
-                    dataObjectTypes=[],
-                    navigableEdges=RelationshipKind.PRIMARY,
-                ),
-            )
-        )
-        assert len(responses) == 1
-        return responses[0]
-
-    #
-    # dataspace
-    #
-
-    async def get_dataspaces(
-        self, store_last_write_filter: int = None
-    ) -> GetDataspacesResponse:
-        responses = await self.send(
-            GetDataspaces(store_last_write_filter=store_last_write_filter)
-        )
-
-        assert all(
-            [isinstance(response, GetDataspacesResponse) for response in responses]
-        ), "Expected GetDataspacesResponse"
-        assert len(responses) == 1
-
-        return responses[0]
-
-    async def put_dataspaces(
-        self,
-        legaltags: list[str],
-        otherRelevantDataCountries: list[str],
-        owners: list[str],
-        viewers: list[str],
-        *dataspace_uris: DataspaceURI,
-    ) -> dict[str, str]:
-        _uris = list(map(DataspaceURI.from_any, dataspace_uris))
-        for i in _uris:
-            if i.raw_uri.count("/") > 4:  # includes the 3 eml
-                raise Exception("Max one / in dataspace name")
-        time = self.timestamp
-        responses = await self.send(
-            PutDataspaces(
-                dataspaces={
-                    d.raw_uri: Dataspace(
-                        uri=d.raw_uri,
-                        storeCreated=time,
-                        storeLastWrite=time,
-                        path=d.dataspace,
-                        custom_data={
-                            "legaltags": DataValue(
-                                item=ArrayOfString(values=legaltags)
-                            ),
-                            "otherRelevantDataCountries": DataValue(
-                                item=ArrayOfString(values=otherRelevantDataCountries)
-                            ),
-                            "owners": DataValue(item=ArrayOfString(values=owners)),
-                            "viewers": DataValue(item=ArrayOfString(values=viewers)),
-                        },
-                    )
-                    for d in _uris
-                }
-            )
-        )
-        assert all(
-            [isinstance(response, PutDataspacesResponse) for response in responses]
-        ), "Expected PutDataspacesResponse"
-
-        successes = {}
-        for response in responses:
-            successes = {**successes, **response.success}
-
-        assert len(successes) == len(dataspace_uris), (
-            f"expected {len(dataspace_uris)} successes"
-        )
-
-        return successes
-
-    async def put_dataspaces_no_raise(
-        self,
-        legaltags: list[str],
-        otherRelevantDataCountries: list[str],
-        owners: list[str],
-        viewers: list[str],
-        *dataspace_uris: DataspaceURI,
-    ) -> dict[str, str]:
-        try:
-            return await self.put_dataspaces(
-                legaltags, otherRelevantDataCountries, owners, viewers, *dataspace_uris
-            )
-        except ETPError:
-            return {}
-
-    async def delete_dataspaces(self, *dataspace_uris: DataspaceURI) -> dict[str, str]:
-        _uris = list(map(str, dataspace_uris))
-
-        responses = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
-        assert all(
-            [isinstance(response, DeleteDataspacesResponse) for response in responses]
-        ), "Expected DeleteDataspacesResponse"
-
-        successes = {}
-        for response in responses:
-            successes = {**successes, **response.success}
-
-        assert len(successes) == len(dataspace_uris), (
-            f"expected {len(dataspace_uris)} successes"
-        )
-        return successes
-
-    async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
-        tasks = []
-        for uri in uris:
-            task = self.send(GetDataObjects(uris={str(uri): str(uri)}))
-            tasks.append(task)
-
-        task_responses = await asyncio.gather(*tasks)
-        responses = [r for tr in task_responses for r in tr]
-        assert len(responses) == len(uris)
-
-        data_objects = []
-        errors = []
-        for uri, response in zip(uris, responses):
-            if not isinstance(response, GetDataObjectsResponse):
-                errors.append(
-                    TypeError(
-                        "Expected GetDataObjectsResponse, got "
-                        f"{response.__class__.__name} with content: {response}",
-                    )
-                )
-            data_objects.append(response.data_objects[str(uri)])
-
-        if len(errors) > 0:
-            raise ExceptionGroup(
-                f"There were {len(errors)} errors in ETPClient.get_data_objects",
-                errors,
-            )
-
-        return data_objects
-
-    async def put_data_objects(self, *objs: DataObject):
-        tasks = []
-        for obj in objs:
-            task = self.send(
-                PutDataObjects(
-                    data_objects={f"{obj.resource.name} - {obj.resource.uri}": obj},
-                ),
-            )
-            tasks.append(task)
-
-        task_responses = await asyncio.gather(*tasks)
-        responses = [r for tr in task_responses for r in tr]
-
-        errors = []
-        for response in responses:
-            if not isinstance(response, PutDataObjectsResponse):
-                errors.append(
-                    TypeError(
-                        "Expected PutDataObjectsResponse, got "
-                        f"{response.__class__.__name} with content: {response}",
-                    )
-                )
-        if len(errors) > 0:
-            raise ExceptionGroup(
-                f"There were {len(errors)} errors in ETPClient.put_data_objects",
-                errors,
-            )
-
-        sucesses = {}
-        for response in responses:
-            sucesses = {**sucesses, **response.success}
-
-        return sucesses
-
-    async def get_resqml_objects(
-        self, *uris: T.Union[DataObjectURI, str]
-    ) -> T.List[ro.AbstractObject]:
-        data_objects = await self.get_data_objects(*uris)
-        return [
-            parse_resqml_v201_object(data_object.data) for data_object in data_objects
-        ]
-
-    async def put_resqml_objects(
-        self, *objs: ro.AbstractObject, dataspace_uri: DataspaceURI
-    ):
-        time = self.timestamp
-        uris = [DataObjectURI.from_obj(dataspace_uri, obj) for obj in objs]
-        dobjs = [
-            DataObject(
-                format="xml",
-                data=serialize_resqml_v201_object(obj),
-                resource=Resource(
-                    uri=uri.raw_uri,
-                    name=obj.citation.title if obj.citation else obj.__class__.__name__,
-                    lastChanged=time,
-                    storeCreated=time,
-                    storeLastWrite=time,
-                    activeStatus="Inactive",  # type: ignore
-                    sourceCount=None,
-                    targetCount=None,
-                ),
-            )
-            for uri, obj in zip(uris, objs)
-        ]
-
-        _ = await self.put_data_objects(*dobjs)
-        return uris
-
-    async def delete_data_objects(
-        self, *uris: T.Union[DataObjectURI, str], prune_contained_objects=False
-    ):
-        _uris = list(map(str, uris))
-
-        responses = await self.send(
-            DeleteDataObjects(
-                uris=dict(zip(_uris, _uris)),
-                prune_contained_objects=prune_contained_objects,
-            )
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, DeleteDataObjectsResponse), (
-            "Expected DeleteDataObjectsResponse"
-        )
-
-        return response.deleted_uris
-
-    async def start_transaction(
-        self, dataspace_uri: DataspaceURI | str, read_only: bool = True
-    ) -> Uuid:
-        dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
-        responses = await self.send(
-            StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri])
-        )
-        assert all(
-            [isinstance(response, StartTransactionResponse) for response in responses]
-        ), "Expected StartTransactionResponse"
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        if not response.successful:
-            raise ETPTransactionFailure(f"Failed starting transaction {dataspace_uri}")
-
-        return response.transaction_uuid
-
-    async def commit_transaction(self, transaction_uuid: Uuid):
-        responses = await self.send(
-            CommitTransaction(transaction_uuid=transaction_uuid)
-        )
-        assert len(responses) == 1
-        response = responses[0]
-
-        if response.successful is False:
-            raise ETPTransactionFailure(response.failure_reason)
-        return response
-
-    async def rollback_transaction(self, transaction_id: Uuid):
-        return await self.send(RollbackTransaction(transactionUuid=transaction_id))
-
-    async def get_array_metadata(self, *uids: DataArrayIdentifier):
-        responses = await self.send(
-            GetDataArrayMetadata(dataArrays={i.path_in_resource: i for i in uids})
-        )
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, GetDataArrayMetadataResponse)
-
-        if len(response.array_metadata) != len(uids):
-            raise ETPError(f"Not all uids found ({uids})", 11)
-
-        # return in same order as arguments
-        return [response.array_metadata[i.path_in_resource] for i in uids]
-
-    async def get_array(self, uid: DataArrayIdentifier):
-        # Check if we can download the full array in one go.
-        (meta,) = await self.get_array_metadata(uid)
-        if (
-            utils_arrays.get_transport_array_size(
-                meta.transport_array_type, meta.dimensions
-            )
-            > self.max_array_size
-        ):
-            return await self._get_array_chunked(uid)
-
-        responses = await self.send(
-            GetDataArrays(dataArrays={uid.path_in_resource: uid})
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, GetDataArraysResponse), (
-            "Expected GetDataArraysResponse"
-        )
-
-        arrays = list(response.data_arrays.values())
-        return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
-
-    async def download_array(
-        self,
-        epc_uri: str | DataObjectURI,
-        path_in_resource: str,
-    ) -> npt.NDArray[utils_arrays.LogicalArrayDTypes]:
-        # Create identifier for the data.
-        dai = DataArrayIdentifier(
-            uri=str(epc_uri),
-            path_in_resource=path_in_resource,
-        )
-
-        responses = await self.send(
-            GetDataArrayMetadata(data_arrays={dai.path_in_resource: dai}),
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        self.assert_response(response, GetDataArrayMetadataResponse)
-        assert (
-            len(response.array_metadata) == 1
-            and dai.path_in_resource in response.array_metadata
-        )
-
-        metadata = response.array_metadata[dai.path_in_resource]
-
-        # Check if we can download the full array in a single message.
-        if (
-            utils_arrays.get_transport_array_size(
-                metadata.transport_array_type, metadata.dimensions
-            )
-            >= self.max_array_size
-        ):
-            transport_dtype = utils_arrays.get_dtype_from_any_array_type(
-                metadata.transport_array_type,
-            )
-            # NOTE: The logical array type is not yet supported by the
-            # open-etp-server. As such the transport array type will be actual
-            # array type used. We only add this call to prepare for when it
-            # will be used.
-            logical_dtype = utils_arrays.get_dtype_from_any_logical_array_type(
-                metadata.logical_array_type,
-            )
-            if logical_dtype != np.dtype(np.bool_):
-                # If this debug message is triggered we should test the
-                # mapping.
-                logger.debug(
-                    "Logical array type has changed: "
-                    f"{metadata.logical_array_type = }, with {logical_dtype = }"
-                )
-
-            # Create a buffer for the data.
-            data = np.zeros(metadata.dimensions, dtype=transport_dtype)
-
-            # Get list with starting indices in each block, and a list with the
-            # number of elements along each axis for each block.
-            block_starts, block_counts = utils_arrays.get_array_block_sizes(
-                data.shape, data.dtype, self.max_array_size
-            )
-
-            def data_subarrays_key(pir: str, i: int) -> str:
-                return pir + f" ({i})"
-
-            tasks = []
-            for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
-                task = self.send(
-                    GetDataSubarrays(
-                        data_subarrays={
-                            data_subarrays_key(
-                                dai.path_in_resource, i
-                            ): GetDataSubarraysType(
-                                uid=dai,
-                                starts=starts,
-                                counts=counts,
-                            ),
-                        },
-                    ),
-                )
-                tasks.append(task)
-
-            task_responses = await asyncio.gather(*tasks)
-            responses = [
-                response
-                for task_response in task_responses
-                for response in task_response
-            ]
-
-            data_blocks = []
-            for i, response in enumerate(responses):
-                self.assert_response(response, GetDataSubarraysResponse)
-                assert (
-                    len(response.data_subarrays) == 1
-                    and data_subarrays_key(dai.path_in_resource, i)
-                    in response.data_subarrays
-                )
-
-                data_block = utils_arrays.get_numpy_array_from_etp_data_array(
-                    response.data_subarrays[
-                        data_subarrays_key(dai.path_in_resource, i)
-                    ],
-                )
-                data_blocks.append(data_block)
-
-            for data_block, starts, counts in zip(
-                data_blocks, block_starts, block_counts
-            ):
-                # Create slice-objects for each block.
-                slices = tuple(
-                    map(
-                        lambda s, c: slice(s, s + c),
-                        np.array(starts).astype(int),
-                        np.array(counts).astype(int),
-                    )
-                )
-                data[slices] = data_block
-
-            # Return after fetching all sub arrays.
-            return data
-
-        # Download the full array in one go.
-        responses = await self.send(
-            GetDataArrays(data_arrays={dai.path_in_resource: dai}),
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        self.assert_response(response, GetDataArraysResponse)
-        assert (
-            len(response.data_arrays) == 1
-            and dai.path_in_resource in response.data_arrays
-        )
-
-        return utils_arrays.get_numpy_array_from_etp_data_array(
-            response.data_arrays[dai.path_in_resource]
-        )
-
-    async def upload_array(
-        self,
-        epc_uri: str | DataObjectURI,
-        path_in_resource: str,
-        data: npt.NDArray[utils_arrays.LogicalArrayDTypes],
-    ) -> None:
-        # Fetch ETP logical and transport array types
-        logical_array_type, transport_array_type = (
-            utils_arrays.get_logical_and_transport_array_types(data.dtype)
-        )
-
-        # Create identifier for the data.
-        dai = DataArrayIdentifier(
-            uri=str(epc_uri),
-            path_in_resource=path_in_resource,
-        )
-
-        # Get current time as a UTC-timestamp.
-        now = self.timestamp
-
-        # Allocate space on server for the array.
-        responses = await self.send(
-            PutUninitializedDataArrays(
-                data_arrays={
-                    dai.path_in_resource: PutUninitializedDataArrayType(
-                        uid=dai,
-                        metadata=DataArrayMetadata(
-                            dimensions=list(data.shape),
-                            transport_array_type=transport_array_type,
-                            logical_array_type=logical_array_type,
-                            store_last_write=now,
-                            store_created=now,
-                        ),
-                    ),
-                },
-            ),
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        self.assert_response(response, PutUninitializedDataArraysResponse)
-        assert len(response.success) == 1 and dai.path_in_resource in response.success
-
-        # Check if we can upload the entire array in go, or if we need to
-        # upload it in smaller blocks.
-        if data.nbytes > self.max_array_size:
-            tasks = []
-
-            # Get list with starting indices in each block, and a list with the
-            # number of elements along each axis for each block.
-            block_starts, block_counts = utils_arrays.get_array_block_sizes(
-                data.shape, data.dtype, self.max_array_size
-            )
-
-            for starts, counts in zip(block_starts, block_counts):
-                # Create slice-objects for each block.
-                slices = tuple(
-                    map(
-                        lambda s, c: slice(s, s + c),
-                        np.array(starts).astype(int),
-                        np.array(counts).astype(int),
-                    )
-                )
-
-                # Slice the array, and convert to the relevant ETP-array type.
-                # Note in the particular the extra `.data`-after the call. The
-                # data should not be of type `DataArray`, but `AnyArray`, so we
-                # need to fetch it from the `DataArray`.
-                etp_subarray_data = utils_arrays.get_etp_data_array_from_numpy(
-                    data[slices]
-                ).data
-
-                # Create an asynchronous task to upload a block to the
-                # ETP-server.
-                task = self.send(
-                    PutDataSubarrays(
-                        data_subarrays={
-                            dai.path_in_resource: PutDataSubarraysType(
-                                uid=dai,
-                                data=etp_subarray_data,
-                                starts=starts,
-                                counts=counts,
-                            ),
-                        },
-                    ),
-                )
-                tasks.append(task)
-
-            # Upload all blocks.
-            task_responses = await asyncio.gather(*tasks)
-
-            # Flatten list of responses.
-            responses = [
-                response
-                for task_response in task_responses
-                for response in task_response
-            ]
-
-            # Check for successful responses.
-            for response in responses:
-                self.assert_response(response, PutDataSubarraysResponse)
-                assert (
-                    len(response.success) == 1
-                    and dai.path_in_resource in response.success
-                )
-
-            # Return after uploading all sub arrays.
-            return
-
-        # Convert NumPy data-array to an ETP-transport array.
-        etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
-
-        # Pass entire array in one message.
-        responses = await self.send(
-            PutDataArrays(
-                data_arrays={
-                    dai.path_in_resource: PutDataArraysType(
-                        uid=dai,
-                        array=etp_array_data,
-                    ),
-                }
-            )
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        self.assert_response(response, PutDataArraysResponse)
-        assert len(response.success) == 1 and dai.path_in_resource in response.success
-
-    async def put_array(
-        self,
-        uid: DataArrayIdentifier,
-        data: np.ndarray,
-    ):
-        logical_array_type, transport_array_type = (
-            utils_arrays.get_logical_and_transport_array_types(data.dtype)
-        )
-        await self._put_uninitialized_data_array(
-            uid,
-            data.shape,
-            transport_array_type=transport_array_type,
-            logical_array_type=logical_array_type,
-        )
-        # Check if we can upload the full array in one go.
-        if data.nbytes > self.max_array_size:
-            return await self._put_array_chunked(uid, data)
-
-        responses = await self.send(
-            PutDataArrays(
-                data_arrays={
-                    uid.path_in_resource: PutDataArraysType(
-                        uid=uid,
-                        array=utils_arrays.get_etp_data_array_from_numpy(data),
-                    )
-                }
-            )
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, PutDataArraysResponse), (
-            "Expected PutDataArraysResponse"
-        )
-        assert len(response.success) == 1, "expected one success from put_array"
-
-        return response.success
-
-    async def get_subarray(
-        self,
-        uid: DataArrayIdentifier,
-        starts: T.Union[np.ndarray, T.List[int]],
-        counts: T.Union[np.ndarray, T.List[int]],
-    ):
-        starts = np.array(starts).astype(np.int64)
-        counts = np.array(counts).astype(np.int64)
-
-        logger.debug(f"get_subarray {starts=:} {counts=:}")
-
-        payload = GetDataSubarraysType(
-            uid=uid,
-            starts=starts.tolist(),
-            counts=counts.tolist(),
-        )
-        responses = await self.send(
-            GetDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, GetDataSubarraysResponse), (
-            "Expected GetDataSubarraysResponse"
-        )
-
-        arrays = list(response.data_subarrays.values())
-        return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
-
-    async def put_subarray(
-        self,
-        uid: DataArrayIdentifier,
-        data: np.ndarray,
-        starts: T.Union[np.ndarray, T.List[int]],
-        counts: T.Union[np.ndarray, T.List[int]],
-    ):
-        # NOTE: This function assumes that the user (or previous methods) have
-        # called _put_uninitialized_data_array.
-
-        # starts [start_X, starts_Y]
-        # counts [count_X, count_Y]
-        # len = 2 [x_start_index, y_start_index]
-        starts = np.array(starts).astype(np.int64)
-        counts = np.array(counts).astype(np.int64)  # len = 2
-        ends = starts + counts  # len = 2
-
-        slices = tuple(map(lambda s, e: slice(s, e), starts, ends))
-        dataarray = utils_arrays.get_etp_data_array_from_numpy(data[slices])
-        payload = PutDataSubarraysType(
-            uid=uid,
-            data=dataarray.data,
-            starts=starts.tolist(),
-            counts=counts.tolist(),
-        )
-
-        logger.debug(
-            f"put_subarray {data.shape=:} {starts=:} {counts=:} "
-            f"{dataarray.data.item.__class__.__name__}"
-        )
-
-        responses = await self.send(
-            PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, PutDataSubarraysResponse), (
-            "Expected PutDataSubarraysResponse"
-        )
-        assert len(response.success) == 1, "expected one success"
-        return response.success
-
-    def _get_chunk_sizes(
-        self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0
-    ):
-        warnings.warn(
-            "This function is deprecated and will be removed in a later version of "
-            "pyetp. The replacement is located via the import "
-            "`from pyetp.utils_arrays import get_array_block_sizes`.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        shape = np.array(shape)
-
-        # capsize blocksize
-        max_items = self.max_array_size / dtype.itemsize
-        block_size = np.power(max_items, 1.0 / len(shape))
-        block_size = min(2048, int(block_size // 2) * 2)
-
-        assert block_size > 8, "computed blocksize unreasonable small"
-
-        all_ranges = [range(s // block_size + 1) for s in shape]
-        indexes = np.array(np.meshgrid(*all_ranges)).T.reshape(-1, len(shape))
-        for ijk in indexes:
-            starts = ijk * block_size
-            if offset != 0:
-                starts = starts + offset
-            ends = np.fmin(shape, starts + block_size)
-            if offset != 0:
-                ends = ends + offset
-            counts = ends - starts
-            if any(counts == 0):
-                continue
-            yield starts, counts
-
-    async def _get_array_chuncked(self, *args, **kwargs):
-        warnings.warn(
-            "This function is deprecated and will be removed in a later version of "
-            "pyetp. Please use the updated function 'pyetp._get_array_chunked'.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._get_array_chunked(*args, **kwargs)
-
-    async def _get_array_chunked(
-        self,
-        uid: DataArrayIdentifier,
-        offset: int = 0,
-        total_count: T.Union[int, None] = None,
-    ):
-        metadata = (await self.get_array_metadata(uid))[0]
-        if len(metadata.dimensions) != 1 and offset != 0:
-            raise Exception("Offset is only implemented for 1D array")
-
-        if isinstance(total_count, (int, float)):
-            buffer_shape = np.array([total_count], dtype=np.int64)
-        else:
-            buffer_shape = np.array(metadata.dimensions, dtype=np.int64)
-        dtype = utils_arrays.get_dtype_from_any_array_type(
-            metadata.transport_array_type
-        )
-        buffer = np.zeros(buffer_shape, dtype=dtype)
-        params = []
-
-        async def populate(starts, counts):
-            params.append([starts, counts])
-            array = await self.get_subarray(uid, starts, counts)
-            ends = starts + counts
-            slices = tuple(
-                map(lambda se: slice(se[0], se[1]), zip(starts - offset, ends - offset))
-            )
-            buffer[slices] = array
-            return
-
-        _ = await asyncio.gather(
-            *[
-                populate(starts, counts)
-                for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
-            ]
-        )
-
-        return buffer
-
-    async def _put_array_chuncked(self, *args, **kwargs):
-        warnings.warn(
-            "This function is deprecated and will be removed in a later version of "
-            "pyetp. Please use the updated function 'pyetp._put_array_chunked'.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._put_array_chunked(*args, **kwargs)
-
-    async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray):
-        for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
-            await self.put_subarray(uid, data, starts, counts)
-
-        return {uid.uri: ""}
-
-    async def _put_uninitialized_data_array(
-        self,
-        uid: DataArrayIdentifier,
-        shape: T.Tuple[int, ...],
-        transport_array_type: AnyArrayType,
-        logical_array_type: AnyLogicalArrayType,
-    ):
-        payload = PutUninitializedDataArrayType(
-            uid=uid,
-            metadata=(
-                DataArrayMetadata(
-                    dimensions=list(shape),  # type: ignore
-                    transportArrayType=transport_array_type,
-                    logicalArrayType=logical_array_type,
-                    storeLastWrite=self.timestamp,
-                    storeCreated=self.timestamp,
-                )
-            ),
-        )
-        responses = await self.send(
-            PutUninitializedDataArrays(dataArrays={uid.path_in_resource: payload})
-        )
-
-        assert len(responses) == 1
-        response = responses[0]
-
-        assert isinstance(response, PutUninitializedDataArraysResponse), (
-            "Expected PutUninitializedDataArraysResponse"
-        )
-        assert len(response.success) == 1, "expected one success"
-        return response.success
+    # @property
+    # def timestamp(self):
+    #     return int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+
+    # def dataspace_uri(self, ds: str) -> DataspaceURI:
+    #     if ds.count("/") > 1:
+    #         raise Exception("Max one / in dataspace name")
+    #     return DataspaceURI.from_name(ds)
+
+    # async def list_objects(
+    #     self, dataspace_uri: DataspaceURI | str, depth: int = 1
+    # ) -> GetResourcesResponse:
+    #     responses = await self.send(
+    #         GetResources(
+    #             scope=ContextScopeKind.TARGETS_OR_SELF,
+    #             context=ContextInfo(
+    #                 uri=str(dataspace_uri),
+    #                 depth=depth,
+    #                 dataObjectTypes=[],
+    #                 navigableEdges=RelationshipKind.PRIMARY,
+    #             ),
+    #         )
+    #     )
+    #     assert len(responses) == 1
+    #     return responses[0]
+
+    # #
+    # # dataspace
+    # #
+
+    # async def get_dataspaces(
+    #     self, store_last_write_filter: int = None
+    # ) -> GetDataspacesResponse:
+    #     responses = await self.send(
+    #         GetDataspaces(store_last_write_filter=store_last_write_filter)
+    #     )
+
+    #     assert all(
+    #         [isinstance(response, GetDataspacesResponse) for response in responses]
+    #     ), "Expected GetDataspacesResponse"
+    #     assert len(responses) == 1
+
+    #     return responses[0]
+
+    # async def put_dataspaces(
+    #     self,
+    #     legaltags: list[str],
+    #     otherRelevantDataCountries: list[str],
+    #     owners: list[str],
+    #     viewers: list[str],
+    #     *dataspace_uris: DataspaceURI,
+    # ) -> dict[str, str]:
+    #     _uris = list(map(DataspaceURI.from_any, dataspace_uris))
+    #     for i in _uris:
+    #         if i.raw_uri.count("/") > 4:  # includes the 3 eml
+    #             raise Exception("Max one / in dataspace name")
+    #     time = self.timestamp
+    #     responses = await self.send(
+    #         PutDataspaces(
+    #             dataspaces={
+    #                 d.raw_uri: Dataspace(
+    #                     uri=d.raw_uri,
+    #                     storeCreated=time,
+    #                     storeLastWrite=time,
+    #                     path=d.dataspace,
+    #                     custom_data={
+    #                         "legaltags": DataValue(
+    #                             item=ArrayOfString(values=legaltags)
+    #                         ),
+    #                         "otherRelevantDataCountries": DataValue(
+    #                             item=ArrayOfString(values=otherRelevantDataCountries)
+    #                         ),
+    #                         "owners": DataValue(item=ArrayOfString(values=owners)),
+    #                         "viewers": DataValue(item=ArrayOfString(values=viewers)),
+    #                     },
+    #                 )
+    #                 for d in _uris
+    #             }
+    #         )
+    #     )
+    #     assert all(
+    #         [isinstance(response, PutDataspacesResponse) for response in responses]
+    #     ), "Expected PutDataspacesResponse"
+
+    #     successes = {}
+    #     for response in responses:
+    #         successes = {**successes, **response.success}
+
+    #     assert len(successes) == len(dataspace_uris), (
+    #         f"expected {len(dataspace_uris)} successes"
+    #     )
+
+    #     return successes
+
+    # async def put_dataspaces_no_raise(
+    #     self,
+    #     legaltags: list[str],
+    #     otherRelevantDataCountries: list[str],
+    #     owners: list[str],
+    #     viewers: list[str],
+    #     *dataspace_uris: DataspaceURI,
+    # ) -> dict[str, str]:
+    #     try:
+    #         return await self.put_dataspaces(
+    #             legaltags, otherRelevantDataCountries, owners, viewers, *dataspace_uris
+    #         )
+    #     except ETPError:
+    #         return {}
+
+    # async def delete_dataspaces(self, *dataspace_uris: DataspaceURI) -> dict[str, str]:
+    #     _uris = list(map(str, dataspace_uris))
+
+    #     responses = await self.send(DeleteDataspaces(uris=dict(zip(_uris, _uris))))
+    #     assert all(
+    #         [isinstance(response, DeleteDataspacesResponse) for response in responses]
+    #     ), "Expected DeleteDataspacesResponse"
+
+    #     successes = {}
+    #     for response in responses:
+    #         successes = {**successes, **response.success}
+
+    #     assert len(successes) == len(dataspace_uris), (
+    #         f"expected {len(dataspace_uris)} successes"
+    #     )
+    #     return successes
+
+    # async def get_data_objects(self, *uris: T.Union[DataObjectURI, str]):
+    #     tasks = []
+    #     for uri in uris:
+    #         task = self.send(GetDataObjects(uris={str(uri): str(uri)}))
+    #         tasks.append(task)
+
+    #     task_responses = await asyncio.gather(*tasks)
+    #     responses = [r for tr in task_responses for r in tr]
+    #     assert len(responses) == len(uris)
+
+    #     data_objects = []
+    #     errors = []
+    #     for uri, response in zip(uris, responses):
+    #         if not isinstance(response, GetDataObjectsResponse):
+    #             errors.append(
+    #                 TypeError(
+    #                     "Expected GetDataObjectsResponse, got "
+    #                     f"{response.__class__.__name} with content: {response}",
+    #                 )
+    #             )
+    #         data_objects.append(response.data_objects[str(uri)])
+
+    #     if len(errors) > 0:
+    #         raise ExceptionGroup(
+    #             f"There were {len(errors)} errors in ETPClient.get_data_objects",
+    #             errors,
+    #         )
+
+    #     return data_objects
+
+    # async def put_data_objects(self, *objs: DataObject):
+    #     tasks = []
+    #     for obj in objs:
+    #         task = self.send(
+    #             PutDataObjects(
+    #                 data_objects={f"{obj.resource.name} - {obj.resource.uri}": obj},
+    #             ),
+    #         )
+    #         tasks.append(task)
+
+    #     task_responses = await asyncio.gather(*tasks)
+    #     responses = [r for tr in task_responses for r in tr]
+
+    #     errors = []
+    #     for response in responses:
+    #         if not isinstance(response, PutDataObjectsResponse):
+    #             errors.append(
+    #                 TypeError(
+    #                     "Expected PutDataObjectsResponse, got "
+    #                     f"{response.__class__.__name} with content: {response}",
+    #                 )
+    #             )
+    #     if len(errors) > 0:
+    #         raise ExceptionGroup(
+    #             f"There were {len(errors)} errors in ETPClient.put_data_objects",
+    #             errors,
+    #         )
+
+    #     sucesses = {}
+    #     for response in responses:
+    #         sucesses = {**sucesses, **response.success}
+
+    #     return sucesses
+
+    # async def get_resqml_objects(
+    #     self, *uris: T.Union[DataObjectURI, str]
+    # ) -> T.List[ro.AbstractObject]:
+    #     data_objects = await self.get_data_objects(*uris)
+    #     return [
+    #         parse_resqml_v201_object(data_object.data) for data_object in data_objects
+    #     ]
+
+    # async def put_resqml_objects(
+    #     self, *objs: ro.AbstractObject, dataspace_uri: DataspaceURI
+    # ):
+    #     time = self.timestamp
+    #     uris = [DataObjectURI.from_obj(dataspace_uri, obj) for obj in objs]
+    #     dobjs = [
+    #         DataObject(
+    #             format="xml",
+    #             data=serialize_resqml_v201_object(obj),
+    #             resource=Resource(
+    #                 uri=uri.raw_uri,
+    #                 name=obj.citation.title if obj.citation else obj.__class__.__name__,
+    #                 lastChanged=time,
+    #                 storeCreated=time,
+    #                 storeLastWrite=time,
+    #                 activeStatus="Inactive",  # type: ignore
+    #                 sourceCount=None,
+    #                 targetCount=None,
+    #             ),
+    #         )
+    #         for uri, obj in zip(uris, objs)
+    #     ]
+
+    #     _ = await self.put_data_objects(*dobjs)
+    #     return uris
+
+    # async def delete_data_objects(
+    #     self, *uris: T.Union[DataObjectURI, str], prune_contained_objects=False
+    # ):
+    #     _uris = list(map(str, uris))
+
+    #     responses = await self.send(
+    #         DeleteDataObjects(
+    #             uris=dict(zip(_uris, _uris)),
+    #             prune_contained_objects=prune_contained_objects,
+    #         )
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, DeleteDataObjectsResponse), (
+    #         "Expected DeleteDataObjectsResponse"
+    #     )
+
+    #     return response.deleted_uris
+
+    # async def start_transaction(
+    #     self, dataspace_uri: DataspaceURI | str, read_only: bool = True
+    # ) -> Uuid:
+    #     dataspace_uri = str(DataspaceURI.from_any(dataspace_uri))
+    #     responses = await self.send(
+    #         StartTransaction(read_only=read_only, dataspace_uris=[dataspace_uri])
+    #     )
+    #     assert all(
+    #         [isinstance(response, StartTransactionResponse) for response in responses]
+    #     ), "Expected StartTransactionResponse"
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     if not response.successful:
+    #         raise ETPTransactionFailure(f"Failed starting transaction {dataspace_uri}")
+
+    #     return response.transaction_uuid
+
+    # async def commit_transaction(self, transaction_uuid: Uuid):
+    #     responses = await self.send(
+    #         CommitTransaction(transaction_uuid=transaction_uuid)
+    #     )
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     if response.successful is False:
+    #         raise ETPTransactionFailure(response.failure_reason)
+    #     return response
+
+    # async def rollback_transaction(self, transaction_id: Uuid):
+    #     return await self.send(RollbackTransaction(transactionUuid=transaction_id))
+
+    # async def get_array_metadata(self, *uids: DataArrayIdentifier):
+    #     responses = await self.send(
+    #         GetDataArrayMetadata(dataArrays={i.path_in_resource: i for i in uids})
+    #     )
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, GetDataArrayMetadataResponse)
+
+    #     if len(response.array_metadata) != len(uids):
+    #         raise ETPError(f"Not all uids found ({uids})", 11)
+
+    #     # return in same order as arguments
+    #     return [response.array_metadata[i.path_in_resource] for i in uids]
+
+    # async def get_array(self, uid: DataArrayIdentifier):
+    #     # Check if we can download the full array in one go.
+    #     (meta,) = await self.get_array_metadata(uid)
+    #     if (
+    #         utils_arrays.get_transport_array_size(
+    #             meta.transport_array_type, meta.dimensions
+    #         )
+    #         > self.max_array_size
+    #     ):
+    #         return await self._get_array_chunked(uid)
+
+    #     responses = await self.send(
+    #         GetDataArrays(dataArrays={uid.path_in_resource: uid})
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, GetDataArraysResponse), (
+    #         "Expected GetDataArraysResponse"
+    #     )
+
+    #     arrays = list(response.data_arrays.values())
+    #     return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
+
+    # async def download_array(
+    #     self,
+    #     epc_uri: str | DataObjectURI,
+    #     path_in_resource: str,
+    # ) -> npt.NDArray[utils_arrays.LogicalArrayDTypes]:
+    #     # Create identifier for the data.
+    #     dai = DataArrayIdentifier(
+    #         uri=str(epc_uri),
+    #         path_in_resource=path_in_resource,
+    #     )
+
+    #     responses = await self.send(
+    #         GetDataArrayMetadata(data_arrays={dai.path_in_resource: dai}),
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     self.assert_response(response, GetDataArrayMetadataResponse)
+    #     assert (
+    #         len(response.array_metadata) == 1
+    #         and dai.path_in_resource in response.array_metadata
+    #     )
+
+    #     metadata = response.array_metadata[dai.path_in_resource]
+
+    #     # Check if we can download the full array in a single message.
+    #     if (
+    #         utils_arrays.get_transport_array_size(
+    #             metadata.transport_array_type, metadata.dimensions
+    #         )
+    #         >= self.max_array_size
+    #     ):
+    #         transport_dtype = utils_arrays.get_dtype_from_any_array_type(
+    #             metadata.transport_array_type,
+    #         )
+    #         # NOTE: The logical array type is not yet supported by the
+    #         # open-etp-server. As such the transport array type will be actual
+    #         # array type used. We only add this call to prepare for when it
+    #         # will be used.
+    #         logical_dtype = utils_arrays.get_dtype_from_any_logical_array_type(
+    #             metadata.logical_array_type,
+    #         )
+    #         if logical_dtype != np.dtype(np.bool_):
+    #             # If this debug message is triggered we should test the
+    #             # mapping.
+    #             logger.debug(
+    #                 "Logical array type has changed: "
+    #                 f"{metadata.logical_array_type = }, with {logical_dtype = }"
+    #             )
+
+    #         # Create a buffer for the data.
+    #         data = np.zeros(metadata.dimensions, dtype=transport_dtype)
+
+    #         # Get list with starting indices in each block, and a list with the
+    #         # number of elements along each axis for each block.
+    #         block_starts, block_counts = utils_arrays.get_array_block_sizes(
+    #             data.shape, data.dtype, self.max_array_size
+    #         )
+
+    #         def data_subarrays_key(pir: str, i: int) -> str:
+    #             return pir + f" ({i})"
+
+    #         tasks = []
+    #         for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
+    #             task = self.send(
+    #                 GetDataSubarrays(
+    #                     data_subarrays={
+    #                         data_subarrays_key(
+    #                             dai.path_in_resource, i
+    #                         ): GetDataSubarraysType(
+    #                             uid=dai,
+    #                             starts=starts,
+    #                             counts=counts,
+    #                         ),
+    #                     },
+    #                 ),
+    #             )
+    #             tasks.append(task)
+
+    #         task_responses = await asyncio.gather(*tasks)
+    #         responses = [
+    #             response
+    #             for task_response in task_responses
+    #             for response in task_response
+    #         ]
+
+    #         data_blocks = []
+    #         for i, response in enumerate(responses):
+    #             self.assert_response(response, GetDataSubarraysResponse)
+    #             assert (
+    #                 len(response.data_subarrays) == 1
+    #                 and data_subarrays_key(dai.path_in_resource, i)
+    #                 in response.data_subarrays
+    #             )
+
+    #             data_block = utils_arrays.get_numpy_array_from_etp_data_array(
+    #                 response.data_subarrays[
+    #                     data_subarrays_key(dai.path_in_resource, i)
+    #                 ],
+    #             )
+    #             data_blocks.append(data_block)
+
+    #         for data_block, starts, counts in zip(
+    #             data_blocks, block_starts, block_counts
+    #         ):
+    #             # Create slice-objects for each block.
+    #             slices = tuple(
+    #                 map(
+    #                     lambda s, c: slice(s, s + c),
+    #                     np.array(starts).astype(int),
+    #                     np.array(counts).astype(int),
+    #                 )
+    #             )
+    #             data[slices] = data_block
+
+    #         # Return after fetching all sub arrays.
+    #         return data
+
+    #     # Download the full array in one go.
+    #     responses = await self.send(
+    #         GetDataArrays(data_arrays={dai.path_in_resource: dai}),
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     self.assert_response(response, GetDataArraysResponse)
+    #     assert (
+    #         len(response.data_arrays) == 1
+    #         and dai.path_in_resource in response.data_arrays
+    #     )
+
+    #     return utils_arrays.get_numpy_array_from_etp_data_array(
+    #         response.data_arrays[dai.path_in_resource]
+    #     )
+
+    # async def upload_array(
+    #     self,
+    #     epc_uri: str | DataObjectURI,
+    #     path_in_resource: str,
+    #     data: npt.NDArray[utils_arrays.LogicalArrayDTypes],
+    # ) -> None:
+    #     # Fetch ETP logical and transport array types
+    #     logical_array_type, transport_array_type = (
+    #         utils_arrays.get_logical_and_transport_array_types(data.dtype)
+    #     )
+
+    #     # Create identifier for the data.
+    #     dai = DataArrayIdentifier(
+    #         uri=str(epc_uri),
+    #         path_in_resource=path_in_resource,
+    #     )
+
+    #     # Get current time as a UTC-timestamp.
+    #     now = self.timestamp
+
+    #     # Allocate space on server for the array.
+    #     responses = await self.send(
+    #         PutUninitializedDataArrays(
+    #             data_arrays={
+    #                 dai.path_in_resource: PutUninitializedDataArrayType(
+    #                     uid=dai,
+    #                     metadata=DataArrayMetadata(
+    #                         dimensions=list(data.shape),
+    #                         transport_array_type=transport_array_type,
+    #                         logical_array_type=logical_array_type,
+    #                         store_last_write=now,
+    #                         store_created=now,
+    #                     ),
+    #                 ),
+    #             },
+    #         ),
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     self.assert_response(response, PutUninitializedDataArraysResponse)
+    #     assert len(response.success) == 1 and dai.path_in_resource in response.success
+
+    #     # Check if we can upload the entire array in go, or if we need to
+    #     # upload it in smaller blocks.
+    #     if data.nbytes > self.max_array_size:
+    #         tasks = []
+
+    #         # Get list with starting indices in each block, and a list with the
+    #         # number of elements along each axis for each block.
+    #         block_starts, block_counts = utils_arrays.get_array_block_sizes(
+    #             data.shape, data.dtype, self.max_array_size
+    #         )
+
+    #         for starts, counts in zip(block_starts, block_counts):
+    #             # Create slice-objects for each block.
+    #             slices = tuple(
+    #                 map(
+    #                     lambda s, c: slice(s, s + c),
+    #                     np.array(starts).astype(int),
+    #                     np.array(counts).astype(int),
+    #                 )
+    #             )
+
+    #             # Slice the array, and convert to the relevant ETP-array type.
+    #             # Note in the particular the extra `.data`-after the call. The
+    #             # data should not be of type `DataArray`, but `AnyArray`, so we
+    #             # need to fetch it from the `DataArray`.
+    #             etp_subarray_data = utils_arrays.get_etp_data_array_from_numpy(
+    #                 data[slices]
+    #             ).data
+
+    #             # Create an asynchronous task to upload a block to the
+    #             # ETP-server.
+    #             task = self.send(
+    #                 PutDataSubarrays(
+    #                     data_subarrays={
+    #                         dai.path_in_resource: PutDataSubarraysType(
+    #                             uid=dai,
+    #                             data=etp_subarray_data,
+    #                             starts=starts,
+    #                             counts=counts,
+    #                         ),
+    #                     },
+    #                 ),
+    #             )
+    #             tasks.append(task)
+
+    #         # Upload all blocks.
+    #         task_responses = await asyncio.gather(*tasks)
+
+    #         # Flatten list of responses.
+    #         responses = [
+    #             response
+    #             for task_response in task_responses
+    #             for response in task_response
+    #         ]
+
+    #         # Check for successful responses.
+    #         for response in responses:
+    #             self.assert_response(response, PutDataSubarraysResponse)
+    #             assert (
+    #                 len(response.success) == 1
+    #                 and dai.path_in_resource in response.success
+    #             )
+
+    #         # Return after uploading all sub arrays.
+    #         return
+
+    #     # Convert NumPy data-array to an ETP-transport array.
+    #     etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
+
+    #     # Pass entire array in one message.
+    #     responses = await self.send(
+    #         PutDataArrays(
+    #             data_arrays={
+    #                 dai.path_in_resource: PutDataArraysType(
+    #                     uid=dai,
+    #                     array=etp_array_data,
+    #                 ),
+    #             }
+    #         )
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     self.assert_response(response, PutDataArraysResponse)
+    #     assert len(response.success) == 1 and dai.path_in_resource in response.success
+
+    # async def put_array(
+    #     self,
+    #     uid: DataArrayIdentifier,
+    #     data: np.ndarray,
+    # ):
+    #     logical_array_type, transport_array_type = (
+    #         utils_arrays.get_logical_and_transport_array_types(data.dtype)
+    #     )
+    #     await self._put_uninitialized_data_array(
+    #         uid,
+    #         data.shape,
+    #         transport_array_type=transport_array_type,
+    #         logical_array_type=logical_array_type,
+    #     )
+    #     # Check if we can upload the full array in one go.
+    #     if data.nbytes > self.max_array_size:
+    #         return await self._put_array_chunked(uid, data)
+
+    #     responses = await self.send(
+    #         PutDataArrays(
+    #             data_arrays={
+    #                 uid.path_in_resource: PutDataArraysType(
+    #                     uid=uid,
+    #                     array=utils_arrays.get_etp_data_array_from_numpy(data),
+    #                 )
+    #             }
+    #         )
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, PutDataArraysResponse), (
+    #         "Expected PutDataArraysResponse"
+    #     )
+    #     assert len(response.success) == 1, "expected one success from put_array"
+
+    #     return response.success
+
+    # async def get_subarray(
+    #     self,
+    #     uid: DataArrayIdentifier,
+    #     starts: T.Union[np.ndarray, T.List[int]],
+    #     counts: T.Union[np.ndarray, T.List[int]],
+    # ):
+    #     starts = np.array(starts).astype(np.int64)
+    #     counts = np.array(counts).astype(np.int64)
+
+    #     logger.debug(f"get_subarray {starts=:} {counts=:}")
+
+    #     payload = GetDataSubarraysType(
+    #         uid=uid,
+    #         starts=starts.tolist(),
+    #         counts=counts.tolist(),
+    #     )
+    #     responses = await self.send(
+    #         GetDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, GetDataSubarraysResponse), (
+    #         "Expected GetDataSubarraysResponse"
+    #     )
+
+    #     arrays = list(response.data_subarrays.values())
+    #     return utils_arrays.get_numpy_array_from_etp_data_array(arrays[0])
+
+    # async def put_subarray(
+    #     self,
+    #     uid: DataArrayIdentifier,
+    #     data: np.ndarray,
+    #     starts: T.Union[np.ndarray, T.List[int]],
+    #     counts: T.Union[np.ndarray, T.List[int]],
+    # ):
+    #     # NOTE: This function assumes that the user (or previous methods) have
+    #     # called _put_uninitialized_data_array.
+
+    #     # starts [start_X, starts_Y]
+    #     # counts [count_X, count_Y]
+    #     # len = 2 [x_start_index, y_start_index]
+    #     starts = np.array(starts).astype(np.int64)
+    #     counts = np.array(counts).astype(np.int64)  # len = 2
+    #     ends = starts + counts  # len = 2
+
+    #     slices = tuple(map(lambda s, e: slice(s, e), starts, ends))
+    #     dataarray = utils_arrays.get_etp_data_array_from_numpy(data[slices])
+    #     payload = PutDataSubarraysType(
+    #         uid=uid,
+    #         data=dataarray.data,
+    #         starts=starts.tolist(),
+    #         counts=counts.tolist(),
+    #     )
+
+    #     logger.debug(
+    #         f"put_subarray {data.shape=:} {starts=:} {counts=:} "
+    #         f"{dataarray.data.item.__class__.__name__}"
+    #     )
+
+    #     responses = await self.send(
+    #         PutDataSubarrays(dataSubarrays={uid.path_in_resource: payload})
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, PutDataSubarraysResponse), (
+    #         "Expected PutDataSubarraysResponse"
+    #     )
+    #     assert len(response.success) == 1, "expected one success"
+    #     return response.success
+
+    # def _get_chunk_sizes(
+    #     self, shape, dtype: np.dtype[T.Any] = np.dtype(np.float32), offset=0
+    # ):
+    #     warnings.warn(
+    #         "This function is deprecated and will be removed in a later version of "
+    #         "pyetp. The replacement is located via the import "
+    #         "`from pyetp.utils_arrays import get_array_block_sizes`.",
+    #         DeprecationWarning,
+    #         stacklevel=2,
+    #     )
+    #     shape = np.array(shape)
+
+    #     # capsize blocksize
+    #     max_items = self.max_array_size / dtype.itemsize
+    #     block_size = np.power(max_items, 1.0 / len(shape))
+    #     block_size = min(2048, int(block_size // 2) * 2)
+
+    #     assert block_size > 8, "computed blocksize unreasonable small"
+
+    #     all_ranges = [range(s // block_size + 1) for s in shape]
+    #     indexes = np.array(np.meshgrid(*all_ranges)).T.reshape(-1, len(shape))
+    #     for ijk in indexes:
+    #         starts = ijk * block_size
+    #         if offset != 0:
+    #             starts = starts + offset
+    #         ends = np.fmin(shape, starts + block_size)
+    #         if offset != 0:
+    #             ends = ends + offset
+    #         counts = ends - starts
+    #         if any(counts == 0):
+    #             continue
+    #         yield starts, counts
+
+    # async def _get_array_chuncked(self, *args, **kwargs):
+    #     warnings.warn(
+    #         "This function is deprecated and will be removed in a later version of "
+    #         "pyetp. Please use the updated function 'pyetp._get_array_chunked'.",
+    #         DeprecationWarning,
+    #         stacklevel=2,
+    #     )
+    #     return self._get_array_chunked(*args, **kwargs)
+
+    # async def _get_array_chunked(
+    #     self,
+    #     uid: DataArrayIdentifier,
+    #     offset: int = 0,
+    #     total_count: T.Union[int, None] = None,
+    # ):
+    #     metadata = (await self.get_array_metadata(uid))[0]
+    #     if len(metadata.dimensions) != 1 and offset != 0:
+    #         raise Exception("Offset is only implemented for 1D array")
+
+    #     if isinstance(total_count, (int, float)):
+    #         buffer_shape = np.array([total_count], dtype=np.int64)
+    #     else:
+    #         buffer_shape = np.array(metadata.dimensions, dtype=np.int64)
+    #     dtype = utils_arrays.get_dtype_from_any_array_type(
+    #         metadata.transport_array_type
+    #     )
+    #     buffer = np.zeros(buffer_shape, dtype=dtype)
+    #     params = []
+
+    #     async def populate(starts, counts):
+    #         params.append([starts, counts])
+    #         array = await self.get_subarray(uid, starts, counts)
+    #         ends = starts + counts
+    #         slices = tuple(
+    #             map(lambda se: slice(se[0], se[1]), zip(starts - offset, ends - offset))
+    #         )
+    #         buffer[slices] = array
+    #         return
+
+    #     _ = await asyncio.gather(
+    #         *[
+    #             populate(starts, counts)
+    #             for starts, counts in self._get_chunk_sizes(buffer_shape, dtype, offset)
+    #         ]
+    #     )
+
+    #     return buffer
+
+    # async def _put_array_chuncked(self, *args, **kwargs):
+    #     warnings.warn(
+    #         "This function is deprecated and will be removed in a later version of "
+    #         "pyetp. Please use the updated function 'pyetp._put_array_chunked'.",
+    #         DeprecationWarning,
+    #         stacklevel=2,
+    #     )
+    #     return self._put_array_chunked(*args, **kwargs)
+
+    # async def _put_array_chunked(self, uid: DataArrayIdentifier, data: np.ndarray):
+    #     for starts, counts in self._get_chunk_sizes(data.shape, data.dtype):
+    #         await self.put_subarray(uid, data, starts, counts)
+
+    #     return {uid.uri: ""}
+
+    # async def _put_uninitialized_data_array(
+    #     self,
+    #     uid: DataArrayIdentifier,
+    #     shape: T.Tuple[int, ...],
+    #     transport_array_type: AnyArrayType,
+    #     logical_array_type: AnyLogicalArrayType,
+    # ):
+    #     payload = PutUninitializedDataArrayType(
+    #         uid=uid,
+    #         metadata=(
+    #             DataArrayMetadata(
+    #                 dimensions=list(shape),  # type: ignore
+    #                 transportArrayType=transport_array_type,
+    #                 logicalArrayType=logical_array_type,
+    #                 storeLastWrite=self.timestamp,
+    #                 storeCreated=self.timestamp,
+    #             )
+    #         ),
+    #     )
+    #     responses = await self.send(
+    #         PutUninitializedDataArrays(dataArrays={uid.path_in_resource: payload})
+    #     )
+
+    #     assert len(responses) == 1
+    #     response = responses[0]
+
+    #     assert isinstance(response, PutUninitializedDataArraysResponse), (
+    #         "Expected PutUninitializedDataArraysResponse"
+    #     )
+    #     assert len(response.success) == 1, "expected one success"
+    #     return response.success
 
 
 class etp_connect:
