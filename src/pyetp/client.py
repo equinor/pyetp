@@ -142,7 +142,7 @@ class ETPClient:
         etp_timeout: float | None = 10.0,
     ) -> None:
         self.ws = ws
-        self.max_size = self.ws.protocol.max_size
+        self.max_size = self.ws.protocol.max_message_size
         # We need to add some slack to the array messages to handle the rest of
         # the message body. This size is a guess! The only way to be absolutely
         # sure is to encode the message, and then check if it is too large.
