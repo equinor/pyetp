@@ -96,6 +96,9 @@ class DataspaceURI:
 
         return DataObjectURI.from_uri(uri).get_dataspace_uri()
 
+    def __str__(self) -> str:
+        return self.uri
+
 
 @dataclasses.dataclass
 class DataObjectURI:
@@ -194,3 +197,6 @@ class DataObjectURI:
             uuid=uuid,
             version=version,
         )
+
+    def __str__(self) -> str:
+        return self.uri
