@@ -176,91 +176,6 @@ def uid_not_exists():
     )
 
 
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_persistent_connect_ws_closing() -> None:
-    counter = 0
-    async for etp_client in etp_connect(uri=etp_server_url):
-        if counter == 10:
-            break
-
-        counter += 1
-        await etp_client.ws.close()
-
-    assert counter == 10
-
-
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_persistent_connect_ws_closing_operations() -> None:
-    counter = 0
-    async for etp_client in etp_connect(uri=etp_server_url):
-        if counter == 10:
-            break
-
-        counter += 1
-
-        await etp_client.ws.close(1009)
-
-        with pytest.raises(websockets.ConnectionClosed):
-            await etp_client.get_dataspaces()
-
-    assert counter == 10
-
-
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_persistent_connect_etp_closing() -> None:
-    async for etp_client in etp_connect(uri=etp_server_url):
-        break
-
-    assert True
-
-
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_persistent_connect_broken_receiver_task() -> None:
-    counter = 0
-    with pytest.raises(asyncio.CancelledError):
-        async for etp_client in etp_connect(uri=etp_server_url):
-            counter += 1
-            etp_client._ETPClient__recvtask.cancel("stop")
-
-            # NOTE: This test can take a variable number of seconds to complete
-            # due to the adaptive timeout when waiting for a message.
-            await etp_client.get_dataspaces()
-
-    # Check that the for-loop only iterates once.
-    assert counter == 1
-
-
-@pytest.mark.skipif(
-    not check_if_server_is_accesible(),
-    reason="websocket for test server not open",
-)
-@pytest.mark.asyncio
-async def test_manual_open_close():
-    etp_client = await etp_connect(uri=etp_server_url)
-    assert etp_client.is_connected, "should be connected"
-    await etp_client.close()  # close
-
-    assert not etp_client.is_connected, "should be disconnected"
-    with pytest.raises(websockets.ConnectionClosedOK):
-        await etp_client.ws.ping()
-
-
 @pytest.mark.asyncio
 async def test_auth(etp_client: ETPClient):
     resp = await etp_client.authorize("test")
@@ -282,45 +197,6 @@ async def test_arraymeta(
     msg = await etp_client.get_array_metadata(uid)
     assert len(msg) == 1
     np.testing.assert_allclose(msg[0].dimensions, data.shape)  # type: ignore
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "code_and_error",
-    [
-        (1000, websockets.exceptions.ConnectionClosedOK),
-        (1002, websockets.exceptions.ConnectionClosedError),
-    ],
-)
-async def test_disconnect_error(
-    etp_client: ETPClient,
-    code_and_error: tuple[int, websockets.exceptions.ConnectionClosed],
-):
-    code, error = code_and_error
-    # Websockets closing code 1000 corresponds to a normal closure and
-    # websockets closing code 1002 corresponds to an endpoint terminating the
-    # connection due to a protocol error (see:
-    # https://datatracker.ietf.org/doc/html/rfc6455.html#section-7.4.1).
-    await etp_client.ws.close(code=code)
-
-    with pytest.raises(error):
-        await etp_client.put_dataspaces_no_raise(
-            [""], [""], [""], [""], etp_client.dataspace_uri("doesnt matter")
-        )
-
-
-@pytest.mark.asyncio
-async def test_timeout_error(
-    etp_client: ETPClient,
-    uid_not_exists: DataArrayIdentifier,
-    monkeypatch: pytest.MonkeyPatch,
-):
-    monkeypatch.setattr(etp_client, "etp_timeout", 0.1)
-    # This ensures that the Event flag will never be set to True
-    monkeypatch.setattr(asyncio.Event, "set", lambda self: False)
-
-    with pytest.raises(asyncio.exceptions.TimeoutError):
-        await etp_client.get_array_metadata(uid_not_exists)
 
 
 @pytest.mark.asyncio

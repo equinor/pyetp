@@ -102,7 +102,6 @@ async def test_persistent_connect_ws_closing() -> None:
 async def test_persistent_connect_ws_closing_operations() -> None:
     counter = 0
     async for etp_client in etp_connect(uri=etp_server_url):
-        print("HELLO")
         if counter == 10:
             break
 
@@ -112,7 +111,6 @@ async def test_persistent_connect_ws_closing_operations() -> None:
 
         with pytest.raises(websockets.ConnectionClosed):
             await etp_client.send_and_recv(GetDataspaces())
-        print("FOO?")
 
     assert counter == 10
 
@@ -151,3 +149,34 @@ async def test_manual_open_close():
 
     with pytest.raises(websockets.ConnectionClosedOK):
         await etp_client.ws.ping()
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_disconnect_error() -> None:
+    # Websockets closing code 1000 corresponds to a normal closure and
+    # websockets closing code 1002 corresponds to an endpoint terminating the
+    # connection due to a protocol error (see:
+    # https://datatracker.ietf.org/doc/html/rfc6455.html#section-7.4.1).
+
+    with pytest.raises(websockets.exceptions.ConnectionClosedOK):
+        async with etp_connect(uri=etp_server_url) as etp_client:
+            # Successful closing.
+            await etp_client.ws.close(code=1000)
+            await etp_client.send_and_recv(GetDataspaces())
+
+    with pytest.raises(websockets.exceptions.ConnectionClosedError):
+        async with etp_connect(uri=etp_server_url) as etp_client:
+            await etp_client.ws.close(code=1002)
+            await etp_client.send_and_recv(GetDataspaces())
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_timeout_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        # We use a very short timeout to ensure that we don't have to wait a
+        # long time for the test to finish.
+        async with etp_connect(uri=etp_server_url, etp_timeout=0.1) as etp_client:
+            monkeypatch.setattr(asyncio.Event, "set", lambda self: False)
+            await etp_client.send_and_recv(GetDataspaces())
