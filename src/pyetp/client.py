@@ -192,10 +192,13 @@ class ETPClient:
             lambda: list()
         )
 
-        # Ensure a minimum timeout of 10 seconds.
-        self.etp_timeout = (
-            etp_timeout if etp_timeout is None or etp_timeout > 10.0 else 10.0
-        )
+        if etp_timeout is not None and etp_timeout < 10:
+            logger.warning(
+                "A timeout shorter than 10 seconds can make the client close slow "
+                "connections too soon. Consider increasing `etp_timeout` if it "
+                "becomes unstable."
+            )
+        self.etp_timeout = etp_timeout
         self.__recvtask = asyncio.create_task(self.__receiver_loop())
 
     @staticmethod
