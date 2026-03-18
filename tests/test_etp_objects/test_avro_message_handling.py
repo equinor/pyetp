@@ -5,9 +5,9 @@ import pytest
 import energistics.etp.v12.protocol.core
 import energistics.etp.v12.protocol.transaction
 from energistics.avro_handler import (
+    GzipCompression,
     decode_message,
     encode_message,
-    GzipCompression,
 )
 from energistics.etp.v12.datatypes import MessageHeader
 from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags

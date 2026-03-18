@@ -1,5 +1,5 @@
-import uuid
 import typing
+import uuid
 
 import pydantic
 
