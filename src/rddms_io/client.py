@@ -6,6 +6,7 @@ import uuid
 from collections.abc import AsyncGenerator, Sequence
 from types import TracebackType
 
+import numpy as np
 import numpy.typing as npt
 from pydantic import SecretStr
 
@@ -846,7 +847,7 @@ class RDDMSClient:
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
             block_starts, block_counts = utils_arrays.get_array_block_sizes(
-                data.shape, data.dtype, self.max_array_size
+                data.shape, data.dtype, self.etp_client.max_array_size
             )
 
             for starts, counts in zip(block_starts, block_counts):
