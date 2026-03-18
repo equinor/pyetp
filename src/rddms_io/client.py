@@ -797,11 +797,6 @@ class RDDMSClient:
             A higher-level method that wraps transaction handling, data object
             uploading and array uploading in one go.
         """
-        # await self.etp_client.upload_array(
-        #     epc_uri=epc_uri,
-        #     path_in_resource=path_in_resource,
-        #     data=data,
-        # )
         # Fetch ETP logical and transport array types
         logical_array_type, transport_array_type = (
             utils_arrays.get_logical_and_transport_array_types(data.dtype)
