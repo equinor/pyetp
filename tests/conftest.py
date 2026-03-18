@@ -1,17 +1,7 @@
-import datetime
 import socket
 import urllib.parse
-import uuid
 
-import numpy as np
-import numpy.typing as npt
 import pytest
-import pytest_asyncio
-from xsdata.models.datatype import XmlDateTime
-
-import resqml_objects.v201 as resqml_objects
-from pyetp.client import ETPClient, etp_connect
-from energistics.uris import DataspaceURI
 
 etp_server_url = "ws://localhost:9100"
 
