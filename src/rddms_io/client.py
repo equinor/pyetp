@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import itertools
 import logging
 import typing
 import uuid
@@ -96,6 +95,16 @@ ObjectsAndArrays: typing.TypeAlias = tuple[
     ListOfRESQMLObjects, dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]]
 ]
 DownloadModelType: typing.TypeAlias = ListOfRESQMLObjects | ObjectsAndArrays
+
+try:
+    from itertools import batched
+except ImportError:
+    # Construct `batched` for Python 3.11 as it was introduced in Python 3.12.
+    # We make it specialized for our use-case.
+    def batched(iterable: bytes, n: int) -> typing.Iterator[tuple[bytes]]:
+        num_chunks = len(iterable) // n + int(len(iterable) % n != 0)
+        for i in range(num_chunks):
+            yield iterable[slice(i * n, (i + 1) * n)]
 
 
 class RDDMSClient:
@@ -1272,7 +1281,7 @@ class RDDMSClient:
             resource=dob.resource,
         )
         new_pdo = PutDataObjects(data_objects={dob_key: new_dob})
-        chunked_bytes = tuple(itertools.batched(data, n=chunk_size))
+        chunked_bytes = tuple(batched(data, n=chunk_size))
 
         chunks = [
             Chunk(
