@@ -241,7 +241,9 @@ class ETPClient:
             message = encode_message(
                 header=mpb_header,
                 body=mpb,
-                compression_func=self.negotiated_compression.compress,
+                compression_func=self.negotiated_compression.compress
+                if self.negotiated_compression is not None
+                else None,
             )
 
             if len(message) > self.max_size:
@@ -252,7 +254,7 @@ class ETPClient:
                     ),
                     message_size=len(message),
                 )
-            tasks.append(self.ws_send(message))
+            tasks.append(self.ws.send(message))
 
         await asyncio.gather(*tasks)
 
