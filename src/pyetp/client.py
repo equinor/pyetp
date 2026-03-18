@@ -123,6 +123,7 @@ class ETPClient:
         self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(
             lambda: list()
         )
+        self._recv_headers: dict[int, list[MessageHeader]] = defaultdict(lambda: list())
 
         if etp_timeout is not None and etp_timeout < 10:
             logger.warning(
@@ -340,9 +341,22 @@ class ETPClient:
                 f"Receiver task got message type {body.__class__.__name__} with "
                 f"header {header}"
             )
+            self._recv_headers[header.correlation_id].append(header)
             self._recv_buffer[header.correlation_id].append(body)
 
             if header.is_final_message():
+                # Sort the returned messages based on the message ids in the
+                # headers.
+                body_list = self._recv_buffer.pop(header.correlation_id)
+                header_list = self._recv_headers.pop(header.correlation_id)
+                body_list = [
+                    b
+                    for _, b in sorted(
+                        zip(header_list, body_list), key=lambda p: p[0].message_id
+                    )
+                ]
+                self._recv_buffer[header.correlation_id] = body_list
+
                 self._recv_events[header.correlation_id].set()
 
         logger.info("Websockets connection closed and receiver task stopped")
