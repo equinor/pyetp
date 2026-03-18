@@ -69,13 +69,13 @@ from energistics.etp.v12.protocol.transaction import (
     StartTransaction,
     StartTransactionResponse,
 )
+from energistics.uris import DataObjectURI, DataspaceURI
 from pyetp import utils_arrays
 from pyetp.client import ETPClient, ETPError, etp_connect, timeout_intervals
 from pyetp.errors import (
     ETPTransactionFailure,
     parse_and_raise_response_errors,
 )
-from energistics.uris import DataObjectURI, DataspaceURI
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 from resqml_objects.v201.utils import find_data_object_references, find_hdf5_datasets

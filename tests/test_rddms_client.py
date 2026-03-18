@@ -7,9 +7,9 @@ import numpy.typing as npt
 import pytest
 
 import resqml_objects.v201 as ro
+from energistics.uris import DataspaceURI
 from pyetp.client import ETPError
 from pyetp.errors import ETPTransactionFailure
-from energistics.uris import DataspaceURI
 from pyetp.utils_arrays import get_valid_dtype_cast
 from rddms_io.client import rddms_connect
 from resqml_objects.epc_readers import (
