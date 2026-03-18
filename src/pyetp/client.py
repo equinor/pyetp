@@ -69,6 +69,7 @@ class ETPClient:
         self,
         ws: websockets.ClientConnection,
         etp_timeout: float | None = 10.0,
+        use_compression: bool = True,
     ) -> None:
         self.ws = ws
         self.max_size = self.ws.protocol.max_message_size
@@ -105,7 +106,10 @@ class ETPClient:
             SupportedDataObject(qualified_type="resqml20."),
         ]
 
-        self.supported_compression = [GzipCompression]
+        if use_compression:
+            self.supported_compression = [GzipCompression]
+        else:
+            self.supported_compression = []
         self.negotiated_compression = None
         self.supported_formats = ["xml"]
 
@@ -563,6 +567,10 @@ class etp_connect:
     max_message_size
         The maximum number of bytes for a single websockets message. Default is
         `2**20` corresponding to `1` MiB.
+    use_compression
+        Flag to toggle if compression of the messages should be applied. So far
+        the client (and the server) only supports compression with gzip.
+        Default is `True` and compression is applied.
 
 
     Examples
@@ -613,6 +621,7 @@ class etp_connect:
         authorization: str | SecretStr | None = None,
         etp_timeout: float | None = None,
         max_message_size: float = 2**20,
+        use_compression: bool = True,
     ) -> None:
         self.uri = uri
         self.data_partition_id = data_partition_id
@@ -624,6 +633,7 @@ class etp_connect:
 
         self.etp_timeout = etp_timeout
         self.max_message_size = max_message_size
+        self.use_compression = use_compression
         self.subprotocols = ["etp12.energistics.org"]
 
     def __await__(self) -> ETPClient:
@@ -656,6 +666,7 @@ class etp_connect:
                 ETPClient(
                     ws=ws,
                     etp_timeout=self.etp_timeout,
+                    use_compression=self.use_compression,
                 )
             )
         except BaseException:
@@ -682,6 +693,7 @@ class etp_connect:
             async with ETPClient(
                 ws=ws,
                 etp_timeout=self.etp_timeout,
+                use_compression=self.use_compression,
             ) as etp_client:
                 yield etp_client
 

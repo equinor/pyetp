@@ -1710,6 +1710,10 @@ class rddms_connect:
     max_message_size
         The maximum number of bytes for a single websockets message. Default is
         `2**20` corresponding to `1` MiB.
+    use_compression
+        Flag to toggle if compression of the messages should be applied. So far
+        the client (and the server) only supports compression with gzip.
+        Default is `True` and compression is applied.
 
 
     Examples
@@ -1766,6 +1770,7 @@ class rddms_connect:
         authorization: str | SecretStr | None = None,
         etp_timeout: float | None = None,
         max_message_size: float = 2**20,
+        use_compression: bool = True,
     ) -> None:
         self.uri = uri
         self.data_partition_id = data_partition_id
@@ -1777,6 +1782,7 @@ class rddms_connect:
 
         self.etp_timeout = etp_timeout
         self.max_message_size = max_message_size
+        self.use_compression = use_compression
 
     def __await__(self) -> RDDMSClient:
         return self.__aenter__().__await__()
@@ -1788,6 +1794,7 @@ class rddms_connect:
             authorization=self.authorization,
             etp_timeout=self.etp_timeout,
             max_message_size=self.max_message_size,
+            use_compression=self.use_compression,
         )
         self.rddms_client = RDDMSClient(etp_client)
 
