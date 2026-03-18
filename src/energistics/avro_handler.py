@@ -132,10 +132,10 @@ def decode_message(
             "function specified"
         )
 
+    body_cls = get_schema_class(header.protocol, header.message_type)
+
     if header.is_compressed():
         body_bytes = decompression_func(body_bytes)
-
-    body_cls = get_schema_class(header.protocol, header.message_type)
 
     with io.BytesIO(body_bytes) as fo:
         body_record = fastavro.read.schemaless_reader(
