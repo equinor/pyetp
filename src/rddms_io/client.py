@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import itertools
 import logging
 import typing
 import uuid
@@ -56,6 +57,7 @@ from energistics.etp.v12.protocol.discovery import (
     GetResourcesResponse,
 )
 from energistics.etp.v12.protocol.store import (
+    Chunk,
     DeleteDataObjects,
     DeleteDataObjectsResponse,
     GetDataObjects,
@@ -72,7 +74,13 @@ from energistics.etp.v12.protocol.transaction import (
 )
 from energistics.uris import DataObjectURI, DataspaceURI
 from pyetp import utils_arrays
-from pyetp.client import ETPClient, ETPError, etp_connect, timeout_intervals
+from pyetp.client import (
+    ETPClient,
+    ETPError,
+    ETPMessageTooLarge,
+    etp_connect,
+    timeout_intervals,
+)
 from pyetp.errors import (
     ETPTransactionFailure,
     parse_and_raise_response_errors,
@@ -1232,6 +1240,55 @@ class RDDMSClient:
 
         return ml_uris
 
+    async def _send_put_data_objects(
+        self, pdo: PutDataObjects
+    ) -> list[PutDataObjectsResponse]:
+        if len(pdo.data_objects) > 1:
+            raise NotImplementedError(
+                "We currently only support chunking a single data object at a time. "
+                "Consider splitting up the data into separate "
+                "`PutDataObjects`-messages first."
+            )
+
+        try:
+            return await self.etp_client.send_and_recv(pdo)
+        except ETPMessageTooLarge:
+            logger.debug("The `PutDataObjects`-message is too big, starting chunking.")
+
+        # We subtract space for header and body metadata in the chunk messages.
+        # This should ideally be tested with the full size, then adjusted to a
+        # lower number if we get an `ETPMessageTooLarge`-error.
+        chunk_size = self.etp_client.max_size - 1000
+        assert chunk_size > 0
+        blob_id = str(uuid.uuid4())
+
+        dob_key = list(pdo.data_objects)[0]
+        dob = pdo.data_objects[dob_key]
+        data = dob.data
+
+        new_dob = DataObject(
+            format=dob.format,
+            blob_id=blob_id,
+            resource=dob.resource,
+        )
+        new_pdo = PutDataObjects(data_objects={dob_key: new_dob})
+        chunked_bytes = tuple(itertools.batched(data, n=chunk_size))
+
+        chunks = [
+            Chunk(
+                blob_id=blob_id,
+                data=b"".join([i.to_bytes() for i in chunk]),
+                final=i == (len(chunked_bytes) - 1),
+            )
+            for i, chunk in enumerate(chunked_bytes)
+        ]
+        assert chunks[-1].final
+
+        return await self.etp_client.send_and_recv(
+            body=new_pdo,
+            multi_part_bodies=chunks,
+        )
+
     async def _upload_model(
         self,
         dataspace_uri: str,
@@ -1286,7 +1343,7 @@ class RDDMSClient:
                 data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
             )
 
-            tasks.append(self.etp_client.send_and_recv(pdo))
+            tasks.append(self._send_put_data_objects(pdo))
 
         task_responses = await asyncio.gather(*tasks)
         responses = [
@@ -1391,6 +1448,48 @@ class RDDMSClient:
             ]
         )
 
+    async def _recv_get_data_objects(
+        self, gdo: GetDataObjects
+    ) -> list[GetDataObjectsResponse]:
+        if len(gdo.uris) > 1:
+            raise NotImplementedError(
+                "We only support chunking a single data object at at time. "
+                "Split up the data into separate `GetDataObjects`-messages first."
+            )
+
+        responses = await self.etp_client.send_and_recv(gdo)
+
+        if len(responses) == 1:
+            return responses
+
+        logger.debug("The `GetDataObjects`-message is too big, starting chunking.")
+        assert isinstance(responses[0], GetDataObjectsResponse)
+        gdor = responses.pop(0)
+        assert len(gdor.data_objects) == 1
+        dob_key = list(gdor.data_objects)[0]
+        dob = gdor.data_objects[dob_key]
+        assert len(dob.data) == 0
+        blob_id = dob.blob_id
+
+        # TODO: This is a bug from the server sending an extra, empty
+        # `GetDataObjectsResponse`-message after all the `Chunk`-messages.
+        # For now we catch and pop it out of the list. This test should be
+        # removed once the bug is fixed.
+        if isinstance(responses[-1], GetDataObjectsResponse):
+            bug_gdor = responses.pop(-1)
+            assert bug_gdor.data_objects == {}
+
+        # The returned `Chunk`-messages are sorted based on the message id in
+        # the header (see `ETPClient.__receiver_loop`).
+        assert all([isinstance(r, Chunk) for r in responses])
+        assert all([r.blob_id == blob_id for r in responses])
+        assert responses[-1].final
+
+        gdor.data_objects[dob_key].blob_id = None
+        gdor.data_objects[dob_key].data = b"".join([r.data for r in responses])
+
+        return [gdor]
+
     async def _download_model(
         self,
         ml_uri: str,
@@ -1399,7 +1498,7 @@ class RDDMSClient:
     ) -> RDDMSModel:
         dataspace_uri = str(DataspaceURI.from_any_etp_uri(ml_uri))
 
-        responses = await self.etp_client.send_and_recv(
+        responses = await self._recv_get_data_objects(
             GetDataObjects(uris={ml_uri: ml_uri})
         )
 

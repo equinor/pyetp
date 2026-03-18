@@ -746,7 +746,11 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         original_dtypes[k] = v.dtype
         casted_data_arrays[k] = v.astype(get_valid_dtype_cast(v))
 
-    async with rddms_connect(uri=etp_server_url) as rddms_client:
+    # We set an upper limit on the `max_message_size` and turn off compression
+    # to trigger chunking.
+    async with rddms_connect(
+        uri=etp_server_url, max_message_size=5000, use_compression=False
+    ) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         ml_uris = await rddms_client.upload_model(
@@ -755,7 +759,17 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
             data_arrays=casted_data_arrays,
         )
 
-    async with rddms_connect(uri=etp_server_url) as rddms_client:
+    # We set an upper limit on the `max_message_size` and turn off compression
+    # to trigger chunking.
+    # Currently the server does not seem to handle returning messages of the
+    # same size that we are able to use when uploading. Hence, the
+    # `max_message_size` in this connection is higher than in the uploading
+    # part above.
+    async with rddms_connect(
+        uri=etp_server_url,
+        max_message_size=10000,
+        use_compression=False,
+    ) as rddms_client:
         ret_models = await rddms_client.download_models(
             ml_uris=ml_uris,
             download_arrays=True,
