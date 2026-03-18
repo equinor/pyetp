@@ -1128,11 +1128,9 @@ class RDDMSClient:
                     in response.data_subarrays
                 )
 
-                data_block = utils_arrays.get_numpy_array_from_etp_data_array(
-                    response.data_subarrays[
-                        data_subarrays_key(dai.path_in_resource, i)
-                    ],
-                )
+                data_block = response.data_subarrays[
+                    data_subarrays_key(dai.path_in_resource, i)
+                ].to_numpy_array()
                 data_blocks.append(data_block)
 
             for data_block, starts, counts in zip(
@@ -1165,9 +1163,7 @@ class RDDMSClient:
             and dai.path_in_resource in response.data_arrays
         )
 
-        return utils_arrays.get_numpy_array_from_etp_data_array(
-            response.data_arrays[dai.path_in_resource]
-        )
+        return response.data_arrays[dai.path_in_resource].to_numpy_array()
 
     async def upload_model(
         self,

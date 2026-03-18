@@ -81,7 +81,7 @@ _INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
 
 
 # This AnyArrayType-map is used until the logical-array-type is properly
-# implemented for the open-etp-server. In this case we
+# implemented for the open-etp-server.
 _ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
     np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
     np.dtype(np.int8): AnyArrayType.BYTES,
@@ -205,7 +205,7 @@ def get_etp_data_array_from_numpy(data: npt.NDArray) -> DataArray:
         return DataArray(dimensions=dimensions, data=AnyArray(item=item))
 
     return DataArray(
-        dimensions=data.shape, data=AnyArray(item=cls(values=np.ravel(data).tolist()))
+        dimensions=data.shape, data=AnyArray(item=cls(values=np.ravel(data)))
     )
 
 
@@ -246,26 +246,6 @@ def get_dtype_from_any_logical_array_type(
 ) -> npt.DTypeLike:
     enum_name = AnyLogicalArrayType(_type)
     return _INV_ANY_LOGICAL_ARRAY_TYPE_MAP[enum_name]
-
-
-def get_numpy_array_from_etp_data_array(
-    data_array: DataArray,
-) -> npt.NDArray[
-    # The types used here do not tell which endianess is used for the returned
-    # arrays, but until we can use np.dtype("<f4")-like syntax (Python > 3.10),
-    # this will do.
-    np.int8 | np.bool_ | np.int32 | np.int64 | np.float32 | np.float64
-]:
-    dtype = get_dtype_from_any_array_class(type(data_array.data.item))
-
-    if type(data_array.data.item) is bytes:
-        return np.array(np.frombuffer(data_array.data.item, dtype=dtype)).reshape(
-            data_array.dimensions
-        )
-
-    return np.array(data_array.data.item.values, dtype=dtype).reshape(
-        data_array.dimensions
-    )
 
 
 def get_array_block_sizes(
