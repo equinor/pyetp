@@ -547,20 +547,20 @@ class etp_connect:
 
     Parameters
     ----------
-    uri: str
+    uri
         The uri to the ETP server. This should be the uri to a websockets
         endpoint.
-    data_partition_id: str | None
+    data_partition_id
         The data partition id used when connecting to the OSDU open-etp-server
         in multi-partition mode. Default is `None`.
-    authorization: str | SecretStr | None
+    authorization
         Bearer token used for authenticating to the ETP server. This token
         should be on the form `"Bearer 1234..."`. Default is `None`.
-    etp_timeout: float | None
+    etp_timeout
         The timeout in seconds for when to stop waiting for a message from the
         ETP server. Setting it to `None` will persist the connection
         indefinetly. Default is `None`.
-    max_message_size: float
+    max_message_size
         The maximum number of bytes for a single websockets message. Default is
         `2**20` corresponding to `1` MiB.
 
