@@ -20,7 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy >= 2.3.4",
-    "websockets >= 15.0",
+    "websockets >= 16.0",
     "lxml >=4.9.4",
     "pydantic >= 2.11.9",
     "xtgeo >= 4.0.0",
