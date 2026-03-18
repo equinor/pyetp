@@ -798,14 +798,14 @@ class RDDMSClient:
 
         Parameters
         ----------
-        epc_uri: str | DataObjectURI
+        epc_uri
             An ETP data object uri to an `obj_EpcExternalPartReference` that is
             connected to the object that links to the provided array.
-        path_in_resource: str
+        path_in_resource
             A key (typically a HDF5-key) that uniquely identifies the array
             along with the `epc_uri`. This key is found in the object that
             links to the provided array.
-        data: npt.NDArray[utils_arrays.LogicalArrayDTypes]
+        data
             A NumPy-array with the data.
 
         See Also
