@@ -2,6 +2,7 @@ import typing as T
 
 import numpy as np
 import numpy.typing as npt
+
 from energistics.etp.v12.datatypes import (
     AnyArray,
     AnyArrayType,
