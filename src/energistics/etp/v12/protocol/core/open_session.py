@@ -94,6 +94,6 @@ class OpenSession(energistics.base.ETPBaseProtocolModel):
     # This field is only set by stores
     earliest_retained_change_time: int = Field(alias="earliestRetainedChangeTime")
     session_id: Uuid = Field(alias="sessionId")
-    endpoint_capabilities: typing.Mapping[EndpointCapabilityKind, DataValue] = Field(
+    endpoint_capabilities: dict[EndpointCapabilityKind, DataValue] = Field(
         alias="endpointCapabilities", default_factory=dict
     )
