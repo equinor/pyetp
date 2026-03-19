@@ -64,7 +64,7 @@ def get_masked_array_validator(
         return np.ma.masked_array(
             obj_values.astype(dtype),
             mask=mask,
-        )  # type: ignore[no-untyped-call]
+        )
 
     return validate_masked_array
 
