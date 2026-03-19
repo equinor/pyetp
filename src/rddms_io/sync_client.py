@@ -14,7 +14,7 @@ from energistics.etp.v12.datatypes.object import (
     Dataspace,
     Resource,
 )
-from pyetp.uri import DataObjectURI, DataspaceURI
+from energistics.uris import DataObjectURI, DataspaceURI
 from pyetp.utils_arrays import LogicalArrayDTypes
 from rddms_io.client import rddms_connect
 from rddms_io.data_types import LinkedObjects, RDDMSModel
@@ -50,6 +50,10 @@ class RDDMSClientSync:
     max_message_size
         The maximum number of bytes for a single websockets message. Default is
         `2**20` corresponding to `1` MiB.
+    use_compression
+        Flag to toggle if compression of the messages should be applied. So far
+        the client (and the server) only supports compression with gzip.
+        Default is `True` and compression is applied.
 
 
 
@@ -82,6 +86,7 @@ class RDDMSClientSync:
         authorization: str | SecretStr | None = None,
         etp_timeout: float | None = None,
         max_message_size: float = 2**20,
+        use_compression: bool = True,
     ) -> None:
         if isinstance(authorization, SecretStr):
             authorization = authorization
@@ -94,6 +99,7 @@ class RDDMSClientSync:
             authorization=authorization,
             etp_timeout=etp_timeout,
             max_message_size=max_message_size,
+            use_compression=use_compression,
         )
 
     def create_dataspace(

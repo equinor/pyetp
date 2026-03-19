@@ -7,9 +7,9 @@ import numpy.typing as npt
 import pytest
 
 import resqml_objects.v201 as ro
+from energistics.uris import DataspaceURI
 from pyetp.client import ETPError
 from pyetp.errors import ETPTransactionFailure
-from pyetp.uri import DataspaceURI
 from pyetp.utils_arrays import get_valid_dtype_cast
 from rddms_io.client import rddms_connect
 from resqml_objects.epc_readers import (
@@ -138,7 +138,7 @@ async def test_upload_and_download_model() -> None:
     crs, epc, gri, Z = get_random_surface()
 
     dataspace_path = "rddms-io/test-upload-and-download-model"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
@@ -241,7 +241,7 @@ async def test_list_linked_objects() -> None:
     crs, epc, gri, Z = get_random_surface()
 
     dataspace_path = "rddms-io/test-list-linked-objects"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
@@ -320,7 +320,7 @@ async def test_list_array_metadata() -> None:
     )
 
     dataspace_path = "rddms-io/test-list-array-metadata"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
@@ -430,7 +430,7 @@ async def test_partial_deletion() -> None:
     gri_2_pir = gri_2.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
 
     dataspace_path = "rddms-io/test-partial-deletion"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
@@ -586,7 +586,7 @@ async def test_partial_deletion() -> None:
 @pytest.mark.asyncio
 async def test_debouncing() -> None:
     dataspace_path = "rddms-io/test-debouncing"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
@@ -666,7 +666,7 @@ async def test_debouncing_on_upload() -> None:
     crs_3, epc_3, gri_3, Z_3 = get_random_surface()
 
     dataspace_path = "rddms-io/test-debouncing-on-upload"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
@@ -735,7 +735,7 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
     data_arrays = get_arrays_and_paths_in_hdf_file(input_hdf_file)
 
     dataspace_path = "rddms-io/test-epc-file-roundtrip"
-    dataspace_uri = str(DataspaceURI.from_any(dataspace_path))
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
 
     # Cast array data types to valid transport array types. This is needed as
     # the open-etp-server does not currently support the use of the logical
@@ -746,7 +746,11 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         original_dtypes[k] = v.dtype
         casted_data_arrays[k] = v.astype(get_valid_dtype_cast(v))
 
-    async with rddms_connect(uri=etp_server_url) as rddms_client:
+    # We set an upper limit on the `max_message_size` and turn off compression
+    # to trigger chunking.
+    async with rddms_connect(
+        uri=etp_server_url, max_message_size=5000, use_compression=False
+    ) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
         ml_uris = await rddms_client.upload_model(
@@ -755,7 +759,17 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
             data_arrays=casted_data_arrays,
         )
 
-    async with rddms_connect(uri=etp_server_url) as rddms_client:
+    # We set an upper limit on the `max_message_size` and turn off compression
+    # to trigger chunking.
+    # Currently the server does not seem to handle returning messages of the
+    # same size that we are able to use when uploading. Hence, the
+    # `max_message_size` in this connection is higher than in the uploading
+    # part above.
+    async with rddms_connect(
+        uri=etp_server_url,
+        max_message_size=10000,
+        use_compression=False,
+    ) as rddms_client:
         ret_models = await rddms_client.download_models(
             ml_uris=ml_uris,
             download_arrays=True,
