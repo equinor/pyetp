@@ -85,7 +85,7 @@ class RDDMSClientSync:
         data_partition_id: str | None = None,
         authorization: str | SecretStr | None = None,
         etp_timeout: float | None = None,
-        max_message_size: float = 2**20,
+        max_message_size: int = 2**20,
         use_compression: bool = True,
     ) -> None:
         if isinstance(authorization, SecretStr):
