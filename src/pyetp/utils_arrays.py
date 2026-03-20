@@ -229,7 +229,7 @@ def get_dtype_from_any_logical_array_type(
 
 
 def get_array_block_sizes(
-    shape: tuple[int], dtype: npt.DTypeLike, max_array_size: int
+    shape: tuple[int], dtype: np.number | np.str_, max_array_size: int
 ) -> tuple[list[list[int]], list[list[int]]]:
     # Total size of array in bytes.
     array_size = int(np.prod(shape) * dtype.itemsize)
