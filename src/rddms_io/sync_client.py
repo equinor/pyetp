@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import datetime
 import typing
 from collections.abc import Sequence
@@ -18,6 +19,15 @@ from energistics.uris import DataObjectURI, DataspaceURI
 from pyetp.utils_arrays import LogicalArrayDTypes
 from rddms_io.client import rddms_connect
 from rddms_io.data_types import LinkedObjects, RDDMSModel
+
+
+def run_coroutine_sync(coro):
+    # Start a new thread.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        # Submit the coroutine to run via `asyncio.run` in the new thread.
+        future = executor.submit(asyncio.run, coro)
+        # Wait for the thread to finish, and return the results.
+        return future.result()
 
 
 class RDDMSClientSync:
@@ -154,7 +164,7 @@ class RDDMSClientSync:
                     ignore_if_exists=ignore_if_exists,
                 )
 
-        return asyncio.run(create_dataspace())
+        return run_coroutine_sync(create_dataspace())
 
     def delete_dataspace(self, dataspace_uri: DataspaceURI | str) -> None:
         """
@@ -177,7 +187,7 @@ class RDDMSClientSync:
             async with rddms_connect(**self.connection_args) as rddms_client:
                 return await rddms_client.delete_dataspace(dataspace_uri=dataspace_uri)
 
-        return asyncio.run(delete_dataspace())
+        return run_coroutine_sync(delete_dataspace())
 
     def list_dataspaces(
         self, store_last_write_filter: datetime.datetime | int | None = None
@@ -206,13 +216,13 @@ class RDDMSClientSync:
             The asynchronous version of this method.
         """
 
-        async def list_dataspaces() -> None:
+        async def list_dataspaces() -> list[Dataspace]:
             async with rddms_connect(**self.connection_args) as rddms_client:
                 return await rddms_client.list_dataspaces(
                     store_last_write_filter=store_last_write_filter
                 )
 
-        return asyncio.run(list_dataspaces())
+        return run_coroutine_sync(list_dataspaces())
 
     def list_objects_under_dataspace(
         self,
@@ -267,7 +277,7 @@ class RDDMSClientSync:
                     store_last_write_filter=store_last_write_filter,
                 )
 
-        return asyncio.run(list_objects_under_dataspace())
+        return run_coroutine_sync(list_objects_under_dataspace())
 
     def list_linked_objects(
         self,
@@ -327,7 +337,7 @@ class RDDMSClientSync:
                     depth=depth,
                 )
 
-        return asyncio.run(list_linked_objects())
+        return run_coroutine_sync(list_linked_objects())
 
     def list_array_metadata(
         self,
@@ -376,7 +386,7 @@ class RDDMSClientSync:
             async with rddms_connect(**self.connection_args) as rddms_client:
                 return await rddms_client.list_array_metadata(ml_uris=ml_uris)
 
-        return asyncio.run(list_array_metadata())
+        return run_coroutine_sync(list_array_metadata())
 
     def list_object_array_metadata(
         self,
@@ -421,7 +431,7 @@ class RDDMSClientSync:
                     dataspace_uri=dataspace_uri, ml_objects=ml_objects
                 )
 
-        return asyncio.run(list_object_array_metadata())
+        return run_coroutine_sync(list_object_array_metadata())
 
     def delete_model(
         self,
@@ -465,7 +475,7 @@ class RDDMSClientSync:
                     debounce=debounce,
                 )
 
-        return asyncio.run(delete_model())
+        return run_coroutine_sync(delete_model())
 
     def upload_model(
         self,
@@ -524,7 +534,7 @@ class RDDMSClientSync:
                     debounce=debounce,
                 )
 
-        return asyncio.run(upload_model())
+        return run_coroutine_sync(upload_model())
 
     def download_models(
         self,
@@ -585,4 +595,4 @@ class RDDMSClientSync:
                     download_linked_objects=download_linked_objects,
                 )
 
-        return asyncio.run(download_models())
+        return run_coroutine_sync(download_models())
