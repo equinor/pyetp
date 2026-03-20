@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import logging
 import typing as T
-import urllib
+import urllib.parse
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, Generator, Sequence
@@ -16,6 +16,7 @@ from energistics.avro_handler import (
     GzipCompression,
     decode_message,
     encode_message,
+    CompressionAlgorithm,
 )
 from energistics.base import ETPBaseProtocolModel, Protocol, Role
 from energistics.etp.v12.datatypes import (
@@ -45,12 +46,11 @@ class ETPError(Exception):
         super().__init__(f"{message} ({code=:})")
 
     @classmethod
-    def from_proto(cls, error: ErrorInfo):
-        assert error is not None, "passed no error info"
+    def from_proto(cls, error: ErrorInfo) -> T.Self:
         return cls(error.message, error.code)
 
     @classmethod
-    def from_protos(cls, errors: Sequence[ErrorInfo]):
+    def from_protos(cls, errors: Sequence[ErrorInfo]) -> list[T.Self]:
         return list(map(cls.from_proto, errors))
 
 
@@ -72,7 +72,13 @@ class ETPClient:
         use_compression: bool = True,
     ) -> None:
         self.ws = ws
-        self.max_size = self.ws.protocol.max_message_size
+
+        # Here `self.ws.protocol.max_message_size` can be `None`, but we ensure
+        # that it gets set to an integer in `etp_connect`, so we do not allow
+        # it to be anything other than an integer.
+        assert self.ws.protocol.max_message_size is not None
+        self.max_size: int = self.ws.protocol.max_message_size
+
         # We need to add some slack to the array messages to handle the rest of
         # the message body. This size is a guess! The only way to be absolutely
         # sure is to encode the message, and then check if it is too large.
@@ -110,7 +116,7 @@ class ETPClient:
             self.supported_compression = [GzipCompression]
         else:
             self.supported_compression = []
-        self.negotiated_compression = None
+        self.negotiated_compression: T.Type[CompressionAlgorithm] | None = None
         self.supported_formats = ["xml"]
 
         self.endpoint_capabilities = {
@@ -147,22 +153,20 @@ class ETPClient:
                 return SupportedProtocol(protocol=protocol, role=Role.STORE)
 
     @staticmethod
-    def get_server_capabilities_url(url: str) -> str:
-        url = urllib.parse.urlparse(url)
+    def get_server_capabilities_url(raw_url: str) -> str:
+        url = urllib.parse.urlparse(raw_url)
         if url.scheme == "ws":
             url = url._replace(scheme="http")
         elif url.scheme == "wss":
             url = url._replace(scheme="https")
 
-        url = urllib.parse.urljoin(
+        return urllib.parse.urljoin(
             url.geturl(),
             (
                 ".well-known/etp-server-capabilities"
                 "?GetVersion=etp12.energistics.org&$format=binary"
             ),
         )
-
-        return url
 
     def get_message_id(self) -> int:
         ret_id = self.message_id
@@ -192,7 +196,7 @@ class ETPClient:
             and body._protocol not in [np.protocol for np in self.negotiated_protocols]
         ):
             raise ValueError(
-                f"Message '{body.__class__.__name}' belongs to protocol "
+                f"Message '{body.__class__.__name__}' belongs to protocol "
                 f"{body._protocol} which is not included in the negotiated protocols "
                 f"{self.negotiated_protocols}."
             )
@@ -203,9 +207,13 @@ class ETPClient:
             MessageHeaderFlags.COMPRESSED
             if self.negotiated_compression is not None
             and body._protocol != Protocol.CORE
-            else 0x0
+            else MessageHeaderFlags.NOFLAG
         )
-        fin_flag = MessageHeaderFlags.FIN if len(multi_part_bodies) == 0 else 0x0
+        fin_flag = (
+            MessageHeaderFlags.FIN
+            if len(multi_part_bodies) == 0
+            else MessageHeaderFlags.NOFLAG
+        )
 
         header = MessageHeader.from_etp_protocol_body(
             body=body,
@@ -234,7 +242,7 @@ class ETPClient:
 
         tasks = [self.ws.send(message)]
         for i, mpb in enumerate(multi_part_bodies):
-            fin_flag = 0x0
+            fin_flag = MessageHeaderFlags.NOFLAG
             if i == len(multi_part_bodies) - 1:
                 fin_flag = MessageHeaderFlags.FIN
             mpb_header = MessageHeader.from_etp_protocol_body(
@@ -322,14 +330,19 @@ class ETPClient:
 
         return bodies
 
-    async def __receiver_loop(self):
+    async def __receiver_loop(self) -> None:
         logger.debug("Starting receiver loop")
 
         # Using `async for` makes the receiver task exit without errors on a
         # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
         # smoother clean-up in case the main-task errors resulting in a closed
         # websockets connection down the line.
-        async for message in self.ws:
+        # async for message in self.ws:
+        while True:
+            try:
+                message = await self.ws.recv(decode=False)
+            except websockets.ConnectionClosedOK:
+                return
             header, body = decode_message(
                 message,
                 decompression_func=self.negotiated_compression.decompress
@@ -375,8 +388,8 @@ class ETPClient:
 
         responses = await self.send_and_recv(rs)
         assert len(responses) == 1
-        os = responses[0]
-        self.assert_response(os, OpenSession)
+        assert isinstance(responses[0], OpenSession)
+        os: OpenSession = responses[0]
         logger.info(f"Session opened:\n{os}")
 
         self.server_application_name = os.application_name
@@ -419,6 +432,10 @@ class ETPClient:
             del os.endpoint_capabilities[
                 EndpointCapabilityKind.MAX_WEB_SOCKET_MESSAGE_PAYLOAD_SIZE
             ]
+            # The standard specifies that the
+            # `EndpointCapabilityKind.MAX_WEB_SOCKET_MESSAGE_PAYLOAD_SIZE`
+            # should be of type `int` (long).
+            assert isinstance(dv.item, int)
             server_max_size = dv.item
 
         if server_max_size < self.max_size:
@@ -532,16 +549,8 @@ class ETPClient:
                 errors.extend(body.errors.values())
         return errors
 
-    @staticmethod
-    def assert_response(
-        response: ETPBaseProtocolModel, expected_type: T.Type[ETPBaseProtocolModel]
-    ) -> None:
-        assert isinstance(response, expected_type), (
-            f"Expected {expected_type}, got {type(response)} with content {response}"
-        )
-
     @property
-    def max_array_size(self):
+    def max_array_size(self) -> int:
         if self.max_size <= self.max_array_size_margin:
             raise AttributeError(
                 "The maximum size of a websocket message must be greater than "
@@ -570,10 +579,10 @@ class etp_connect:
         endpoint.
     data_partition_id
         The data partition id used when connecting to the OSDU open-etp-server
-        in multi-partition mode. Default is `None`.
+        in multi-partition mode. Default is `""`.
     authorization
         Bearer token used for authenticating to the ETP server. This token
-        should be on the form `"Bearer 1234..."`. Default is `None`.
+        should be on the form `"Bearer 1234..."`. Default is `""`.
     etp_timeout
         The timeout in seconds for when to stop waiting for a message from the
         ETP server. Setting it to `None` will persist the connection
@@ -631,10 +640,10 @@ class etp_connect:
     def __init__(
         self,
         uri: str,
-        data_partition_id: str | None = None,
-        authorization: str | SecretStr | None = None,
+        data_partition_id: str = "",
+        authorization: str | SecretStr = "",
         etp_timeout: float | None = None,
-        max_message_size: float = 2**20,
+        max_message_size: int = 2**20,
         use_compression: bool = True,
     ) -> None:
         self.uri = uri
@@ -648,19 +657,19 @@ class etp_connect:
         self.etp_timeout = etp_timeout
         self.max_message_size = max_message_size
         self.use_compression = use_compression
-        self.subprotocols = ["etp12.energistics.org"]
+        self.subprotocols = [websockets.typing.Subprotocol("etp12.energistics.org")]
 
-    def __await__(self) -> ETPClient:
+    def __await__(self) -> T.Iterator[ETPClient]:
         # The caller is responsible for calling `close()` on the client.
         return self.__aenter__().__await__()
 
     def get_additional_headers(self) -> dict[str, str]:
         additional_headers = {}
 
-        if self.authorization.get_secret_value() is not None:
+        if self.authorization.get_secret_value():
             additional_headers["Authorization"] = self.authorization.get_secret_value()
 
-        if self.data_partition_id is not None:
+        if self.data_partition_id:
             additional_headers["data-partition-id"] = self.data_partition_id
 
         return additional_headers
@@ -712,7 +721,7 @@ class etp_connect:
                 yield etp_client
 
 
-def timeout_intervals(total_timeout: float) -> Generator[float]:
+def timeout_intervals(total_timeout: float | None) -> Generator[float]:
     # Local function generating progressively longer timeout intervals.
 
     # Use the timeout-interval generator from the Python websockets
