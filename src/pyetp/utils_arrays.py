@@ -216,26 +216,6 @@ def get_transport_array_size(
     return int(np.prod(dimensions) * dtype.itemsize)
 
 
-def get_dtype_from_any_array_class(cls: AnyArray) -> npt.DTypeLike:
-    if cls is bytes:
-        return np.dtype(np.int8)
-    elif cls is ArrayOfBoolean:
-        return np.dtype(np.bool_)
-    elif cls is ArrayOfInt:
-        return np.dtype("<i4")
-    elif cls is ArrayOfLong:
-        return np.dtype("<i8")
-    elif cls is ArrayOfFloat:
-        return np.dtype("<f4")
-    elif cls is ArrayOfDouble:
-        return np.dtype("<f8")
-    # TODO: Update NumPy to >= 2.0, and import the ArrayOfString-class
-    # elif cls == ArrayOfString:
-    #     return np.StringDType()
-
-    raise TypeError(f"Class {cls} is not a valid array class")
-
-
 def get_dtype_from_any_array_type(_type: AnyArrayType | str) -> npt.DTypeLike:
     enum_name = AnyArrayType(_type)
     return _INV_ANY_ARRAY_TYPE_MAP[enum_name]
