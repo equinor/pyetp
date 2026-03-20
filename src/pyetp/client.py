@@ -13,10 +13,10 @@ import websockets.client
 from pydantic import SecretStr
 
 from energistics.avro_handler import (
+    CompressionAlgorithm,
     GzipCompression,
     decode_message,
     encode_message,
-    CompressionAlgorithm,
 )
 from energistics.base import ETPBaseProtocolModel, Protocol, Role
 from energistics.etp.v12.datatypes import (
