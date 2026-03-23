@@ -15,8 +15,42 @@ from energistics.etp.v12.datatypes import (
 )
 from energistics.etp.v12.datatypes.data_array_types import DataArray
 
-SUPPORTED_ARRAY_TYPES: T.TypeAlias = (
-    ArrayOfFloat | ArrayOfBoolean | ArrayOfInt | ArrayOfLong | ArrayOfDouble
+SupportedETPArrayTypes: T.TypeAlias = (
+    T.Type[ArrayOfFloat]
+    | T.Type[ArrayOfBoolean]
+    | T.Type[ArrayOfInt]
+    | T.Type[ArrayOfLong]
+    | T.Type[ArrayOfDouble]
+)
+# TransportArrayDTypes: T.TypeAlias = (
+#     np.dtype[np.bool_]
+#     | np.dtype[np.int8]
+#     | np.dtype[np.int32]
+#     | np.dtype[np.int64]
+#     | np.dtype[np.float32]
+#     | np.dtype[np.float64]
+#     | np.dtype[np.str_]
+# )
+# LogicalArrayDTypes: T.TypeAlias = (
+#     TransportArrayDTypes
+#     | np.dtype[np.uint8]
+#     | np.dtype[np.uint16]
+#     | np.dtype[np.uint32]
+#     | np.dtype[np.uint64]
+# )
+ArrayDTypes: T.TypeAlias = (
+    np.dtype[np.bool_]
+    | np.dtype[np.int8]
+    | np.dtype[np.int32]
+    | np.dtype[np.int64]
+    | np.dtype[np.float32]
+    | np.dtype[np.float64]
+    | np.dtype[np.str_]
+    | np.dtype[np.dtypes.StringDType()]
+    | np.dtype[np.uint8]
+    | np.dtype[np.uint16]
+    | np.dtype[np.uint32]
+    | np.dtype[np.uint64]
 )
 
 
@@ -25,7 +59,7 @@ SUPPORTED_ARRAY_TYPES: T.TypeAlias = (
 # NOTE: Currently the logical-array-mapping does not work on the
 # open-etp-server. We write the relevant logical array type, but we only get
 # AnyLogicalArrayType.ARRAY_OF_BOOLEAN in return from the server.
-_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyLogicalArrayType] = {
+_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[ArrayDTypes, AnyLogicalArrayType] = {
     np.dtype(np.bool_): AnyLogicalArrayType.ARRAY_OF_BOOLEAN,
     np.dtype(np.int8): AnyLogicalArrayType.ARRAY_OF_INT8,
     np.dtype(np.uint8): AnyLogicalArrayType.ARRAY_OF_UINT8,
@@ -47,65 +81,65 @@ _ANY_LOGICAL_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyLogicalArrayType] = {
     np.dtype(">f8"): AnyLogicalArrayType.ARRAY_OF_DOUBLE64_BE,
 }
 
-valid_logical_array_dtypes = list(_ANY_LOGICAL_ARRAY_TYPE_MAP)
-LogicalArrayDTypes: T.TypeAlias = T.Union[tuple(valid_logical_array_dtypes)]
-
-_INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, npt.DTypeLike] = {
+_INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, ArrayDTypes] = {
     v: k for k, v in _ANY_LOGICAL_ARRAY_TYPE_MAP.items()
 }
 
 
-# TODO: This map should be used once the logical-array-type is supported in the
-# open-etp-server.
-# _ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
-#     np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
-#     np.dtype(np.int8): AnyArrayType.BYTES,
-#     np.dtype(np.uint8): AnyArrayType.BYTES,
-#     np.dtype("<i2"): AnyArrayType.BYTES,
-#     np.dtype("<i4"): AnyArrayType.BYTES,
-#     np.dtype("<i8"): AnyArrayType.BYTES,
-#     np.dtype("<u2"): AnyArrayType.BYTES,
-#     np.dtype("<u4"): AnyArrayType.BYTES,
-#     np.dtype("<u8"): AnyArrayType.BYTES,
-#     np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
-#     np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
-#     np.dtype(">i2"): AnyArrayType.BYTES,
-#     np.dtype(">i4"): AnyArrayType.BYTES,
-#     np.dtype(">i8"): AnyArrayType.BYTES,
-#     np.dtype(">u2"): AnyArrayType.BYTES,
-#     np.dtype(">u4"): AnyArrayType.BYTES,
-#     np.dtype(">u8"): AnyArrayType.BYTES,
-#     np.dtype(">f4"): AnyArrayType.BYTES,
-#     np.dtype(">f8"): AnyArrayType.BYTES,
-# }
-
-
-# This AnyArrayType-map is used until the logical-array-type is properly
-# implemented for the open-etp-server.
-_ANY_ARRAY_TYPE_MAP: dict[npt.DTypeLike, AnyArrayType] = {
+_ANY_ARRAY_TYPE_MAP: dict[ArrayDTypes, AnyArrayType] = {
     np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
-    np.dtype(np.int8): AnyArrayType.BYTES,
+    np.dtype(np.int8): AnyArrayType.ARRAY_OF_INT,
+    np.dtype(np.uint8): AnyArrayType.BYTES,
+    np.dtype("<i2"): AnyArrayType.ARRAY_OF_INT,
     np.dtype("<i4"): AnyArrayType.ARRAY_OF_INT,
     np.dtype("<i8"): AnyArrayType.ARRAY_OF_LONG,
+    np.dtype("<u2"): AnyArrayType.BYTES,
+    np.dtype("<u4"): AnyArrayType.BYTES,
+    np.dtype("<u8"): AnyArrayType.BYTES,
     np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
     np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
+    np.dtype(">i2"): AnyArrayType.BYTES,
+    np.dtype(">i4"): AnyArrayType.BYTES,
+    np.dtype(">i8"): AnyArrayType.BYTES,
+    np.dtype(">u2"): AnyArrayType.BYTES,
+    np.dtype(">u4"): AnyArrayType.BYTES,
+    np.dtype(">u8"): AnyArrayType.BYTES,
+    np.dtype(">f4"): AnyArrayType.BYTES,
+    np.dtype(">f8"): AnyArrayType.BYTES,
+    np.dtype(np.str_): AnyArrayType.ARRAY_OF_STRING,
 }
-valid_any_array_dtypes = list(_ANY_ARRAY_TYPE_MAP)
 
-_INV_ANY_ARRAY_TYPE_MAP: dict[AnyArrayType, npt.DTypeLike] = {
+
+# # This AnyArrayType-map is used until the logical-array-type is properly
+# # implemented for the open-etp-server.
+# _ANY_ARRAY_TYPE_MAP: dict[TransportArrayDTypes, AnyArrayType] = {
+#     np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
+#     np.dtype(np.int8): AnyArrayType.BYTES,
+#     np.dtype(np.int32): AnyArrayType.ARRAY_OF_INT,
+#     np.dtype(np.int64): AnyArrayType.ARRAY_OF_LONG,
+#     np.dtype(np.float32): AnyArrayType.ARRAY_OF_FLOAT,
+#     np.dtype(np.float64): AnyArrayType.ARRAY_OF_DOUBLE,
+#     np.dtype(np.str_): AnyArrayType.ARRAY_OF_STRING,
+# }
+
+_INV_ANY_ARRAY_TYPE_MAP: dict[
+    AnyArrayType,
+    TransportArrayDTypes,
+] = {
     AnyArrayType.ARRAY_OF_BOOLEAN: np.dtype(np.bool_),
     # The BYTES-arrays are converted to the proper dtype using the logical
     # array type. We can therefore interpret the bytes as np.int8, before we
     # combine the byte strings to the proper type.
     AnyArrayType.BYTES: np.dtype(np.int8),
-    AnyArrayType.ARRAY_OF_INT: np.dtype("<i4"),
-    AnyArrayType.ARRAY_OF_LONG: np.dtype("<i8"),
-    AnyArrayType.ARRAY_OF_FLOAT: np.dtype("<f4"),
-    AnyArrayType.ARRAY_OF_DOUBLE: np.dtype("<f8"),
+    AnyArrayType.ARRAY_OF_INT: np.dtype(np.int32),
+    AnyArrayType.ARRAY_OF_LONG: np.dtype(np.int64),
+    AnyArrayType.ARRAY_OF_FLOAT: np.dtype(np.float32),
+    AnyArrayType.ARRAY_OF_DOUBLE: np.dtype(np.float64),
+    AnyArrayType.ARRAY_OF_STRING: np.dtype(np.str_),
 }
 
 
-_ANY_ARRAY_MAP: dict[AnyArrayType, SUPPORTED_ARRAY_TYPES] = {
+_ANY_ARRAY_MAP: dict[AnyArrayType, SupportedETPArrayTypes | T.Type[bytes]] = {
     AnyArrayType.ARRAY_OF_FLOAT: ArrayOfFloat,
     AnyArrayType.ARRAY_OF_DOUBLE: ArrayOfDouble,
     AnyArrayType.ARRAY_OF_INT: ArrayOfInt,
@@ -114,13 +148,13 @@ _ANY_ARRAY_MAP: dict[AnyArrayType, SUPPORTED_ARRAY_TYPES] = {
     AnyArrayType.BYTES: bytes,
 }
 
-_INV_ANY_ARRAY_MAP: dict[SUPPORTED_ARRAY_TYPES, AnyArrayType] = {
+_INV_ANY_ARRAY_MAP: dict[SupportedETPArrayTypes | T.Type[bytes], AnyArrayType] = {
     v: k for k, v in _ANY_ARRAY_MAP.items()
 }
 
 
 def check_if_array_is_valid_dtype(array: npt.NDArray[T.Any]) -> bool:
-    return array.dtype in valid_any_array_dtypes
+    return array.dtype in list(_ANY_ARRAY_TYPE_MAP)
 
 
 def get_valid_dtype_cast(array: npt.NDArray[T.Any]) -> npt.DTypeLike:
@@ -142,7 +176,7 @@ def get_valid_dtype_cast(array: npt.NDArray[T.Any]) -> npt.DTypeLike:
     elif array.dtype == np.dtype(">u8"):
         return np.dtype("<i8")
 
-    raise TypeError(f"Dtype {array.dtype} does not have a valid cast")
+    raise TypeError(f"DType '{array.dtype}' does not have a valid cast")
 
 
 def get_logical_array_type(dtype: npt.DTypeLike) -> AnyLogicalArrayType:
@@ -153,23 +187,21 @@ def get_logical_array_type(dtype: npt.DTypeLike) -> AnyLogicalArrayType:
 
     # Here we might be taking a chance by not caring about the endianess of the
     # string.
-    if dtype.type == np.str_:
+    if np.dtype(dtype).type == np.str_:
         return AnyLogicalArrayType.ARRAY_OF_STRING
 
     # We ignore the AnyLogicalArrayType.ARRAY_OF_CUSTOM for now.
-    raise KeyError(f"Data type {dtype} is not a valid ETP v1.2 logical array type")
+    raise KeyError(
+        f"Data type {dtype} does not have a valid corresponding ETP v1.2 logical "
+        "array type"
+    )
 
 
-def get_transport_array_type(dtype: npt.DTypeLike) -> AnyArrayType:
-    transport_array_type = _ANY_ARRAY_TYPE_MAP.get(dtype)
+def get_transport_array_type(dtype: ArrayDTypes) -> AnyArrayType:
+    transport_array_type = _ANY_ARRAY_TYPE_MAP.get(dtype, None)
 
     if transport_array_type is not None:
         return transport_array_type
-
-    # Here we might be taking a chance by not caring about the endianess of the
-    # string.
-    if dtype.type == np.str_:
-        return AnyArrayType.ARRAY_OF_STRING
 
     raise KeyError(
         f"Data type {dtype} does not have a valid map to an ETP v1.2 transport array "
@@ -189,7 +221,9 @@ def get_logical_and_transport_array_types(
     return get_logical_array_type(dtype), get_transport_array_type(dtype)
 
 
-def get_etp_data_array_from_numpy(data: npt.NDArray) -> DataArray:
+def get_etp_data_array_from_numpy(
+    data: npt.NDArray[ArrayDTypes],
+) -> DataArray:
     transport_array_type = get_transport_array_type(data.dtype)
     cls = _ANY_ARRAY_MAP[transport_array_type]
 
@@ -203,6 +237,11 @@ def get_etp_data_array_from_numpy(data: npt.NDArray) -> DataArray:
         dimensions[-1] = dimensions[-1] * itemsize
 
         return DataArray(dimensions=dimensions, data=AnyArray(item=item))
+
+    # Here `cls` can not be `bytes`, but we need to explicitly cast it to any
+    # of the ETP-array types for the static type checker.
+    assert cls is not bytes
+    cls = T.cast(SupportedETPArrayTypes, cls)
 
     return DataArray(
         dimensions=data.shape, data=AnyArray(item=cls(values=np.ravel(data)))
