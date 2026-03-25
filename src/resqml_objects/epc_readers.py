@@ -47,7 +47,7 @@ def get_resqml_v201_objects(
     """
 
     robjs = []
-    fail = {}
+    fail: dict[str, AttributeError | ParserError] = {}
 
     with zipfile.ZipFile(epc_filename, "r") as zf:
         for zi in zf.infolist():
@@ -56,9 +56,7 @@ def get_resqml_v201_objects(
 
                 try:
                     robjs.append(parse_resqml_v201_object(c))
-                except AttributeError as e:
-                    fail[zi.filename] = e
-                except ParserError as e:
+                except (AttributeError, ParserError) as e:
                     fail[zi.filename] = e
 
     if log_failed_objects:
