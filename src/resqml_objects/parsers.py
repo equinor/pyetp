@@ -13,7 +13,7 @@ def parse_resqml_v201_object(
     parser = XmlParser()
 
     xml_obj = etree.fromstring(raw_data)
-    obj_type = xml_obj.get(xsi_type_key) or etree.QName(xml_obj.tag).localname
+    obj_type = xml_obj.get(xsi_type_key) or etree.QName(str(xml_obj.tag)).localname
 
     if ":" in obj_type:
         obj_type = obj_type.split(":")[1]
