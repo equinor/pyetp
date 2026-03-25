@@ -2,7 +2,7 @@ import logging
 import pathlib
 import zipfile
 
-import h5py
+import h5py  # type: ignore
 import numpy as np
 import numpy.typing as npt
 from xsdata.exceptions import ParserError
