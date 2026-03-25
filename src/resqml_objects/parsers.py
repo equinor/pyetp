@@ -19,7 +19,8 @@ def parse_resqml_v201_object(
         obj_type = obj_type.split(":")[1]
 
     parsed_obj = parser.from_bytes(raw_data, getattr(ro_201, obj_type))
-
-    return (
+    ret_obj: ro_201.AbstractObject = (
         parsed_obj if not isinstance(parsed_obj, DerivedElement) else parsed_obj.value
     )
+
+    return ret_obj
