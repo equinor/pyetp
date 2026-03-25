@@ -37,7 +37,10 @@ def rotate_2d_vector(
     c = np.cos(angle / 2.0)
     s = np.sin(angle / 2.0)
 
-    return (c**2 - s**2) * r + 2 * c * s * np.stack([-r[1], r[0]])
+    rotated_vectors: typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))] = (
+        c**2 - s**2
+    ) * r + 2 * c * s * np.stack([-r[1], r[0]])
+    return rotated_vectors
 
 
 def angle_to_unit_vectors(
@@ -87,11 +90,11 @@ def unit_vectors_to_angle(
     x_vec = unit_vectors[:, 0]
     y_vec = unit_vectors[:, 1]
 
-    tol = np.finfo(x_vec.dtype).eps * 100
+    tol = float(np.finfo(x_vec.dtype).eps * 100)
     if not np.allclose(x_vec @ y_vec, 0.0, atol=tol):
         raise ValueError("Unit vectors are not orthonormal")
 
-    angle = np.atan2(x_vec[1], x_vec[0])
+    angle = float(np.atan2(x_vec[1], x_vec[0]))
 
     # Check to ensure that the `y`-vector is rotated `pi / 2.0`
     # counter-clockwise from the `x`-vector.
@@ -149,13 +152,14 @@ class RegularGridParameters(typing.Generic[DType]):
         Two two-dimensional unit vectors of the `X` and `Y` grids. The vectors
         lie in the columns of `unit_vectors`, i.e., `vec_1 = unit_vectors[:,
         0]` and `vec_2 = unit_vectors[:, 1]`.
+    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
+        The offset of the origin of the local coordinate reference system, if
+        applicable. This gets set to `np.array([0.0, 0.0], dtype=DType)` by
+        default in the `RegularGridParameters.from_xy_grid`- and
+        `RegularGridParameters.from_xy_grid_vectors`-methods.
     crs_angle: float
         The rotation of the local coordinate reference system, if applicable.
         The default is `0.0`, i.e., an urotated coordinate system is used.
-    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))] | None
-        The offset of the origin of the local coordinate reference system, if
-        applicable. The default is `None` which gets defaulted to `array([0.0,
-        0.0])` of type `DType`.
 
     Note that we construct the edge of `X` from `shape[0]`, `origin[0]`,
     `spacing[0]`, and `unit_vectors[:, 0]`, and the edge of `Y` from the second
@@ -166,18 +170,15 @@ class RegularGridParameters(typing.Generic[DType]):
     origin: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
     spacing: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
     unit_vectors: typing.Annotated[npt.NDArray[DType], dict(shape=(2, 2))]
+    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
     crs_angle: float = 0.0
-    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))] | None = None
+    # crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))] | None = None
 
     # Attaching the helper functions to this class to avoid doing extra
     # imports.
     rotate_2d_vector = staticmethod(rotate_2d_vector)
     angle_to_unit_vectors = staticmethod(angle_to_unit_vectors)
     unit_vectors_to_angle = staticmethod(unit_vectors_to_angle)
-
-    def __post_init__(self) -> None:
-        if self.crs_offset is None:
-            self.crs_offset = np.zeros_like(self.origin)
 
     def to_xy_grid(
         self, to_global_crs: bool = True
@@ -213,7 +214,7 @@ class RegularGridParameters(typing.Generic[DType]):
 
             # Computing the origin of the surface in the global CRS by adding
             # in the offset of the local CRS.
-            origin = origin + self.crs_offset
+            origin += self.crs_offset
 
         edge_1 = vec_1 * self.spacing[0] * np.arange(self.shape[0]).reshape(-1, 1)
         edge_2 = vec_2 * self.spacing[1] * np.arange(self.shape[1]).reshape(-1, 1)
@@ -231,6 +232,9 @@ class RegularGridParameters(typing.Generic[DType]):
         crs_angle: float = 0.0,
         crs_offset: npt.NDArray[DType] | None = None,
     ) -> typing.Self:
+        if crs_offset is None:
+            crs_offset = np.zeros(2, dtype=X.dtype)
+
         if len(np.shape(np.squeeze(X))) == 1 and len(np.shape(np.squeeze(Y))) == 1:
             return cls.from_xy_grid_vectors(
                 X, Y, crs_angle=crs_angle, crs_offset=crs_offset
@@ -245,7 +249,7 @@ class RegularGridParameters(typing.Generic[DType]):
         x_row_diffs = np.diff(X, axis=0)
         y_row_diffs = np.diff(Y, axis=0)
 
-        tol = np.finfo(X.dtype).eps * 10
+        tol = float(np.finfo(X.dtype).eps * 10)
         # Check that the spacing is uniform in all directions.
         np.testing.assert_allclose(x_col_diffs, x_col_diffs[0, 0], atol=tol)
         np.testing.assert_allclose(y_col_diffs, y_col_diffs[0, 0], atol=tol)
@@ -284,6 +288,9 @@ class RegularGridParameters(typing.Generic[DType]):
         crs_angle: float = 0.0,
         crs_offset: npt.NDArray[DType] | None = None,
     ) -> typing.Self:
+        if crs_offset is None:
+            crs_offset = np.zeros(2, dtype=x.dtype)
+
         x = np.squeeze(x)
         y = np.squeeze(y)
 
