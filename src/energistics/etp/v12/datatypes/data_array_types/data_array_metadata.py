@@ -1,8 +1,10 @@
 import typing
 
+import numpy as np
 from pydantic import Field
 
 import energistics.base
+from energistics.array_mapping import TransportArrayTypeMapping
 from energistics.etp.v12.datatypes.any_array_type import AnyArrayType
 from energistics.etp.v12.datatypes.any_logical_array_type import AnyLogicalArrayType
 from energistics.etp.v12.datatypes.data_value import DataValue
@@ -62,3 +64,7 @@ class DataArrayMetadata(energistics.base.ETPBaseModel):
 
     # TODO: Add validation of transport and logical array types once this is
     # implemented from the server.
+
+    def get_transport_array_size(self) -> int:
+        dtype = TransportArrayTypeMapping.get_dtype(self.transport_array_type)
+        return int(np.prod(self.dimensions) * dtype.itemsize)

@@ -20,7 +20,6 @@ class ArrayOfFloat(energistics.base.ETPBaseModel):
         "depends": [],
     }
 
-    # values: list[float]
     values: typing.Annotated[
         npt.NDArray[np.float32],
         PlainValidator(get_array_validator(np.dtype(np.float32))),

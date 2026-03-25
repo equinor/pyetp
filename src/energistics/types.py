@@ -1,5 +1,7 @@
 import typing
 
+import numpy as np
+
 from energistics.etp.v12.datatypes.array_of_boolean import ArrayOfBoolean
 from energistics.etp.v12.datatypes.array_of_bytes import ArrayOfBytes
 from energistics.etp.v12.datatypes.array_of_double import ArrayOfDouble
@@ -29,3 +31,20 @@ ETPArrayType: typing.TypeAlias = (
     | ArrayOfNullableInt
     | ArrayOfNullableLong
 )
+
+ETPBasicNumpyArrayType: typing.TypeAlias = (
+    np.bool_ | np.int32 | np.int64 | np.float32 | np.float64 | np.str_
+)
+
+ETPNumpyArrayType: typing.TypeAlias = (
+    ETPBasicNumpyArrayType
+    | np.int8
+    | np.int16
+    | np.uint8
+    | np.uint16
+    | np.uint32
+    | np.uint64
+    | np.bytes_
+)
+
+ETPNumpyArrayDType: typing.TypeAlias = np.dtype[ETPNumpyArrayType]
