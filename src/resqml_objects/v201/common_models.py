@@ -49,23 +49,23 @@ class RegularSurfaceModels:
             rotate_2d_vector(np.array([0.0, 1.0]), angle=angle_in_rad)
         )
 
-        uuid_epc = uuid_epc or str(uuid.uuid4())
-        uuid_crs = uuid_crs or str(uuid.uuid4())
-        uuid_gri = uuid_gri or str(uuid.uuid4())
+        uuid_epc = uuid_epc or uuid.uuid4()
+        uuid_crs = uuid_crs or uuid.uuid4()
+        uuid_gri = uuid_gri or uuid.uuid4()
 
         epc = ro.obj_EpcExternalPartReference(
             citation=ro.Citation(
                 title=f"Hdf proxy for {title}",
                 originator=originator,
             ),
-            uuid=uuid_epc,
+            uuid=str(uuid_epc),
         )
         crs = ro.obj_LocalDepth3dCrs(
             citation=ro.Citation(
                 title=f"Local crs for {title}",
                 originator=originator,
             ),
-            uuid=uuid_crs,
+            uuid=str(uuid_crs),
             vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=vertical_epsg_code),
             projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=projected_epsg_code),
             zincreasing_downward=zincreasing_downward,
@@ -82,12 +82,14 @@ class RegularSurfaceModels:
             spacing=spacing,
             unit_vec_1=unit_vec_1,
             unit_vec_2=unit_vec_2,
-            uuid=uuid_gri,
+            uuid=str(uuid_gri),
         )
 
-        path_in_hdf_file = (
-            gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
-        )
+        points = gri.grid2d_patch.geometry.points
+        assert isinstance(points, ro.Point3dZValueArray)
+        zvalues = points.zvalues
+        assert isinstance(zvalues, ro.DoubleHdf5Array)
+        path_in_hdf_file = zvalues.values.path_in_hdf_file
         data_arrays = {path_in_hdf_file: surf}
 
         return (epc, crs, gri), data_arrays
