@@ -10,8 +10,19 @@ def serialize_resqml_v201_object(
 ) -> bytes:
     serializer = XmlSerializer(config=SerializerConfig())
 
-    namespace = getattr(obj.Meta, "namespace", None) or obj.Meta.target_namespace
-    name = obj.__class__.__name__
+    if isinstance(obj, DerivedElement):
+        namespace = getattr(obj.value.Meta, "namespace", None) or getattr(
+            obj.value.Meta, "target_namespace", None
+        )
+        name = obj.value.__class__.__name__
+    else:
+        namespace = getattr(obj.Meta, "namespace", None) or getattr(
+            obj.Meta, "target_namespace", None
+        )
+        name = obj.__class__.__name__
+
+    if namespace is None:
+        raise AttributeError(f"No XML namespace found for object {obj}")
 
     # This is a solution to enforce the inclusion of the `xsi:type`-attribute
     # on the generated XML-elements.
