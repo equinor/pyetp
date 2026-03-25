@@ -90,12 +90,6 @@ from resqml_objects.v201.utils import find_data_object_references, find_hdf5_dat
 
 logger = logging.getLogger(__name__)
 
-ListOfRESQMLObjects: typing.TypeAlias = list[ro.AbstractCitedDataObject]
-ObjectsAndArrays: typing.TypeAlias = tuple[
-    ListOfRESQMLObjects, dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]]
-]
-DownloadModelType: typing.TypeAlias = ListOfRESQMLObjects | ObjectsAndArrays
-
 try:
     from itertools import batched
 except ImportError:
