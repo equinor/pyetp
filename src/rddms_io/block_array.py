@@ -1,9 +1,11 @@
 import numpy as np
+import numpy.typing as npt
 
 
 def get_array_block_sizes(
-    shape: tuple[int], dtype: np.number | np.str_, max_array_size: int
+    shape: tuple[int], dtype: npt.DTypeLike, max_array_size: int
 ) -> tuple[list[list[int]], list[list[int]]]:
+    dtype = np.dtype(dtype)
     # Total size of array in bytes.
     array_size = int(np.prod(shape) * dtype.itemsize)
     # Calculate the minimum number of blocks needed (if the array was flat).
