@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+import sys
 import typing
 import uuid
 from collections.abc import AsyncGenerator, Sequence
@@ -90,9 +91,9 @@ from resqml_objects.v201.utils import find_data_object_references, find_hdf5_dat
 
 logger = logging.getLogger(__name__)
 
-try:
+if sys.version_info >= (3, 12):
     from itertools import batched
-except ImportError:
+else:
     # Construct `batched` for Python 3.11 as it was introduced in Python 3.12.
     # We make it specialized for our use-case.
     def batched(iterable: bytes, n: int) -> typing.Iterator[tuple[bytes]]:
