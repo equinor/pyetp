@@ -14,8 +14,8 @@ from energistics.etp.v12.datatypes.object import (
     Dataspace,
     Resource,
 )
+from energistics.types import ETPNumpyArrayType
 from energistics.uris import DataObjectURI, DataspaceURI
-from pyetp.utils_arrays import LogicalArrayDTypes
 from rddms_io.client import rddms_connect
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 
@@ -471,9 +471,7 @@ class RDDMSClientSync:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[LogicalArrayDTypes]]
-        ] = {},
+        data_arrays: typing.Mapping[str, Sequence[npt.NDArray[ETPNumpyArrayType]]] = {},
         debounce: bool | float = False,
     ) -> list[str]:
         """

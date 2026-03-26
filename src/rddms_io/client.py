@@ -72,8 +72,8 @@ from energistics.etp.v12.protocol.transaction import (
     StartTransaction,
     StartTransactionResponse,
 )
+from energistics.types import ETPNumpyArrayType
 from energistics.uris import DataObjectURI, DataspaceURI
-from pyetp import utils_arrays
 from pyetp.client import (
     ETPClient,
     ETPError,
@@ -783,7 +783,7 @@ class RDDMSClient:
         self,
         epc_uri: str | DataObjectURI,
         path_in_resource: str,
-        data: npt.NDArray[utils_arrays.LogicalArrayDTypes],
+        data: npt.NDArray[ETPNumpyArrayType],
     ) -> None:
         """
         Method used for uploading a single array to an ETP server. This method
@@ -935,14 +935,14 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, PutDataArraysResponse)
+        assert isinstance(response, PutDataArraysResponse)
         assert len(response.success) == 1 and dai.path_in_resource in response.success
 
     async def download_object_arrays(
         self,
         dataspace_uri: str | DataspaceURI,
         ml_object: ro.AbstractCitedDataObject,
-    ) -> dict[str, npt.NDArray[utils_arrays.LogicalArrayDTypes]]:
+    ) -> dict[str, npt.NDArray[ETPNumpyArrayType]]:
         """
         Method accepting a `dataspace_uri` (or dataspace path) and a
         RESQML-object, and downloading all attached arrays (if any). This
@@ -959,7 +959,7 @@ class RDDMSClient:
 
         Returns
         -------
-        dict[str, npt.NDArray[utils_arrays.LogicalArrayDTypes]]
+        dict[str, npt.NDArray[ETPNumpyArrayType]]
             A dictionary mapping the `path_in_hdf_file`-keys in `ml_object` to
             the corresponding array. Empty if `ml_object` does not reference
             any arrays.
@@ -1002,7 +1002,7 @@ class RDDMSClient:
         self,
         epc_uri: str | DataObjectURI,
         path_in_resource: str,
-    ) -> npt.NDArray[utils_arrays.LogicalArrayDTypes]:
+    ) -> npt.NDArray[ETPNumpyArrayType]:
         """
         Method used for downloading a single array from an ETP server. It
         should not be necessary for a user to call this method, prefer
@@ -1020,7 +1020,7 @@ class RDDMSClient:
 
         Returns
         -------
-        data: npt.NDArray[utils_arrays.LogicalArrayDTypes]
+        data: npt.NDArray[ETPNumpyArrayType]
             A NumPy-array with the data.
 
         See Also
@@ -1164,9 +1164,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[utils_arrays.LogicalArrayDTypes]]
-        ] = {},
+        data_arrays: typing.Mapping[str, Sequence[npt.NDArray[ETPNumpyArrayType]]] = {},
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> list[str]:
@@ -1293,9 +1291,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[utils_arrays.LogicalArrayDTypes]]
-        ],
+        data_arrays: typing.Mapping[str, Sequence[npt.NDArray[ETPNumpyArrayType]]],
     ) -> list[str]:
         logger.debug(
             f"Starting to upload model of {len(ml_objects)} objects and "
