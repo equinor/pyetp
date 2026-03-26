@@ -30,7 +30,7 @@ class RDDMSModel(typing.NamedTuple):
     """
 
     obj: ro.AbstractCitedDataObject
-    arrays: dict[str, list[npt.NDArray[ETPNumpyArrayType]]]
+    arrays: dict[str, npt.NDArray[ETPNumpyArrayType]]
     linked_models: list["RDDMSModel"]
 
 

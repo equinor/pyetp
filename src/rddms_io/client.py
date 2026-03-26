@@ -1165,7 +1165,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[str, Sequence[npt.NDArray[ETPNumpyArrayType]]] = {},
+        data_arrays: typing.Mapping[str, npt.NDArray[ETPNumpyArrayType]] = {},
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> list[str]:
@@ -1292,7 +1292,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[str, Sequence[npt.NDArray[ETPNumpyArrayType]]],
+        data_arrays: typing.Mapping[str, npt.NDArray[ETPNumpyArrayType]],
     ) -> list[str]:
         logger.debug(
             f"Starting to upload model of {len(ml_objects)} objects and "

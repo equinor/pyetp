@@ -471,7 +471,7 @@ class RDDMSClientSync:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[str, Sequence[npt.NDArray[ETPNumpyArrayType]]] = {},
+        data_arrays: typing.Mapping[str, npt.NDArray[ETPNumpyArrayType]] = {},
         debounce: bool | float = False,
     ) -> list[str]:
         """
