@@ -97,10 +97,10 @@ if sys.version_info >= (3, 12):
 else:
     # Construct `batched` for Python 3.11 as it was introduced in Python 3.12.
     # We make it specialized for our use-case.
-    def batched(iterable: bytes, n: int) -> typing.Iterator[tuple[bytes]]:
+    def batched(iterable: bytes, n: int) -> typing.Iterator[tuple[int, ...]]:
         num_chunks = len(iterable) // n + int(len(iterable) % n != 0)
         for i in range(num_chunks):
-            yield iterable[slice(i * n, (i + 1) * n)]
+            yield tuple(iterable[slice(i * n, (i + 1) * n)])
 
 
 class RDDMSClient:
