@@ -11,6 +11,7 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import SecretStr
 
+from rddms_io.block_array import get_array_block_sizes
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes import ArrayOfString, DataValue, Uuid
 from energistics.etp.v12.datatypes.data_array_types import (
@@ -858,7 +859,7 @@ class RDDMSClient:
 
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
-            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+            block_starts, block_counts = get_array_block_sizes(
                 data.shape, data.dtype, self.etp_client.max_array_size
             )
 
@@ -1080,7 +1081,7 @@ class RDDMSClient:
 
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
-            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+            block_starts, block_counts = get_array_block_sizes(
                 data.shape, data.dtype, self.etp_client.max_array_size
             )
 
