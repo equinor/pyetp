@@ -659,7 +659,7 @@ class etp_connect:
         self.use_compression = use_compression
         self.subprotocols = [websockets.typing.Subprotocol("etp12.energistics.org")]
 
-    def __await__(self) -> T.Iterator[ETPClient]:
+    def __await__(self) -> T.Generator[None, None, ETPClient]:
         # The caller is responsible for calling `close()` on the client.
         return self.__aenter__().__await__()
 
