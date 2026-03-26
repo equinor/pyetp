@@ -724,7 +724,7 @@ class RDDMSClient:
             ]
         )
 
-        metadata_map = {}
+        metadata_map: dict[str, dict[str, DataArrayMetadata]] = {}
         for am in array_metadata:
             metadata_map = {**metadata_map, **am}
 
@@ -807,9 +807,14 @@ class RDDMSClient:
                 "RDDMSClient.list_array_metadata",
             )
 
-            pirm = {}
+            pirm: dict[str, DataArrayMetadata] = {}
             for response in tr:
-                pirm = {**pirm, **response.array_metadata}
+                pirm = {
+                    **pirm,
+                    **typing.cast(
+                        GetDataArrayMetadataResponse, response
+                    ).array_metadata,
+                }
 
             metadata_map[uri] = pirm
 
