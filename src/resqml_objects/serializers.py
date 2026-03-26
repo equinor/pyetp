@@ -1,12 +1,32 @@
+import typing
+
 from xsdata.formats.dataclass.models.generics import DerivedElement
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
-import resqml_objects.v201 as ro_201
+
+class MetaSub(typing.Protocol):
+    @property
+    def namespace(self) -> str: ...
+
+
+class MetaObj(typing.Protocol):
+    @property
+    def target_namespace(self) -> str: ...
+
+
+class RO201SubObj(typing.Protocol):
+    @property
+    def Meta(self) -> typing.Type[MetaSub]: ...
+
+
+class RO201Obj(typing.Protocol):
+    @property
+    def Meta(self) -> typing.Type[MetaObj]: ...
 
 
 def serialize_resqml_v201_object(
-    obj: ro_201.AbstractObject | DerivedElement[ro_201.AbstractObject],
+    obj: RO201Obj | RO201SubObj | DerivedElement[RO201Obj | RO201SubObj],
 ) -> bytes:
     serializer = XmlSerializer(config=SerializerConfig())
 
