@@ -93,7 +93,15 @@ class RDDMSClientSync:
         else:
             authorization = SecretStr(authorization)
 
-        self.connection_args = dict(
+        class ConnectionArguments(typing.TypedDict):
+            uri: str
+            data_partition_id: str
+            authorization: SecretStr
+            etp_timeout: float | None
+            max_message_size: int
+            use_compression: bool
+
+        self.connection_args = ConnectionArguments(
             uri=uri,
             data_partition_id=data_partition_id,
             authorization=authorization,
