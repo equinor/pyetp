@@ -12,7 +12,11 @@ from energistics.etp.v12.datatypes.array_of_float import ArrayOfFloat
 from energistics.etp.v12.datatypes.array_of_int import ArrayOfInt
 from energistics.etp.v12.datatypes.array_of_long import ArrayOfLong
 from energistics.etp.v12.datatypes.array_of_string import ArrayOfString
-from energistics.types import ETPBasicArrayType, ETPNumpyArrayDType
+from energistics.types import (
+    ETPBasicArrayType,
+    ETPBasicNumpyArrayDType,
+    ETPNumpyArrayDType,
+)
 
 # See section 13.2.2.1 for the allowed mapping between logical array types and
 # transport array types.
@@ -72,7 +76,7 @@ _ANY_ARRAY_TYPE_MAP: dict[ETPNumpyArrayDType, AnyArrayType] = {
 
 _INV_ANY_ARRAY_TYPE_MAP: dict[
     AnyArrayType,
-    ETPNumpyArrayDType,
+    ETPBasicNumpyArrayDType,
 ] = {
     AnyArrayType.ARRAY_OF_BOOLEAN: np.dtype(np.bool_),
     # The BYTES-arrays are converted to the proper dtype using the logical
@@ -152,7 +156,9 @@ class LogicalArrayTypeMapping:
 
 class TransportArrayTypeMapping:
     numpy_to_etp_map: dict[ETPNumpyArrayDType, AnyArrayType] = _ANY_ARRAY_TYPE_MAP
-    etp_to_numpy_map: dict[AnyArrayType, ETPNumpyArrayDType] = _INV_ANY_ARRAY_TYPE_MAP
+    etp_to_numpy_map: dict[AnyArrayType, ETPBasicNumpyArrayDType] = (
+        _INV_ANY_ARRAY_TYPE_MAP
+    )
 
     @staticmethod
     def get_etp_array_type(dtype: ETPNumpyArrayDType) -> AnyArrayType:
@@ -177,7 +183,7 @@ class TransportArrayTypeMapping:
         return _ANY_ARRAY_MAP[array_type]
 
     @staticmethod
-    def get_dtype(array_type: AnyArrayType | str) -> ETPNumpyArrayDType:
+    def get_dtype(array_type: AnyArrayType | str) -> ETPBasicNumpyArrayDType:
         enum_name = AnyArrayType(array_type)
         return TransportArrayTypeMapping.etp_to_numpy_map[enum_name]
 
