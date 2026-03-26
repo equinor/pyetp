@@ -214,7 +214,7 @@ class RDDMSClientSync:
             The asynchronous version of this method.
         """
 
-        async def list_dataspaces() -> None:
+        async def list_dataspaces() -> list[Dataspace]:
             async with rddms_connect(**self.connection_args) as rddms_client:
                 return await rddms_client.list_dataspaces(
                     store_last_write_filter=store_last_write_filter
@@ -583,7 +583,7 @@ class RDDMSClientSync:
             The asynchronous version of this method.
         """
 
-        async def download_models() -> None:
+        async def download_models() -> list[RDDMSModel]:
             async with rddms_connect(**self.connection_args) as rddms_client:
                 return await rddms_client.download_models(
                     ml_uris=ml_uris,
