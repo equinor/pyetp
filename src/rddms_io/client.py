@@ -12,8 +12,15 @@ import numpy.typing as npt
 from pydantic import SecretStr
 
 import resqml_objects.v201 as ro
+from energistics.array_mapping import (
+    LogicalArrayTypeMapping,
+    TransportArrayTypeMapping,
+    get_logical_and_transport_array_types,
+)
+from energistics.base import ETPBaseProtocolModel
 from energistics.etp.v12.datatypes import ArrayOfString, DataValue, Uuid
 from energistics.etp.v12.datatypes.data_array_types import (
+    DataArray,
     DataArrayIdentifier,
     DataArrayMetadata,
     GetDataSubarraysType,
@@ -852,7 +859,7 @@ class RDDMSClient:
         """
         # Fetch ETP logical and transport array types
         logical_array_type, transport_array_type = (
-            utils_arrays.get_logical_and_transport_array_types(data.dtype)
+            get_logical_and_transport_array_types(data.dtype)
         )
 
         # Create identifier for the data.
@@ -917,9 +924,7 @@ class RDDMSClient:
                 # Note in the particular the extra `.data`-after the call. The
                 # data should not be of type `DataArray`, but `AnyArray`, so we
                 # need to fetch it from the `DataArray`.
-                etp_subarray_data = utils_arrays.get_etp_data_array_from_numpy(
-                    data[slices]
-                ).data
+                etp_subarray_data = DataArray.from_numpy_array(data[slices]).data
 
                 # Create an asynchronous task to upload a block to the
                 # ETP-server.
@@ -959,7 +964,7 @@ class RDDMSClient:
             return
 
         # Convert NumPy data-array to an ETP-transport array.
-        etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
+        etp_array_data = DataArray.from_numpy_array(data)
 
         # Pass entire array in one message.
         responses = await self.etp_client.send_and_recv(
@@ -1092,20 +1097,15 @@ class RDDMSClient:
         metadata = response.array_metadata[dai.path_in_resource]
 
         # Check if we can download the full array in a single message.
-        if (
-            utils_arrays.get_transport_array_size(
-                metadata.transport_array_type, metadata.dimensions
-            )
-            >= self.etp_client.max_array_size
-        ):
-            transport_dtype = utils_arrays.get_dtype_from_any_array_type(
+        if metadata.get_transport_array_size() >= self.etp_client.max_array_size:
+            transport_dtype = TransportArrayTypeMapping.get_dtype(
                 metadata.transport_array_type,
             )
             # NOTE: The logical array type is not yet supported by the
             # open-etp-server. As such the transport array type will be actual
             # array type used. We only add this call to prepare for when it
             # will be used.
-            logical_dtype = utils_arrays.get_dtype_from_any_logical_array_type(
+            logical_dtype = LogicalArrayTypeMapping.get_dtype(
                 metadata.logical_array_type,
             )
             if logical_dtype != np.dtype(np.bool_):
@@ -1281,7 +1281,7 @@ class RDDMSClient:
 
     async def _send_put_data_objects(
         self, pdo: PutDataObjects
-    ) -> list[PutDataObjectsResponse]:
+    ) -> list[ETPBaseProtocolModel]:
         if len(pdo.data_objects) > 1:
             raise NotImplementedError(
                 "We currently only support chunking a single data object at a time. "
@@ -1359,7 +1359,6 @@ class RDDMSClient:
             if not isinstance(last_changed, datetime.datetime):
                 last_changed = last_changed.to_datetime()
 
-            # Note that chunking is handled in the ETP-client if that is needed.
             dob = DataObject(
                 format="xml",
                 data=obj_xml,
@@ -1487,7 +1486,7 @@ class RDDMSClient:
 
     async def _recv_get_data_objects(
         self, gdo: GetDataObjects
-    ) -> list[GetDataObjectsResponse]:
+    ) -> list[ETPBaseProtocolModel]:
         if len(gdo.uris) > 1:
             raise NotImplementedError(
                 "We only support chunking a single data object at at time. "
