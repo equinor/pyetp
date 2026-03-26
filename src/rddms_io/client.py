@@ -341,10 +341,11 @@ class RDDMSClient:
         """
 
         dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
-        total_timeout = debounce
 
         if isinstance(debounce, bool):
             total_timeout = None
+        else:
+            total_timeout = debounce
 
         for ti in timeout_intervals(total_timeout):
             try:
@@ -569,6 +570,7 @@ class RDDMSClient:
             A container (`NamedTuple`) with resources and edges for the sources
             and targets of the start-object.
         """
+        start_uri = str(start_uri)
         data_object_types = [
             dot if isinstance(dot, str) else dot.get_qualified_type()
             for dot in data_object_types
@@ -579,7 +581,7 @@ class RDDMSClient:
 
         gr_sources = GetResources(
             context=ContextInfo(
-                uri=str(start_uri),
+                uri=start_uri,
                 depth=depth,
                 data_object_types=data_object_types,
                 navigable_edges=RelationshipKind.PRIMARY,
@@ -595,7 +597,7 @@ class RDDMSClient:
 
         gr_targets = GetResources(
             context=ContextInfo(
-                uri=str(start_uri),
+                uri=start_uri,
                 depth=depth,
                 data_object_types=data_object_types,
                 navigable_edges=RelationshipKind.PRIMARY,
