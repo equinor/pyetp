@@ -6,7 +6,7 @@ import pydantic
 import energistics.base
 
 UUIDType: typing.TypeAlias = (
-    pydantic.UUID1 | pydantic.UUID3 | pydantic.UUID4 | pydantic.UUID5 | bytes | str
+    pydantic.UUID1 | pydantic.UUID3 | pydantic.UUID4 | pydantic.UUID5
 )
 
 
