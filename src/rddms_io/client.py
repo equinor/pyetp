@@ -1772,7 +1772,7 @@ class rddms_connect:
         self.max_message_size = max_message_size
         self.use_compression = use_compression
 
-    def __await__(self) -> RDDMSClient:
+    def __await__(self) -> typing.Generator[None, None, RDDMSClient]:
         return self.__aenter__().__await__()
 
     async def __aenter__(self) -> RDDMSClient:
