@@ -6,7 +6,11 @@ import numpy.typing as npt
 import energistics.base
 from energistics.array_mapping import TransportArrayTypeMapping
 from energistics.etp.v12.datatypes.any_array import AnyArray
-from energistics.types import ETPBasicArrayType, ETPBasicNumpyArrayType
+from energistics.types import (
+    ETPBasicArrayType,
+    ETPBasicNumpyArrayType,
+    ETPNumpyArrayType,
+)
 
 
 @energistics.base.add_avro_metadata
@@ -41,12 +45,12 @@ class DataArray(energistics.base.ETPBaseModel):
     @classmethod
     def from_numpy_array(
         cls,
-        data_array: npt.NDArray[ETPBasicNumpyArrayType],
+        data_array: npt.NDArray[ETPNumpyArrayType],
     ) -> typing.Self:
-        if not issubclass(data_array.dtype.type, ETPBasicNumpyArrayType):
+        if not issubclass(data_array.dtype.type, ETPNumpyArrayType):
             raise TypeError(
                 f"Array type {data_array.dtype} is not included in the valid transport "
-                f"array types {ETPBasicNumpyArrayType}. The data must be cast to one "
+                f"array types {ETPNumpyArrayType}. The data must be cast to one "
                 "of the valid types first."
             )
 
