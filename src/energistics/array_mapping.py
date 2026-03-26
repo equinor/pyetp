@@ -1,3 +1,4 @@
+import math
 import typing
 
 import numpy as np
@@ -141,6 +142,13 @@ class LogicalArrayTypeMapping:
 
         return dtype in list(LogicalArrayTypeMapping.numpy_to_etp_map)
 
+    @staticmethod
+    def get_array_size(
+        dimensions: list[int] | tuple[int], array_type: AnyLogicalArrayType | str
+    ) -> int:
+        dtype = LogicalArrayTypeMapping.get_dtype(array_type)
+        return math.prod(dimensions) * dtype.itemsize
+
 
 class TransportArrayTypeMapping:
     numpy_to_etp_map: dict[ETPNumpyArrayDType, AnyArrayType] = _ANY_ARRAY_TYPE_MAP
@@ -181,6 +189,13 @@ class TransportArrayTypeMapping:
             dtype = np.dtype(np.str_)
 
         return dtype in list(TransportArrayTypeMapping.numpy_to_etp_map)
+
+    @staticmethod
+    def get_array_size(
+        dimensions: list[int] | tuple[int], array_type: AnyArrayType | str
+    ) -> int:
+        dtype = TransportArrayTypeMapping.get_dtype(array_type)
+        return math.prod(dimensions) * dtype.itemsize
 
     @staticmethod
     def get_valid_dtype_cast(array: npt.NDArray[typing.Any]) -> ETPNumpyArrayDType:

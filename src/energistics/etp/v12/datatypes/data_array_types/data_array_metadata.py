@@ -1,6 +1,5 @@
 import typing
 
-import numpy as np
 from pydantic import Field
 
 import energistics.base
@@ -66,5 +65,6 @@ class DataArrayMetadata(energistics.base.ETPBaseModel):
     # implemented from the server.
 
     def get_transport_array_size(self) -> int:
-        dtype = TransportArrayTypeMapping.get_dtype(self.transport_array_type)
-        return int(np.prod(self.dimensions) * dtype.itemsize)
+        return TransportArrayTypeMapping.get_array_size(
+            self.dimensions, self.transport_array_type
+        )
