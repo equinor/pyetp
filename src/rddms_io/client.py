@@ -1393,6 +1393,8 @@ class RDDMSClient:
         logger.debug("Done uploading model objects. Starting on upload of arrays.")
 
         dataspace_path = DataspaceURI.from_uri(dataspace_uri).dataspace
+        if dataspace_path is None:
+            dataspace_path = ""
 
         uploaded_data_keys = []
         tasks = []
