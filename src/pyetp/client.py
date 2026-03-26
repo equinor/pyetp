@@ -177,7 +177,7 @@ class ETPClient:
     async def send_and_recv(
         self,
         body: ETPBaseProtocolModel,
-        multi_part_bodies: list[ETPBaseProtocolModel] = [],
+        multi_part_bodies: T.Sequence[ETPBaseProtocolModel] = [],
     ) -> list[ETPBaseProtocolModel]:
         correlation_id = await self.send(body=body, multi_part_bodies=multi_part_bodies)
         return await self.recv(correlation_id)
@@ -185,7 +185,7 @@ class ETPClient:
     async def send(
         self,
         body: ETPBaseProtocolModel,
-        multi_part_bodies: list[ETPBaseProtocolModel] = [],
+        multi_part_bodies: T.Sequence[ETPBaseProtocolModel] = [],
     ) -> int:
         # The core protocol is _always_ supported.
         if (
