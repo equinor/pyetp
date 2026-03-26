@@ -33,12 +33,11 @@ ETPArrayType: typing.TypeAlias = (
 )
 
 ETPBasicNumpyArrayType: typing.TypeAlias = (
-    np.bool_ | np.int32 | np.int64 | np.float32 | np.float64 | np.str_
+    np.bool_ | np.int32 | np.int64 | np.float32 | np.float64 | np.str_ | np.int8
 )
 
 ETPNumpyArrayType: typing.TypeAlias = (
     ETPBasicNumpyArrayType
-    | np.int8
     | np.int16
     | np.uint8
     | np.uint16
