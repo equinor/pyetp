@@ -5,7 +5,7 @@ import fastavro
 import energistics.base
 
 
-def avro_roundtrip(obj: energistics.base.ETPType) -> energistics.base.ETPType:
+def avro_roundtrip(obj: energistics.base.ETPBaseModel) -> energistics.base.ETPBaseModel:
     cls = type(obj)
     with io.BytesIO() as fb:
         fastavro.write.schemaless_writer(
