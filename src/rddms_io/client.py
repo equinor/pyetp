@@ -401,13 +401,8 @@ class RDDMSClient:
             typically be the uuid from the
             `RDDMSClient.start_transaction`-method.
         """
-        if isinstance(transaction_uuid, uuid.UUID):
-            transaction_uuid = Uuid(transaction_uuid.bytes)
-        elif isinstance(transaction_uuid, str | bytes):
-            transaction_uuid = Uuid(transaction_uuid)
-
         responses = await self.etp_client.send_and_recv(
-            CommitTransaction(transaction_uuid=transaction_uuid),
+            CommitTransaction(transaction_uuid=Uuid(transaction_uuid)),
         )
 
         assert len(responses) == 1
@@ -434,13 +429,8 @@ class RDDMSClient:
             typically be the uuid from the
             `RDDMSClient.start_transaction`-method.
         """
-        if isinstance(transaction_uuid, uuid.UUID | str):
-            transaction_uuid = Uuid(str(transaction_uuid).encode())
-        elif isinstance(transaction_uuid, bytes):
-            transaction_uuid = Uuid(transaction_uuid)
-
         responses = await self.etp_client.send_and_recv(
-            RollbackTransaction(transaction_uuid=transaction_uuid)
+            RollbackTransaction(transaction_uuid=Uuid(transaction_uuid))
         )
 
         parse_and_raise_response_errors(
