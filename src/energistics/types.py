@@ -46,4 +46,5 @@ ETPNumpyArrayType: typing.TypeAlias = (
     | np.bytes_
 )
 
+ETPBasicNumpyArrayDType: typing.TypeAlias = np.dtype[ETPBasicNumpyArrayType]
 ETPNumpyArrayDType: typing.TypeAlias = np.dtype[ETPNumpyArrayType]
