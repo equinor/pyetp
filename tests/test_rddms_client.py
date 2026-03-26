@@ -7,10 +7,10 @@ import numpy.typing as npt
 import pytest
 
 import resqml_objects.v201 as ro
+from energistics.array_mapping import TransportArrayTypeMapping
 from energistics.uris import DataspaceURI
 from pyetp.client import ETPError
 from pyetp.errors import ETPTransactionFailure
-from pyetp.utils_arrays import get_valid_dtype_cast
 from rddms_io.client import rddms_connect
 from resqml_objects.epc_readers import (
     get_arrays_and_paths_in_hdf_file,
@@ -744,7 +744,9 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
     casted_data_arrays = {}
     for k, v in data_arrays.items():
         original_dtypes[k] = v.dtype
-        casted_data_arrays[k] = v.astype(get_valid_dtype_cast(v))
+        casted_data_arrays[k] = v.astype(
+            TransportArrayTypeMapping.get_valid_dtype_cast(v)
+        )
 
     # We set an upper limit on the `max_message_size` and turn off compression
     # to trigger chunking.
