@@ -1687,10 +1687,10 @@ class rddms_connect:
         endpoint to an ETP server.
     data_partition_id
         The data partition id used when connecting to the OSDU open-etp-server
-        in multi-partition mode. Default is `None`.
+        in multi-partition mode. Default is `""`.
     authorization
         Bearer token used for authenticating to the RDDMS server. This token
-        should be on the form `"Bearer 1234..."`. Default is `None`.
+        should be on the form `"Bearer 1234..."`. Default is `""`.
     etp_timeout
         The timeout in seconds for when to stop waiting for a message from the
         server. Setting it to `None` will persist the connection indefinetly.
@@ -1754,8 +1754,8 @@ class rddms_connect:
     def __init__(
         self,
         uri: str,
-        data_partition_id: str | None = None,
-        authorization: str | SecretStr | None = None,
+        data_partition_id: str = "",
+        authorization: str | SecretStr = "",
         etp_timeout: float | None = None,
         max_message_size: int = 2**20,
         use_compression: bool = True,
