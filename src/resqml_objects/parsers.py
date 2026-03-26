@@ -3,13 +3,12 @@ from xsdata.formats.dataclass.models.generics import DerivedElement
 from xsdata.formats.dataclass.parsers import XmlParser
 
 import resqml_objects.v201 as ro_201
+from resqml_objects.serializers import RO201Obj, RO201SubObj
 
 xsi_type_key = "{http://www.w3.org/2001/XMLSchema-instance}type"
 
 
-def parse_resqml_v201_object(
-    raw_data: bytes,
-) -> ro_201.AbstractObject:
+def parse_resqml_v201_object(raw_data: bytes) -> RO201Obj | RO201SubObj:
     parser = XmlParser()
 
     xml_obj = etree.fromstring(raw_data)
