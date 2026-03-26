@@ -11,7 +11,6 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import SecretStr
 
-from rddms_io.block_array import get_array_block_sizes
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes import ArrayOfString, DataValue, Uuid
 from energistics.etp.v12.datatypes.data_array_types import (
@@ -86,6 +85,7 @@ from pyetp.errors import (
     ETPTransactionFailure,
     parse_and_raise_response_errors,
 )
+from rddms_io.block_array import get_array_block_sizes
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 from resqml_objects.v201.utils import find_data_object_references, find_hdf5_datasets
