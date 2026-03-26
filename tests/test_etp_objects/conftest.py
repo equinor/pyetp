@@ -23,7 +23,11 @@ def avro_roundtrip(obj: energistics.base.ETPType) -> energistics.base.ETPType:
             return_named_type_override=True,
         )
 
-        assert isinstance(record, dict)
-        ret_obj = cls(**record)
+        assert isinstance(record, dict | bytes)
+        if isinstance(record, dict):
+            ret_obj = cls(**record)
+        else:
+            # Handle the case when we get bytes in return.
+            ret_obj = cls(record)
 
     return ret_obj

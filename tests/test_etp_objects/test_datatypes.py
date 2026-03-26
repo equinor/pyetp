@@ -26,6 +26,7 @@ from energistics.etp.v12.datatypes import (
     ServerCapabilities,
     SupportedDataObject,
     SupportedProtocol,
+    Uuid,
     Version,
 )
 from energistics.etp.v12.datatypes.data_value import (
@@ -359,3 +360,16 @@ def test_messsage_header() -> None:
             message_id=12,
             message_flags=MessageHeaderFlags.FIN | MessageHeaderFlags.COMPRESSED,
         )
+
+
+def test_uuid() -> None:
+    u = uuid.uuid4()
+    etp_u_1 = Uuid(u)
+    etp_u_2 = Uuid(u.bytes)
+    etp_u_3 = Uuid(str(u))
+    etp_u_4 = Uuid(etp_u_1)
+
+    assert u == uuid.UUID(str(etp_u_1.root))
+    assert etp_u_1 == etp_u_2 == etp_u_3 == etp_u_4
+
+    assert etp_u_1 == avro_roundtrip(etp_u_1)

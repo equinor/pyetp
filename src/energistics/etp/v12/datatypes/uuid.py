@@ -6,13 +6,15 @@ import pydantic
 import energistics.base
 
 UUIDType: typing.TypeAlias = (
-    pydantic.UUID1 | pydantic.UUID3 | pydantic.UUID4 | pydantic.UUID5
+    pydantic.UUID1 | pydantic.UUID3 | pydantic.UUID4 | pydantic.UUID5 | bytes | str
 )
 
 
 def serialize_uuid(value: UUIDType) -> bytes:
     if isinstance(value, bytes):
         return value
+    if isinstance(value, str):
+        return uuid.UUID(value).bytes
     return value.bytes
 
 
@@ -25,6 +27,8 @@ def validate_uuid(value: typing.Any) -> typing.Any:
         return uuid.UUID(str(value))
     if isinstance(value, int):
         return uuid.UUID(int=value)
+    if isinstance(value, Uuid):
+        return uuid.UUID(str(value.root))
 
     raise ValueError(
         f"Unable to coerce uuid '{value}' of type '{type(value)}' into a "
