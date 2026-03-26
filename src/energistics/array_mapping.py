@@ -44,26 +44,28 @@ _INV_ANY_LOGICAL_ARRAY_TYPE_MAP: dict[AnyLogicalArrayType, ETPNumpyArrayDType] =
     v: k for k, v in _ANY_LOGICAL_ARRAY_TYPE_MAP.items()
 }
 
+# NOTE: The commented dtypes should be included once the logical array field is
+# supported from the server side.
 _ANY_ARRAY_TYPE_MAP: dict[ETPNumpyArrayDType, AnyArrayType] = {
     np.dtype(np.bool_): AnyArrayType.ARRAY_OF_BOOLEAN,
-    np.dtype(np.int8): AnyArrayType.ARRAY_OF_INT,
-    np.dtype(np.uint8): AnyArrayType.BYTES,
-    np.dtype("<i2"): AnyArrayType.ARRAY_OF_INT,
+    np.dtype(np.int8): AnyArrayType.BYTES,
+    # np.dtype(np.uint8): AnyArrayType.BYTES,
+    # np.dtype("<i2"): AnyArrayType.BYTES,
     np.dtype("<i4"): AnyArrayType.ARRAY_OF_INT,
     np.dtype("<i8"): AnyArrayType.ARRAY_OF_LONG,
-    np.dtype("<u2"): AnyArrayType.BYTES,
-    np.dtype("<u4"): AnyArrayType.BYTES,
-    np.dtype("<u8"): AnyArrayType.BYTES,
+    # np.dtype("<u2"): AnyArrayType.BYTES,
+    # np.dtype("<u4"): AnyArrayType.BYTES,
+    # np.dtype("<u8"): AnyArrayType.BYTES,
     np.dtype("<f4"): AnyArrayType.ARRAY_OF_FLOAT,
     np.dtype("<f8"): AnyArrayType.ARRAY_OF_DOUBLE,
-    np.dtype(">i2"): AnyArrayType.BYTES,
-    np.dtype(">i4"): AnyArrayType.BYTES,
-    np.dtype(">i8"): AnyArrayType.BYTES,
-    np.dtype(">u2"): AnyArrayType.BYTES,
-    np.dtype(">u4"): AnyArrayType.BYTES,
-    np.dtype(">u8"): AnyArrayType.BYTES,
-    np.dtype(">f4"): AnyArrayType.BYTES,
-    np.dtype(">f8"): AnyArrayType.BYTES,
+    # np.dtype(">i2"): AnyArrayType.BYTES,
+    # np.dtype(">i4"): AnyArrayType.BYTES,
+    # np.dtype(">i8"): AnyArrayType.BYTES,
+    # np.dtype(">u2"): AnyArrayType.BYTES,
+    # np.dtype(">u4"): AnyArrayType.BYTES,
+    # np.dtype(">u8"): AnyArrayType.BYTES,
+    # np.dtype(">f4"): AnyArrayType.BYTES,
+    # np.dtype(">f8"): AnyArrayType.BYTES,
     np.dtype(np.str_): AnyArrayType.ARRAY_OF_STRING,
 }
 
