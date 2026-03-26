@@ -67,6 +67,7 @@ from energistics.etp.v12.protocol.store import (
 )
 from energistics.etp.v12.protocol.transaction import (
     CommitTransaction,
+    CommitTransactionResponse,
     RollbackTransaction,
     RollbackTransactionResponse,
     StartTransaction,
@@ -176,7 +177,16 @@ class RDDMSClient:
             GetDataspacesResponse,
             "RDDMSClient.list_dataspaces",
         )
-        dataspaces = [ds for response in responses for ds in response.dataspaces]
+        # Here we know that `responses` has type `list[GetDataspacesResponse]`
+        dataspaces = [
+            ds
+            for response in responses
+            # Explicitly cast `response` to `GetDataspacesResponse` (this has
+            # been checked with the `parse_and_raise_response_errors`-function
+            # above.
+            for ds in typing.cast(GetDataspacesResponse, response).dataspaces
+        ]
+
         return dataspaces
 
     async def delete_dataspace(self, dataspace_uri: DataspaceURI | str) -> None:
@@ -199,7 +209,14 @@ class RDDMSClient:
             DeleteDataspacesResponse,
             "RDDMSClient.delete_dataspace",
         )
-        assert any([dataspace_uri in response.success for response in responses])
+        assert any(
+            [
+                # Cast `response` to `DeleteDataspacesResponse`. This has been
+                # checked with `parse_and_raise_response_errors` above.
+                dataspace_uri in typing.cast(DeleteDataspacesResponse, response).success
+                for response in responses
+            ]
+        )
 
     async def create_dataspace(
         self,
@@ -279,7 +296,15 @@ class RDDMSClient:
         parse_and_raise_response_errors(
             responses, PutDataspacesResponse, "RDDMSClient.create_dataspace"
         )
-        assert any([str(dataspace_uri) in response.success for response in responses])
+        assert any(
+            [
+                str(dataspace_uri)
+                # Cast `response` to `PutDataspacesResponse`. This has been
+                # checked with `parse_and_raise_response_errors` above.
+                in typing.cast(PutDataspacesResponse, response).success
+                for response in responses
+            ]
+        )
 
     async def start_transaction(
         self,
@@ -347,6 +372,7 @@ class RDDMSClient:
 
             assert len(responses) == 1
             response = responses[0]
+            assert isinstance(response, StartTransactionResponse)
 
             if not response.successful:
                 raise ETPTransactionFailure(str(response.failure_reason))
@@ -385,6 +411,7 @@ class RDDMSClient:
 
         assert len(responses) == 1
         response = responses[0]
+        assert isinstance(response, CommitTransactionResponse)
 
         if not response.successful:
             raise ETPTransactionFailure(str(response))
@@ -411,12 +438,18 @@ class RDDMSClient:
         elif isinstance(transaction_uuid, bytes):
             transaction_uuid = Uuid(transaction_uuid)
 
-        response = await self.etp_client.send_and_recv(
+        responses = await self.etp_client.send_and_recv(
             RollbackTransaction(transaction_uuid=transaction_uuid)
         )
+
         parse_and_raise_response_errors(
-            [response], RollbackTransactionResponse, "RDDMSClient.rollback_transaction"
+            responses, RollbackTransactionResponse, "RDDMSClient.rollback_transaction"
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+        assert isinstance(response, RollbackTransactionResponse)
+
         if not response.successful:
             raise ETPTransactionFailure(str(response))
 
@@ -484,7 +517,14 @@ class RDDMSClient:
         parse_and_raise_response_errors(
             responses, GetResourcesResponse, "RDDMSClient.list_objects_under_dataspace"
         )
-        return [resource for response in responses for resource in response.resources]
+        return [
+            resource
+            for response in responses
+            # We have checked that `responses` is of type
+            # `list[GetResourcesResponse]` in the function
+            # `parse_and_raise_response_errors` above.
+            for resource in typing.cast(GetResourcesResponse, response).resources
+        ]
 
     async def list_linked_objects(
         self,
@@ -579,14 +619,17 @@ class RDDMSClient:
             for grer in filter(
                 lambda e: isinstance(e, GetResourcesEdgesResponse), sources_responses
             )
-            for e in grer.edges
+            # The filter above only selects instances of
+            # `GetResourcesEdgesResponse`, so the cast is only included for
+            # type checkers.
+            for e in typing.cast(GetResourcesEdgesResponse, grer).edges
         ]
         source_resources = [
             r
             for grr in filter(
                 lambda e: isinstance(e, GetResourcesResponse), sources_responses
             )
-            for r in grr.resources
+            for r in typing.cast(GetResourcesResponse, grr).resources
         ]
 
         target_edges = [
@@ -594,14 +637,14 @@ class RDDMSClient:
             for grer in filter(
                 lambda e: isinstance(e, GetResourcesEdgesResponse), targets_responses
             )
-            for e in grer.edges
+            for e in typing.cast(GetResourcesEdgesResponse, grer).edges
         ]
         target_resources = [
             r
             for grr in filter(
                 lambda e: isinstance(e, GetResourcesResponse), targets_responses
             )
-            for r in grr.resources
+            for r in typing.cast(GetResourcesResponse, grr).resources
         ]
 
         self_resource = next(filter(lambda sr: sr.uri == start_uri, source_resources))
@@ -845,7 +888,7 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, PutUninitializedDataArraysResponse)
+        assert isinstance(response, PutUninitializedDataArraysResponse)
         assert len(response.success) == 1 and dai.path_in_resource in response.success
 
         # Check if we can upload the entire array in go, or if we need to
@@ -909,7 +952,7 @@ class RDDMSClient:
 
             # Check for successful responses.
             for response in responses:
-                self.etp_client.assert_response(response, PutDataSubarraysResponse)
+                assert isinstance(response, PutDataSubarraysResponse)
                 assert (
                     len(response.success) == 1
                     and dai.path_in_resource in response.success
@@ -1043,7 +1086,7 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, GetDataArrayMetadataResponse)
+        assert isinstance(response, GetDataArrayMetadataResponse)
         assert (
             len(response.array_metadata) == 1
             and dai.path_in_resource in response.array_metadata
@@ -1117,7 +1160,7 @@ class RDDMSClient:
 
             data_blocks = []
             for i, response in enumerate(responses):
-                self.etp_client.assert_response(response, GetDataSubarraysResponse)
+                assert isinstance(response, GetDataSubarraysResponse)
                 assert (
                     len(response.data_subarrays) == 1
                     and data_subarrays_key(dai.path_in_resource, i)
@@ -1153,7 +1196,7 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, GetDataArraysResponse)
+        assert isinstance(response, GetDataArraysResponse)
         assert (
             len(response.data_arrays) == 1
             and dai.path_in_resource in response.data_arrays
@@ -1460,8 +1503,8 @@ class RDDMSClient:
             return responses
 
         logger.debug("The `GetDataObjects`-message is too big, starting chunking.")
-        assert isinstance(responses[0], GetDataObjectsResponse)
         gdor = responses.pop(0)
+        assert isinstance(gdor, GetDataObjectsResponse)
         assert len(gdor.data_objects) == 1
         dob_key = list(gdor.data_objects)[0]
         dob = gdor.data_objects[dob_key]
@@ -1474,16 +1517,19 @@ class RDDMSClient:
         # removed once the bug is fixed.
         if isinstance(responses[-1], GetDataObjectsResponse):
             bug_gdor = responses.pop(-1)
+            assert isinstance(bug_gdor, GetDataObjectsResponse)
             assert bug_gdor.data_objects == {}
 
         # The returned `Chunk`-messages are sorted based on the message id in
         # the header (see `ETPClient.__receiver_loop`).
         assert all([isinstance(r, Chunk) for r in responses])
-        assert all([r.blob_id == blob_id for r in responses])
-        assert responses[-1].final
+        assert all([typing.cast(Chunk, r).blob_id == blob_id for r in responses])
+        assert typing.cast(Chunk, responses[-1]).final
 
         gdor.data_objects[dob_key].blob_id = None
-        gdor.data_objects[dob_key].data = b"".join([r.data for r in responses])
+        gdor.data_objects[dob_key].data = b"".join(
+            [typing.cast(Chunk, r).data for r in responses]
+        )
 
         return [gdor]
 
@@ -1508,10 +1554,14 @@ class RDDMSClient:
         # the different chunks.
         assert len(responses) == 1
         response = responses[0]
+        assert isinstance(response, GetDataObjectsResponse)
 
         assert len(response.data_objects) == 1
         data_object = response.data_objects[ml_uri]
+
         ml_object = parse_resqml_v201_object(data_object.data)
+        # We should only get top-level objects in return from the ETP-server.
+        assert isinstance(ml_object, ro.AbstractCitedDataObject)
 
         linked_models = []
         if download_linked_objects:
