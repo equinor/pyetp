@@ -1478,7 +1478,7 @@ class RDDMSClient:
         return await asyncio.gather(
             *[
                 self._download_model(
-                    ml_uri=ml_uri,
+                    ml_uri=str(ml_uri),
                     download_arrays=download_arrays,
                     download_linked_objects=download_linked_objects,
                 )
