@@ -1397,7 +1397,7 @@ class RDDMSClient:
             dataspace_path = ""
 
         uploaded_data_keys = []
-        tasks = []
+        array_tasks = []
         for hdf5_dataset in ml_hds:
             path_in_resource = hdf5_dataset.path_in_hdf_file
             epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
@@ -1407,7 +1407,7 @@ class RDDMSClient:
             data = data_arrays[path_in_resource]
             uploaded_data_keys.append(path_in_resource)
 
-            tasks.append(
+            array_tasks.append(
                 self.upload_array(
                     epc_uri=epc_uri,
                     path_in_resource=path_in_resource,
@@ -1422,7 +1422,7 @@ class RDDMSClient:
                 "provided objects."
             )
 
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*array_tasks)
 
         logger.debug("Done uploading arrays.")
         return ml_uris
