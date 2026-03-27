@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.typing as npt
+import pytest
 
 import resqml_objects.v201 as ro
 from rddms_io.sync_client import RDDMSClientSync
@@ -83,6 +84,64 @@ def test_upload_and_download_surface() -> None:
     rddms_client = RDDMSClientSync(uri=etp_server_url)
 
     dataspace_path = "rddms-io-sync/test-upload-and-download-surface"
+
+    rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
+    dataspaces = rddms_client.list_dataspaces()
+    assert dataspace_path in [d.path for d in dataspaces]
+
+    epc_uri, crs_uri, gri_uri = rddms_client.upload_model(
+        dataspace_uri=dataspace_path,
+        ml_objects=[epc, crs, gri],
+        data_arrays=data_arrays,
+        debounce=True,
+    )
+
+    resources = rddms_client.list_objects_under_dataspace(dataspace_path)
+    uris = [r.uri for r in resources]
+
+    assert epc_uri in uris
+    assert crs_uri in uris
+    assert gri_uri in uris
+
+    gri_lo = rddms_client.list_linked_objects(start_uri=gri_uri)
+    assert gri_uri == gri_lo.start_uri
+    assert crs_uri == gri_lo.target_edges[0].target_uri
+
+    array_metadata = rddms_client.list_array_metadata(
+        ml_uris=[epc_uri, crs_uri, gri_uri]
+    )
+    assert len(array_metadata) == 1
+    assert tuple(array_metadata[gri_uri][key].dimensions) == data_arrays[key].shape
+    assert array_metadata == rddms_client.list_object_array_metadata(
+        dataspace_uri=dataspace_path,
+        ml_objects=[gri],
+    )
+
+    ret_models = rddms_client.download_models(
+        ml_uris=[epc_uri, crs_uri, gri_uri],
+        download_arrays=True,
+        download_linked_objects=True,
+    )
+    assert ret_models[0].obj == epc
+    assert ret_models[1].obj == crs
+    assert ret_models[2].obj == gri
+    assert ret_models[2].linked_models[0].obj == crs
+
+    np.testing.assert_equal(ret_models[2].arrays[key], data_arrays[key])
+
+    rddms_client.delete_model(ml_uris=uris)
+    rddms_client.delete_dataspace(dataspace_path)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_upload_and_download_surface_async() -> None:
+    (epc, crs, gri), data_arrays = get_random_surface()
+    key = gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+
+    rddms_client = RDDMSClientSync(uri=etp_server_url)
+
+    dataspace_path = "rddms-io-sync/test-upload-and-download-surface-async"
 
     rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
     dataspaces = rddms_client.list_dataspaces()
