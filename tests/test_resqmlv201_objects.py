@@ -1,6 +1,5 @@
 import dataclasses
 import datetime
-import typing
 
 import numpy as np
 from lxml import etree
@@ -9,15 +8,17 @@ from xsdata.models.datatype import XmlDateTime
 import resqml_objects.v201 as ro
 from pyetp._version import version
 from resqml_objects.parsers import parse_resqml_v201_object
-from resqml_objects.serializers import serialize_resqml_v201_object
+from resqml_objects.serializers import (
+    RO201Obj,
+    RO201SubObj,
+    serialize_resqml_v201_object,
+)
 from resqml_objects.surface_helpers import RegularGridParameters
 
-R = typing.TypeVar(
-    "R", bound=ro.AbstractObject | ro.AbstractObject_1 | ro.AbstractObject_Type
-)
 
-
-def compare_serialization_parsing_roundtrip(obj: R) -> tuple[R, bytes]:
+def compare_serialization_parsing_roundtrip(
+    obj: RO201Obj | RO201SubObj,
+) -> tuple[RO201Obj | RO201SubObj, bytes]:
     obj_b = serialize_resqml_v201_object(obj)
     ret_obj = parse_resqml_v201_object(obj_b)
 
