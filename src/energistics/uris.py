@@ -81,7 +81,7 @@ class DataspaceURI:
         return cls(uri=uri, dataspace=dataspace)
 
     @classmethod
-    def from_any_etp_uri(cls, uri: str | typing.Self | DataObjectURI) -> typing.Self:
+    def from_any_etp_uri(cls, uri: str | typing.Self | DataObjectURI) -> DataspaceURI:
         if isinstance(uri, DataspaceURI):
             return cls(**dataclasses.asdict(uri))
 

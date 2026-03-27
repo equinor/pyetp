@@ -2,21 +2,20 @@ import logging
 import pathlib
 import zipfile
 
-import h5py
+import h5py  # type: ignore
 import numpy as np
 import numpy.typing as npt
 from xsdata.exceptions import ParserError
 
-import resqml_objects.v201 as ro_201
-
-from .parsers import parse_resqml_v201_object
+from resqml_objects.parsers import parse_resqml_v201_object
+from resqml_objects.serializers import RO201Obj, RO201SubObj
 
 logger = logging.getLogger(__name__)
 
 
 def get_resqml_v201_objects(
     epc_filename: str | pathlib.Path, log_failed_objects: bool = False
-) -> list[ro_201.AbstractObject]:
+) -> list[RO201Obj | RO201SubObj]:
     """This function is fairly brute-force; the function reads all files in the
     provided EPC-file, and tries to parse it as one of the auto-generated
     RESQML v2.0.1 objects. If you are unsure that all objects were included you
@@ -47,7 +46,7 @@ def get_resqml_v201_objects(
     """
 
     robjs = []
-    fail = {}
+    fail: dict[str, AttributeError | ParserError] = {}
 
     with zipfile.ZipFile(epc_filename, "r") as zf:
         for zi in zf.infolist():
@@ -56,9 +55,7 @@ def get_resqml_v201_objects(
 
                 try:
                     robjs.append(parse_resqml_v201_object(c))
-                except AttributeError as e:
-                    fail[zi.filename] = e
-                except ParserError as e:
+                except (AttributeError, ParserError) as e:
                     fail[zi.filename] = e
 
     if log_failed_objects:

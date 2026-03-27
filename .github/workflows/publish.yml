@@ -1,5 +1,5 @@
 name: Build and publish
- 
+
 on:
   release:
     types: [published]
@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install pip and pypa/build
         run: |

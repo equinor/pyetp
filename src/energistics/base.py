@@ -26,9 +26,6 @@ class ETPBaseModel(BaseModel, ETPMetaData):
     model_config = ConfigDict(populate_by_name=True)
 
 
-ETPType = typing.TypeVar("ETPType", bound=ETPBaseModel)
-
-
 class Protocol(enum.IntEnum):
     CORE = 0
     CHANNEL_STREAMING = 1

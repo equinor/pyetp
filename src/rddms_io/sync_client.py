@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 import datetime
 import typing
-from collections.abc import Sequence
+from collections.abc import Coroutine, Mapping, Sequence
 
 import numpy.typing as npt
 from pydantic import SecretStr
@@ -15,17 +15,19 @@ from energistics.etp.v12.datatypes.object import (
     Dataspace,
     Resource,
 )
+from energistics.types import ETPNumpyArrayType
 from energistics.uris import DataObjectURI, DataspaceURI
-from pyetp.utils_arrays import LogicalArrayDTypes
 from rddms_io.client import rddms_connect
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 
+T = typing.TypeVar("T")
 
-def run_coroutine_sync(coro):
+
+def run_coroutine_sync(coro: Coroutine[typing.Any, typing.Any, T]) -> T:
     # Start a new thread.
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         # Submit the coroutine to run via `asyncio.run` in the new thread.
-        future = executor.submit(asyncio.run, coro)
+        future: concurrent.futures.Future[T] = executor.submit(asyncio.run, coro)
         # Wait for the thread to finish, and return the results.
         return future.result()
 
@@ -49,10 +51,10 @@ class RDDMSClientSync:
         endpoint to an ETP server.
     data_partition_id
         The data partition id used when connecting to the OSDU open-etp-server
-        in multi-partition mode. Default is `None`.
+        in multi-partition mode. Default is `""`.
     authorization
         Bearer token used for authenticating to the RDDMS server. This token
-        should be on the form `"Bearer 1234..."`. Default is `None`.
+        should be on the form `"Bearer 1234..."`. Default is `""`.
     etp_timeout
         The timeout in seconds for when to stop waiting for a message from the
         server. Setting it to `None` will persist the connection indefinetly.
@@ -92,10 +94,10 @@ class RDDMSClientSync:
     def __init__(
         self,
         uri: str,
-        data_partition_id: str | None = None,
-        authorization: str | SecretStr | None = None,
+        data_partition_id: str = "",
+        authorization: str | SecretStr = "",
         etp_timeout: float | None = None,
-        max_message_size: float = 2**20,
+        max_message_size: int = 2**20,
         use_compression: bool = True,
     ) -> None:
         if isinstance(authorization, SecretStr):
@@ -103,7 +105,15 @@ class RDDMSClientSync:
         else:
             authorization = SecretStr(authorization)
 
-        self.connection_args = dict(
+        class ConnectionArguments(typing.TypedDict):
+            uri: str
+            data_partition_id: str
+            authorization: SecretStr
+            etp_timeout: float | None
+            max_message_size: int
+            use_compression: bool
+
+        self.connection_args = ConnectionArguments(
             uri=uri,
             data_partition_id=data_partition_id,
             authorization=authorization,
@@ -135,7 +145,7 @@ class RDDMSClientSync:
         legal_tags
             List of legal tag strings for the ACL. The default is an empty
             list.
-        other_relevant_data_countries: list[str]
+        other_relevant_data_countries
             List of data countries for the ACL. The default is an empty list.
         owners
             List of owners ACL. The default is an empty list.
@@ -227,7 +237,7 @@ class RDDMSClientSync:
     def list_objects_under_dataspace(
         self,
         dataspace_uri: DataspaceURI | str,
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
     ) -> list[Resource]:
@@ -282,7 +292,7 @@ class RDDMSClientSync:
     def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         store_last_write_filter: datetime.datetime | int | None = None,
         depth: int = 1,
     ) -> LinkedObjects:
@@ -294,9 +304,9 @@ class RDDMSClientSync:
 
         Parameters
         ----------
-        start_uri: DataObjectURI | str
+        start_uri
             An ETP data object uri to start the query from.
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]]
+        data_object_types
             A filter to limit which types of objects to include in the results.
             As a string it is on the form `eml20.obj_EpcExternalPartReference`
             for a specific object, or `eml20.*` for all Energistics Common
@@ -305,12 +315,12 @@ class RDDMSClientSync:
             can also be classes from `resqml_objects.v201`, in which case the
             filter will be constructed. Default is `[]`, meaning no filter is
             applied.
-        store_last_write_filter: datetime.datetime | int | None
+        store_last_write_filter
             Filter to only include objects that are written after the provided
             datetime or timestamp. Default is `None`, meaning no filter is
             applied. Note that the timestamp should be in microsecond
             resolution.
-        depth: int
+        depth
             The number of links to return. Setting `depth = 1` will only return
             targets and sources that are directly linked to the start object.
             With `depth = 2` we get links to objects that linkes to the targets
@@ -341,7 +351,7 @@ class RDDMSClientSync:
 
     def list_array_metadata(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
     ) -> dict[str, dict[str, DataArrayMetadata]]:
         """
         Method used for listing array metadata for all connected arrays to the
@@ -435,7 +445,7 @@ class RDDMSClientSync:
 
     def delete_model(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
         prune_contained_objects: bool = False,
         debounce: bool | float = False,
     ) -> None:
@@ -481,9 +491,7 @@ class RDDMSClientSync:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[LogicalArrayDTypes]]
-        ] = {},
+        data_arrays: Mapping[str, npt.NDArray[ETPNumpyArrayType]] = {},
         debounce: bool | float = False,
     ) -> list[str]:
         """
@@ -538,7 +546,7 @@ class RDDMSClientSync:
 
     def download_models(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
         download_arrays: bool = False,
         download_linked_objects: bool = False,
     ) -> list[RDDMSModel]:
@@ -587,7 +595,7 @@ class RDDMSClientSync:
             The asynchronous version of this method.
         """
 
-        async def download_models() -> None:
+        async def download_models() -> list[RDDMSModel]:
             async with rddms_connect(**self.connection_args) as rddms_client:
                 return await rddms_client.download_models(
                     ml_uris=ml_uris,

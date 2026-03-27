@@ -58,7 +58,8 @@ class MessageHeader(energistics.base.ETPBaseModel):
     @classmethod
     def from_etp_protocol_body(
         cls,
-        body: typing.Type[energistics.base.ETPBaseProtocolModel],
+        body: typing.Type[energistics.base.ETPBaseProtocolModel]
+        | energistics.base.ETPBaseProtocolModel,
         message_id: int,
         message_flags: MessageHeaderFlags,
         correlation_id: int = 0,

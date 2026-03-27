@@ -5,6 +5,8 @@ import numpy as np
 from rddms_io import rddms_connect
 import resqml_objects.v201 as ro
 
+from rddms_io.data_types import LinkedObjects
+from energistics.etp.v12.datatypes.object import Dataspace, Resource
 
 z = np.random.random((101, 103))
 origin = np.array([10.0, 11.0])
@@ -39,10 +41,14 @@ gri = ro.obj_Grid2dRepresentation.from_regular_surface(
 )
 
 
-async def main() -> None:
+async def main() -> tuple[
+    list[Dataspace],
+    list[Resource],
+    LinkedObjects,
+]:
     uri = "ws://localhost:9100"
-    data_partition_id = None
-    access_token = None
+    data_partition_id = ""
+    access_token = ""
     dataspace_path = "rddms_io/demo"
 
     async with rddms_connect(
@@ -57,6 +63,13 @@ async def main() -> None:
             owners=["owners"],
             viewers=["viewers-1", "viewers-2"],
             ignore_if_exists=True,
+        )
+
+        assert isinstance(
+            gri.grid2d_patch.geometry.points, ro.Point3dZValueArray
+        )
+        assert isinstance(
+            gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
         )
 
         await rddms_client.upload_model(
@@ -88,6 +101,14 @@ async def main() -> None:
 
         ret_model = ret_models[0]
         ret_gri = ret_model.obj
+
+        assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
+        assert isinstance(
+            ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray
+        )
+        assert isinstance(
+            ret_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
+        )
 
         assert len(ret_model.linked_models) == 1
 

@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import datetime
 import re
-import uuid
+
+# Re-exporting to allow for variables named `uuid` in the code.
+import uuid as uuid_lib
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum
@@ -945,7 +947,7 @@ class DataObjectReference:
 
     @staticmethod
     def get_content_type_string(
-        obj: AbstractResqmlDataObject | Type[AbstractResqmlDataObject],
+        obj: AbstractCitedDataObject | Type[AbstractCitedDataObject],
     ) -> str:
         """
         Static method constructing a RESQML v2.0.1 or EML v2.0 content type
@@ -979,7 +981,7 @@ class DataObjectReference:
         """
 
         # Get class object instead of the instance.
-        if type(obj) is not type:
+        if not isinstance(obj, type):
             obj = type(obj)
 
         namespace = getattr(obj.Meta, "namespace", None) or getattr(
@@ -1004,7 +1006,7 @@ class DataObjectReference:
     @classmethod
     def from_object(
         cls,
-        obj: AbstractResqmlDataObject,
+        obj: AbstractCitedDataObject,
         uuid_authority: None | str = None,
         version_string: None | str = None,
     ) -> Self:
@@ -10238,7 +10240,7 @@ class AbstractObject_1:
     )
     uuid: str = field(
         # We add a uuid by default, if it is not provided.
-        default_factory=lambda: str(uuid.uuid4()),
+        default_factory=lambda: str(uuid_lib.uuid4()),
         metadata={
             "type": "Attribute",
             "required": True,
@@ -24063,7 +24065,18 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             ]
         )
 
-        offsets = sg.offset
+        offsets: list[Point3dOffset] = sg.offset
+        assert len(offsets) == 2
+
+        if not (
+            isinstance(offsets[0].spacing, DoubleConstantArray)
+            and isinstance(offsets[1].spacing, DoubleConstantArray)
+        ):
+            raise NotImplementedError(
+                "We do not support offsets (in the `Point3dLatticeArray` from the "
+                "`supporting_geometry`-field) being something else than instances of "
+                "`DoubleConstantArray`"
+            )
 
         spacing = np.array(
             [
@@ -24144,7 +24157,18 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             self.grid2d_patch.fastest_axis_count,
         )
         origin = sg.origin
-        offsets = sg.offset
+        offsets: list[Point3dOffset] = sg.offset
+        assert len(offsets) == 2
+
+        if not (
+            isinstance(offsets[0].spacing, DoubleConstantArray)
+            and isinstance(offsets[1].spacing, DoubleConstantArray)
+        ):
+            raise NotImplementedError(
+                "We do not support offsets (in the `Point3dLatticeArray` from the "
+                "`supporting_geometry`-field) being something else than instances of "
+                "`DoubleConstantArray`"
+            )
 
         ori = np.array(
             [
@@ -24172,7 +24196,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         if crs is not None:
             if crs.uuid != self.grid2d_patch.geometry.local_crs.uuid:
                 warnings.warn(
-                    f"The provided crs has a different uuid '{crs.citation.uuid}' "
+                    f"The provided crs has a different uuid '{crs.uuid}' "
                     " than the referenced crs "
                     f"'{self.grid2d_patch.geometry.local_crs.uuid}'."
                 )
@@ -24208,7 +24232,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
         patch_index: int = 0,
         path_in_hdf_file: str = "",
-        uuid: str | uuid.UUID | None = None,
+        uuid: str | uuid_lib.UUID | None = None,
         surface_role: SurfaceRole | str = SurfaceRole.MAP,
         boundaries: list[PatchBoundaries] | None = None,
         represented_interpretation: AbstractFeatureInterpretation | None = None,
@@ -24228,23 +24252,11 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         and/or optional metadata from RESQML.
         """
 
-        if uuid is None:
-            # Cursed solution as the `uuid`-argument overwrites the top-level
-            # import of the standard-library `uuid`.
-            import uuid
-
-            uuid = str(uuid.uuid4())
-
         surface_role = SurfaceRole(surface_role)
         boundaries = boundaries or []
         extra_metadata = extra_metadata or []
         aliases = aliases or []
         path_in_hdf_file = path_in_hdf_file or f"/RESQML/{uuid}/zvalues"
-
-        if represented_interpretation is not None:
-            represented_interpretation = DataObjectReference.from_object(
-                represented_interpretation
-            )
 
         grid2d_patch = Grid2dPatch.from_regular_surface(
             crs=crs,
@@ -24262,12 +24274,16 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             citation=citation,
             aliases=aliases,
             custom_data=custom_data,
-            uuid=uuid,
+            uuid=(str(uuid) if uuid is not None else str(uuid_lib.uuid4())),
             object_version=object_version,
             surface_role=surface_role,
             grid2d_patch=grid2d_patch,
             boundaries=boundaries,
-            represented_interpretation=represented_interpretation,
+            represented_interpretation=(
+                represented_interpretation
+                if represented_interpretation is None
+                else DataObjectReference.from_object(represented_interpretation)
+            ),
             extra_metadata=extra_metadata,
         )
 

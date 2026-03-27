@@ -4,7 +4,7 @@ import numpy.typing as npt
 
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes.object import Edge, Resource
-from pyetp import utils_arrays
+from energistics.types import ETPNumpyArrayType
 
 
 class RDDMSModel(typing.NamedTuple):
@@ -30,7 +30,7 @@ class RDDMSModel(typing.NamedTuple):
     """
 
     obj: ro.AbstractCitedDataObject
-    arrays: dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]]
+    arrays: dict[str, npt.NDArray[ETPNumpyArrayType]]
     linked_models: list["RDDMSModel"]
 
 

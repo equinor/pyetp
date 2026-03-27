@@ -1,14 +1,18 @@
 import random
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 
-import pyetp.utils_arrays
+from energistics.array_mapping import (
+    TransportArrayTypeMapping,
+    get_logical_and_transport_array_types,
+)
 from energistics.etp.v12.datatypes import (
     AnyArrayType,
     AnyLogicalArrayType,
 )
+from energistics.types import ETPNumpyArrayDType
+from rddms_io.block_array import get_array_block_sizes
 
 
 @pytest.mark.parametrize(
@@ -18,16 +22,16 @@ from energistics.etp.v12.datatypes import (
         # pyetp.utils_arrays.py.
         np.dtype(np.bool_),
         np.dtype(np.int8),
-        np.dtype("<i4"),
-        np.dtype("<i8"),
-        np.dtype("<f4"),
-        np.dtype("<f8"),
+        np.dtype(np.int32),
+        np.dtype(np.int64),
+        np.dtype(np.float32),
+        np.dtype(np.float64),
     ],
 )
-def test_allowed_mappings(dtype: npt.DTypeLike) -> None:
+def test_allowed_mappings(dtype: ETPNumpyArrayDType) -> None:
     # See section 13.2.2.1 in the ETP v1.2 specification.
-    logical_array_type, transport_array_type = (
-        pyetp.utils_arrays.get_logical_and_transport_array_types(dtype)
+    logical_array_type, transport_array_type = get_logical_and_transport_array_types(
+        dtype
     )
 
     match logical_array_type:
@@ -68,8 +72,6 @@ def test_allowed_mappings(dtype: npt.DTypeLike) -> None:
 @pytest.mark.parametrize(
     "dtype",
     [
-        # We only add the supported dtypes for now. See comments in
-        # pyetp.utils_arrays.py.
         np.dtype(np.bool_),
         np.dtype(np.int8),
         np.dtype("<i4"),
@@ -78,14 +80,14 @@ def test_allowed_mappings(dtype: npt.DTypeLike) -> None:
         np.dtype("<f8"),
     ],
 )
-def test_transport_array_size(dtype: npt.DTypeLike) -> None:
+def test_transport_array_size(dtype: ETPNumpyArrayDType) -> None:
     for i in range(10):
         shape = tuple(random.randint(1, 15) for i in range(random.randint(1, 5)))
         data = np.random.random(shape).astype(dtype)
 
-        transport_array_type = pyetp.utils_arrays.get_transport_array_type(dtype)
-        transport_array_size = pyetp.utils_arrays.get_transport_array_size(
-            transport_array_type, shape
+        transport_array_type = TransportArrayTypeMapping.get_etp_array_type(dtype)
+        transport_array_size = TransportArrayTypeMapping.get_array_size(
+            shape, transport_array_type
         )
 
         assert data.nbytes == transport_array_size
@@ -114,13 +116,13 @@ def test_transport_array_size(dtype: npt.DTypeLike) -> None:
         (234, 39, 104),
     ],
 )
-def test_array_block_sizes(dtype: npt.DTypeLike, shape: tuple[int]) -> None:
+def test_array_block_sizes(dtype: ETPNumpyArrayDType, shape: tuple[int]) -> None:
     max_array_size = 10_000 - 512
 
     data = np.random.random(shape).astype(dtype)
     data_buffer = np.zeros_like(data)
 
-    block_starts, block_counts = pyetp.utils_arrays.get_array_block_sizes(
+    block_starts, block_counts = get_array_block_sizes(
         data.shape,
         data.dtype,
         max_array_size,

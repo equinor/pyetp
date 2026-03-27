@@ -1,9 +1,10 @@
 import asyncio
 import datetime
 import logging
+import sys
 import typing
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from types import TracebackType
 
 import numpy as np
@@ -11,8 +12,15 @@ import numpy.typing as npt
 from pydantic import SecretStr
 
 import resqml_objects.v201 as ro
+from energistics.array_mapping import (
+    LogicalArrayTypeMapping,
+    TransportArrayTypeMapping,
+    get_logical_and_transport_array_types,
+)
+from energistics.base import ETPBaseProtocolModel
 from energistics.etp.v12.datatypes import ArrayOfString, DataValue, Uuid
 from energistics.etp.v12.datatypes.data_array_types import (
+    DataArray,
     DataArrayIdentifier,
     DataArrayMetadata,
     GetDataSubarraysType,
@@ -66,13 +74,14 @@ from energistics.etp.v12.protocol.store import (
 )
 from energistics.etp.v12.protocol.transaction import (
     CommitTransaction,
+    CommitTransactionResponse,
     RollbackTransaction,
     RollbackTransactionResponse,
     StartTransaction,
     StartTransactionResponse,
 )
+from energistics.types import ETPNumpyArrayType
 from energistics.uris import DataObjectURI, DataspaceURI
-from pyetp import utils_arrays
 from pyetp.client import (
     ETPClient,
     ETPError,
@@ -84,27 +93,22 @@ from pyetp.errors import (
     ETPTransactionFailure,
     parse_and_raise_response_errors,
 )
+from rddms_io.block_array import get_array_block_sizes
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 from resqml_objects import parse_resqml_v201_object, serialize_resqml_v201_object
 from resqml_objects.v201.utils import find_data_object_references, find_hdf5_datasets
 
 logger = logging.getLogger(__name__)
 
-ListOfRESQMLObjects: typing.TypeAlias = list[ro.AbstractCitedDataObject]
-ObjectsAndArrays: typing.TypeAlias = tuple[
-    ListOfRESQMLObjects, dict[str, list[npt.NDArray[utils_arrays.LogicalArrayDTypes]]]
-]
-DownloadModelType: typing.TypeAlias = ListOfRESQMLObjects | ObjectsAndArrays
-
-try:
+if sys.version_info >= (3, 12):
     from itertools import batched
-except ImportError:
+else:
     # Construct `batched` for Python 3.11 as it was introduced in Python 3.12.
     # We make it specialized for our use-case.
-    def batched(iterable: bytes, n: int) -> typing.Iterator[tuple[bytes]]:
+    def batched(iterable: bytes, n: int) -> typing.Iterator[tuple[int, ...]]:
         num_chunks = len(iterable) // n + int(len(iterable) % n != 0)
         for i in range(num_chunks):
-            yield iterable[slice(i * n, (i + 1) * n)]
+            yield tuple(iterable[slice(i * n, (i + 1) * n)])
 
 
 class RDDMSClient:
@@ -180,7 +184,16 @@ class RDDMSClient:
             GetDataspacesResponse,
             "RDDMSClient.list_dataspaces",
         )
-        dataspaces = [ds for response in responses for ds in response.dataspaces]
+        # Here we know that `responses` has type `list[GetDataspacesResponse]`
+        dataspaces = [
+            ds
+            for response in responses
+            # Explicitly cast `response` to `GetDataspacesResponse` (this has
+            # been checked with the `parse_and_raise_response_errors`-function
+            # above.
+            for ds in typing.cast(GetDataspacesResponse, response).dataspaces
+        ]
+
         return dataspaces
 
     async def delete_dataspace(self, dataspace_uri: DataspaceURI | str) -> None:
@@ -203,7 +216,14 @@ class RDDMSClient:
             DeleteDataspacesResponse,
             "RDDMSClient.delete_dataspace",
         )
-        assert any([dataspace_uri in response.success for response in responses])
+        assert any(
+            [
+                # Cast `response` to `DeleteDataspacesResponse`. This has been
+                # checked with `parse_and_raise_response_errors` above.
+                dataspace_uri in typing.cast(DeleteDataspacesResponse, response).success
+                for response in responses
+            ]
+        )
 
     async def create_dataspace(
         self,
@@ -283,7 +303,15 @@ class RDDMSClient:
         parse_and_raise_response_errors(
             responses, PutDataspacesResponse, "RDDMSClient.create_dataspace"
         )
-        assert any([str(dataspace_uri) in response.success for response in responses])
+        assert any(
+            [
+                str(dataspace_uri)
+                # Cast `response` to `PutDataspacesResponse`. This has been
+                # checked with `parse_and_raise_response_errors` above.
+                in typing.cast(PutDataspacesResponse, response).success
+                for response in responses
+            ]
+        )
 
     async def start_transaction(
         self,
@@ -320,10 +348,11 @@ class RDDMSClient:
         """
 
         dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_uri))
-        total_timeout = debounce
 
         if isinstance(debounce, bool):
             total_timeout = None
+        else:
+            total_timeout = debounce
 
         for ti in timeout_intervals(total_timeout):
             try:
@@ -351,6 +380,7 @@ class RDDMSClient:
 
             assert len(responses) == 1
             response = responses[0]
+            assert isinstance(response, StartTransactionResponse)
 
             if not response.successful:
                 raise ETPTransactionFailure(str(response.failure_reason))
@@ -378,17 +408,16 @@ class RDDMSClient:
             typically be the uuid from the
             `RDDMSClient.start_transaction`-method.
         """
-        if isinstance(transaction_uuid, uuid.UUID):
-            transaction_uuid = Uuid(transaction_uuid.bytes)
-        elif isinstance(transaction_uuid, str | bytes):
-            transaction_uuid = Uuid(transaction_uuid)
-
+        # TODO: Remove `#type: ignore` if this issue gets resolved:
+        # https://github.com/pydantic/pydantic/issues/12978
+        transaction_uuid = Uuid(transaction_uuid)  # type: ignore
         responses = await self.etp_client.send_and_recv(
             CommitTransaction(transaction_uuid=transaction_uuid),
         )
 
         assert len(responses) == 1
         response = responses[0]
+        assert isinstance(response, CommitTransactionResponse)
 
         if not response.successful:
             raise ETPTransactionFailure(str(response))
@@ -410,24 +439,28 @@ class RDDMSClient:
             typically be the uuid from the
             `RDDMSClient.start_transaction`-method.
         """
-        if isinstance(transaction_uuid, uuid.UUID | str):
-            transaction_uuid = Uuid(str(transaction_uuid).encode())
-        elif isinstance(transaction_uuid, bytes):
-            transaction_uuid = Uuid(transaction_uuid)
-
-        response = await self.etp_client.send_and_recv(
+        # TODO: Remove `#type: ignore` if this issue gets resolved:
+        # https://github.com/pydantic/pydantic/issues/12978
+        transaction_uuid = Uuid(transaction_uuid)  # type: ignore
+        responses = await self.etp_client.send_and_recv(
             RollbackTransaction(transaction_uuid=transaction_uuid)
         )
+
         parse_and_raise_response_errors(
-            [response], RollbackTransactionResponse, "RDDMSClient.rollback_transaction"
+            responses, RollbackTransactionResponse, "RDDMSClient.rollback_transaction"
         )
+
+        assert len(responses) == 1
+        response = responses[0]
+        assert isinstance(response, RollbackTransactionResponse)
+
         if not response.successful:
             raise ETPTransactionFailure(str(response))
 
     async def list_objects_under_dataspace(
         self,
         dataspace_uri: DataspaceURI | str,
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
     ) -> list[Resource]:
@@ -488,12 +521,19 @@ class RDDMSClient:
         parse_and_raise_response_errors(
             responses, GetResourcesResponse, "RDDMSClient.list_objects_under_dataspace"
         )
-        return [resource for response in responses for resource in response.resources]
+        return [
+            resource
+            for response in responses
+            # We have checked that `responses` is of type
+            # `list[GetResourcesResponse]` in the function
+            # `parse_and_raise_response_errors` above.
+            for resource in typing.cast(GetResourcesResponse, response).resources
+        ]
 
     async def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         store_last_write_filter: datetime.datetime | int | None = None,
         depth: int = 1,
     ) -> LinkedObjects:
@@ -505,9 +545,9 @@ class RDDMSClient:
 
         Parameters
         ----------
-        start_uri: DataObjectURI | str
+        start_uri
             An ETP data object uri to start the query from.
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]]
+        data_object_types
             A filter to limit which types of objects to include in the results.
             As a string it is on the form `eml20.obj_EpcExternalPartReference`
             for a specific object, or `eml20.*` for all Energistics Common
@@ -516,12 +556,12 @@ class RDDMSClient:
             can also be classes from `resqml_objects.v201`, in which case the
             filter will be constructed. Default is `[]`, meaning no filter is
             applied.
-        store_last_write_filter: datetime.datetime | int | None
+        store_last_write_filter
             Filter to only include objects that are written after the provided
             datetime or timestamp. Default is `None`, meaning no filter is
             applied. Note that the timestamp should be in microsecond
             resolution.
-        depth: int
+        depth
             The number of links to return. Setting `depth = 1` will only return
             targets and sources that are directly linked to the start object.
             With `depth = 2` we get links to objects that linkes to the targets
@@ -533,6 +573,7 @@ class RDDMSClient:
             A container (`NamedTuple`) with resources and edges for the sources
             and targets of the start-object.
         """
+        start_uri = str(start_uri)
         data_object_types = [
             dot if isinstance(dot, str) else dot.get_qualified_type()
             for dot in data_object_types
@@ -543,7 +584,7 @@ class RDDMSClient:
 
         gr_sources = GetResources(
             context=ContextInfo(
-                uri=str(start_uri),
+                uri=start_uri,
                 depth=depth,
                 data_object_types=data_object_types,
                 navigable_edges=RelationshipKind.PRIMARY,
@@ -559,7 +600,7 @@ class RDDMSClient:
 
         gr_targets = GetResources(
             context=ContextInfo(
-                uri=str(start_uri),
+                uri=start_uri,
                 depth=depth,
                 data_object_types=data_object_types,
                 navigable_edges=RelationshipKind.PRIMARY,
@@ -583,14 +624,17 @@ class RDDMSClient:
             for grer in filter(
                 lambda e: isinstance(e, GetResourcesEdgesResponse), sources_responses
             )
-            for e in grer.edges
+            # The filter above only selects instances of
+            # `GetResourcesEdgesResponse`, so the cast is only included for
+            # type checkers.
+            for e in typing.cast(GetResourcesEdgesResponse, grer).edges
         ]
         source_resources = [
             r
             for grr in filter(
                 lambda e: isinstance(e, GetResourcesResponse), sources_responses
             )
-            for r in grr.resources
+            for r in typing.cast(GetResourcesResponse, grr).resources
         ]
 
         target_edges = [
@@ -598,14 +642,14 @@ class RDDMSClient:
             for grer in filter(
                 lambda e: isinstance(e, GetResourcesEdgesResponse), targets_responses
             )
-            for e in grer.edges
+            for e in typing.cast(GetResourcesEdgesResponse, grer).edges
         ]
         target_resources = [
             r
             for grr in filter(
                 lambda e: isinstance(e, GetResourcesResponse), targets_responses
             )
-            for r in grr.resources
+            for r in typing.cast(GetResourcesResponse, grr).resources
         ]
 
         self_resource = next(filter(lambda sr: sr.uri == start_uri, source_resources))
@@ -635,7 +679,7 @@ class RDDMSClient:
 
     async def list_array_metadata(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
     ) -> dict[str, dict[str, DataArrayMetadata]]:
         """
         Method used for listing array metadata for all connected arrays to the
@@ -693,7 +737,7 @@ class RDDMSClient:
             ]
         )
 
-        metadata_map = {}
+        metadata_map: dict[str, dict[str, DataArrayMetadata]] = {}
         for am in array_metadata:
             metadata_map = {**metadata_map, **am}
 
@@ -776,9 +820,14 @@ class RDDMSClient:
                 "RDDMSClient.list_array_metadata",
             )
 
-            pirm = {}
+            pirm: dict[str, DataArrayMetadata] = {}
             for response in tr:
-                pirm = {**pirm, **response.array_metadata}
+                pirm = {
+                    **pirm,
+                    **typing.cast(
+                        GetDataArrayMetadataResponse, response
+                    ).array_metadata,
+                }
 
             metadata_map[uri] = pirm
 
@@ -788,7 +837,7 @@ class RDDMSClient:
         self,
         epc_uri: str | DataObjectURI,
         path_in_resource: str,
-        data: npt.NDArray[utils_arrays.LogicalArrayDTypes],
+        data: npt.NDArray[ETPNumpyArrayType],
     ) -> None:
         """
         Method used for uploading a single array to an ETP server. This method
@@ -816,7 +865,7 @@ class RDDMSClient:
         """
         # Fetch ETP logical and transport array types
         logical_array_type, transport_array_type = (
-            utils_arrays.get_logical_and_transport_array_types(data.dtype)
+            get_logical_and_transport_array_types(data.dtype)
         )
 
         # Create identifier for the data.
@@ -849,7 +898,7 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, PutUninitializedDataArraysResponse)
+        assert isinstance(response, PutUninitializedDataArraysResponse)
         assert len(response.success) == 1 and dai.path_in_resource in response.success
 
         # Check if we can upload the entire array in go, or if we need to
@@ -863,7 +912,7 @@ class RDDMSClient:
 
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
-            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+            block_starts, block_counts = get_array_block_sizes(
                 data.shape, data.dtype, self.etp_client.max_array_size
             )
 
@@ -881,9 +930,7 @@ class RDDMSClient:
                 # Note in the particular the extra `.data`-after the call. The
                 # data should not be of type `DataArray`, but `AnyArray`, so we
                 # need to fetch it from the `DataArray`.
-                etp_subarray_data = utils_arrays.get_etp_data_array_from_numpy(
-                    data[slices]
-                ).data
+                etp_subarray_data = DataArray.from_numpy_array(data[slices]).data
 
                 # Create an asynchronous task to upload a block to the
                 # ETP-server.
@@ -913,7 +960,7 @@ class RDDMSClient:
 
             # Check for successful responses.
             for response in responses:
-                self.etp_client.assert_response(response, PutDataSubarraysResponse)
+                assert isinstance(response, PutDataSubarraysResponse)
                 assert (
                     len(response.success) == 1
                     and dai.path_in_resource in response.success
@@ -923,7 +970,7 @@ class RDDMSClient:
             return
 
         # Convert NumPy data-array to an ETP-transport array.
-        etp_array_data = utils_arrays.get_etp_data_array_from_numpy(data)
+        etp_array_data = DataArray.from_numpy_array(data)
 
         # Pass entire array in one message.
         responses = await self.etp_client.send_and_recv(
@@ -940,14 +987,14 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, PutDataArraysResponse)
+        assert isinstance(response, PutDataArraysResponse)
         assert len(response.success) == 1 and dai.path_in_resource in response.success
 
     async def download_object_arrays(
         self,
         dataspace_uri: str | DataspaceURI,
         ml_object: ro.AbstractCitedDataObject,
-    ) -> dict[str, npt.NDArray[utils_arrays.LogicalArrayDTypes]]:
+    ) -> dict[str, npt.NDArray[ETPNumpyArrayType]]:
         """
         Method accepting a `dataspace_uri` (or dataspace path) and a
         RESQML-object, and downloading all attached arrays (if any). This
@@ -964,7 +1011,7 @@ class RDDMSClient:
 
         Returns
         -------
-        dict[str, npt.NDArray[utils_arrays.LogicalArrayDTypes]]
+        dict[str, npt.NDArray[ETPNumpyArrayType]]
             A dictionary mapping the `path_in_hdf_file`-keys in `ml_object` to
             the corresponding array. Empty if `ml_object` does not reference
             any arrays.
@@ -1007,7 +1054,7 @@ class RDDMSClient:
         self,
         epc_uri: str | DataObjectURI,
         path_in_resource: str,
-    ) -> npt.NDArray[utils_arrays.LogicalArrayDTypes]:
+    ) -> npt.NDArray[ETPNumpyArrayType]:
         """
         Method used for downloading a single array from an ETP server. It
         should not be necessary for a user to call this method, prefer
@@ -1025,7 +1072,7 @@ class RDDMSClient:
 
         Returns
         -------
-        data: npt.NDArray[utils_arrays.LogicalArrayDTypes]
+        data: npt.NDArray[ETPNumpyArrayType]
             A NumPy-array with the data.
 
         See Also
@@ -1047,7 +1094,7 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, GetDataArrayMetadataResponse)
+        assert isinstance(response, GetDataArrayMetadataResponse)
         assert (
             len(response.array_metadata) == 1
             and dai.path_in_resource in response.array_metadata
@@ -1056,20 +1103,15 @@ class RDDMSClient:
         metadata = response.array_metadata[dai.path_in_resource]
 
         # Check if we can download the full array in a single message.
-        if (
-            utils_arrays.get_transport_array_size(
-                metadata.transport_array_type, metadata.dimensions
-            )
-            >= self.etp_client.max_array_size
-        ):
-            transport_dtype = utils_arrays.get_dtype_from_any_array_type(
+        if metadata.get_transport_array_size() >= self.etp_client.max_array_size:
+            transport_dtype = TransportArrayTypeMapping.get_dtype(
                 metadata.transport_array_type,
             )
             # NOTE: The logical array type is not yet supported by the
             # open-etp-server. As such the transport array type will be actual
             # array type used. We only add this call to prepare for when it
             # will be used.
-            logical_dtype = utils_arrays.get_dtype_from_any_logical_array_type(
+            logical_dtype = LogicalArrayTypeMapping.get_dtype(
                 metadata.logical_array_type,
             )
             if logical_dtype != np.dtype(np.bool_):
@@ -1085,7 +1127,7 @@ class RDDMSClient:
 
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
-            block_starts, block_counts = utils_arrays.get_array_block_sizes(
+            block_starts, block_counts = get_array_block_sizes(
                 data.shape, data.dtype, self.etp_client.max_array_size
             )
 
@@ -1121,7 +1163,7 @@ class RDDMSClient:
 
             data_blocks = []
             for i, response in enumerate(responses):
-                self.etp_client.assert_response(response, GetDataSubarraysResponse)
+                assert isinstance(response, GetDataSubarraysResponse)
                 assert (
                     len(response.data_subarrays) == 1
                     and data_subarrays_key(dai.path_in_resource, i)
@@ -1157,7 +1199,7 @@ class RDDMSClient:
         assert len(responses) == 1
         response = responses[0]
 
-        self.etp_client.assert_response(response, GetDataArraysResponse)
+        assert isinstance(response, GetDataArraysResponse)
         assert (
             len(response.data_arrays) == 1
             and dai.path_in_resource in response.data_arrays
@@ -1169,9 +1211,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[utils_arrays.LogicalArrayDTypes]]
-        ] = {},
+        data_arrays: Mapping[str, npt.NDArray[ETPNumpyArrayType]] = {},
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> list[str]:
@@ -1247,7 +1287,7 @@ class RDDMSClient:
 
     async def _send_put_data_objects(
         self, pdo: PutDataObjects
-    ) -> list[PutDataObjectsResponse]:
+    ) -> list[ETPBaseProtocolModel]:
         if len(pdo.data_objects) > 1:
             raise NotImplementedError(
                 "We currently only support chunking a single data object at a time. "
@@ -1298,9 +1338,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[
-            str, Sequence[npt.NDArray[utils_arrays.LogicalArrayDTypes]]
-        ],
+        data_arrays: Mapping[str, npt.NDArray[ETPNumpyArrayType]],
     ) -> list[str]:
         logger.debug(
             f"Starting to upload model of {len(ml_objects)} objects and "
@@ -1327,7 +1365,6 @@ class RDDMSClient:
             if not isinstance(last_changed, datetime.datetime):
                 last_changed = last_changed.to_datetime()
 
-            # Note that chunking is handled in the ETP-client if that is needed.
             dob = DataObject(
                 format="xml",
                 data=obj_xml,
@@ -1362,9 +1399,11 @@ class RDDMSClient:
         logger.debug("Done uploading model objects. Starting on upload of arrays.")
 
         dataspace_path = DataspaceURI.from_uri(dataspace_uri).dataspace
+        if dataspace_path is None:
+            dataspace_path = ""
 
         uploaded_data_keys = []
-        tasks = []
+        array_tasks = []
         for hdf5_dataset in ml_hds:
             path_in_resource = hdf5_dataset.path_in_hdf_file
             epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
@@ -1374,7 +1413,7 @@ class RDDMSClient:
             data = data_arrays[path_in_resource]
             uploaded_data_keys.append(path_in_resource)
 
-            tasks.append(
+            array_tasks.append(
                 self.upload_array(
                     epc_uri=epc_uri,
                     path_in_resource=path_in_resource,
@@ -1389,14 +1428,14 @@ class RDDMSClient:
                 "provided objects."
             )
 
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*array_tasks)
 
         logger.debug("Done uploading arrays.")
         return ml_uris
 
     async def download_models(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
         download_arrays: bool = False,
         download_linked_objects: bool = False,
     ) -> list[RDDMSModel]:
@@ -1445,7 +1484,7 @@ class RDDMSClient:
         return await asyncio.gather(
             *[
                 self._download_model(
-                    ml_uri=ml_uri,
+                    ml_uri=str(ml_uri),
                     download_arrays=download_arrays,
                     download_linked_objects=download_linked_objects,
                 )
@@ -1455,7 +1494,7 @@ class RDDMSClient:
 
     async def _recv_get_data_objects(
         self, gdo: GetDataObjects
-    ) -> list[GetDataObjectsResponse]:
+    ) -> list[ETPBaseProtocolModel]:
         if len(gdo.uris) > 1:
             raise NotImplementedError(
                 "We only support chunking a single data object at at time. "
@@ -1468,8 +1507,8 @@ class RDDMSClient:
             return responses
 
         logger.debug("The `GetDataObjects`-message is too big, starting chunking.")
-        assert isinstance(responses[0], GetDataObjectsResponse)
         gdor = responses.pop(0)
+        assert isinstance(gdor, GetDataObjectsResponse)
         assert len(gdor.data_objects) == 1
         dob_key = list(gdor.data_objects)[0]
         dob = gdor.data_objects[dob_key]
@@ -1482,16 +1521,19 @@ class RDDMSClient:
         # removed once the bug is fixed.
         if isinstance(responses[-1], GetDataObjectsResponse):
             bug_gdor = responses.pop(-1)
+            assert isinstance(bug_gdor, GetDataObjectsResponse)
             assert bug_gdor.data_objects == {}
 
         # The returned `Chunk`-messages are sorted based on the message id in
         # the header (see `ETPClient.__receiver_loop`).
         assert all([isinstance(r, Chunk) for r in responses])
-        assert all([r.blob_id == blob_id for r in responses])
-        assert responses[-1].final
+        assert all([typing.cast(Chunk, r).blob_id == blob_id for r in responses])
+        assert typing.cast(Chunk, responses[-1]).final
 
         gdor.data_objects[dob_key].blob_id = None
-        gdor.data_objects[dob_key].data = b"".join([r.data for r in responses])
+        gdor.data_objects[dob_key].data = b"".join(
+            [typing.cast(Chunk, r).data for r in responses]
+        )
 
         return [gdor]
 
@@ -1516,10 +1558,14 @@ class RDDMSClient:
         # the different chunks.
         assert len(responses) == 1
         response = responses[0]
+        assert isinstance(response, GetDataObjectsResponse)
 
         assert len(response.data_objects) == 1
         data_object = response.data_objects[ml_uri]
+
         ml_object = parse_resqml_v201_object(data_object.data)
+        # We should only get top-level objects in return from the ETP-server.
+        assert isinstance(ml_object, ro.AbstractCitedDataObject)
 
         linked_models = []
         if download_linked_objects:
@@ -1568,7 +1614,7 @@ class RDDMSClient:
 
     async def delete_model(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
         prune_contained_objects: bool = False,
         handle_transaction: bool = True,
         debounce: bool | float = False,
@@ -1647,10 +1693,10 @@ class rddms_connect:
         endpoint to an ETP server.
     data_partition_id
         The data partition id used when connecting to the OSDU open-etp-server
-        in multi-partition mode. Default is `None`.
+        in multi-partition mode. Default is `""`.
     authorization
         Bearer token used for authenticating to the RDDMS server. This token
-        should be on the form `"Bearer 1234..."`. Default is `None`.
+        should be on the form `"Bearer 1234..."`. Default is `""`.
     etp_timeout
         The timeout in seconds for when to stop waiting for a message from the
         server. Setting it to `None` will persist the connection indefinetly.
@@ -1714,10 +1760,10 @@ class rddms_connect:
     def __init__(
         self,
         uri: str,
-        data_partition_id: str | None = None,
-        authorization: str | SecretStr | None = None,
+        data_partition_id: str = "",
+        authorization: str | SecretStr = "",
         etp_timeout: float | None = None,
-        max_message_size: float = 2**20,
+        max_message_size: int = 2**20,
         use_compression: bool = True,
     ) -> None:
         self.uri = uri
@@ -1732,7 +1778,7 @@ class rddms_connect:
         self.max_message_size = max_message_size
         self.use_compression = use_compression
 
-    def __await__(self) -> RDDMSClient:
+    def __await__(self) -> typing.Generator[None, None, RDDMSClient]:
         return self.__aenter__().__await__()
 
     async def __aenter__(self) -> RDDMSClient:

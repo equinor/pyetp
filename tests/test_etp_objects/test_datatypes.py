@@ -26,6 +26,7 @@ from energistics.etp.v12.datatypes import (
     ServerCapabilities,
     SupportedDataObject,
     SupportedProtocol,
+    Uuid,
     Version,
 )
 from energistics.etp.v12.datatypes.data_value import (
@@ -35,7 +36,7 @@ from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags
 from energistics.etp.v12.datatypes.object import DataObject, Dataspace, Resource
 from energistics.etp.v12.protocol.core import CloseSession
 from energistics.types import ETPArrayType, ETPBasicArrayType
-from tests.test_etp_objects.conftest import avro_roundtrip
+from tests.test_etp_objects.conftest import avro_roundtrip, avro_roundtrip_uuid
 
 
 @pytest.mark.parametrize(
@@ -57,6 +58,7 @@ def test_etp_array_types(
     array_instance: ETPArrayType,
 ) -> None:
     ret_array_instance = avro_roundtrip(array_instance)
+    assert isinstance(ret_array_instance, ETPArrayType)
     np.testing.assert_equal(array_instance.values, ret_array_instance.values)
 
 
@@ -139,6 +141,7 @@ def test_data_value(item: ItemType) -> None:
     dv = DataValue(item=item)
     ret_dv = avro_roundtrip(dv)
 
+    assert isinstance(ret_dv, DataValue)
     assert type(ret_dv.item) is type(dv.item)
 
     if isinstance(
@@ -213,6 +216,7 @@ def test_dataspace() -> None:
 
     ret_ds = avro_roundtrip(ds)
     assert ret_ds == ds
+    assert isinstance(ret_ds, Dataspace)
     assert (
         datetime.datetime.fromtimestamp(
             ret_ds.store_last_write / 1e6, tz=datetime.timezone.utc
@@ -359,3 +363,18 @@ def test_messsage_header() -> None:
             message_id=12,
             message_flags=MessageHeaderFlags.FIN | MessageHeaderFlags.COMPRESSED,
         )
+
+
+def test_uuid() -> None:
+    u = uuid.uuid4()
+    etp_u_1 = Uuid(u)
+    # TODO: Remove all `#type: ignore` below if this issue gets resolved:
+    # https://github.com/pydantic/pydantic/issues/12978
+    etp_u_2 = Uuid(u.bytes)  # type: ignore
+    etp_u_3 = Uuid(str(u))  # type: ignore
+    etp_u_4 = Uuid(etp_u_1)  # type: ignore
+
+    assert u == uuid.UUID(str(etp_u_1.root))
+    assert etp_u_1 == etp_u_2 == etp_u_3 == etp_u_4
+
+    assert etp_u_1 == avro_roundtrip_uuid(etp_u_1)

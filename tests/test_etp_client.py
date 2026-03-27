@@ -61,7 +61,7 @@ async def test_persistent_connect_broken_receiver_task() -> None:
     with pytest.raises(asyncio.CancelledError):
         async for etp_client in etp_connect(uri=etp_server_url):
             counter += 1
-            etp_client._ETPClient__recvtask.cancel("stop")
+            etp_client._recvtask.cancel("stop")
 
             # NOTE: This test can take a variable number of seconds to complete
             # due to the adaptive timeout when waiting for a message.
@@ -73,7 +73,7 @@ async def test_persistent_connect_broken_receiver_task() -> None:
 
 @skip_decorator
 @pytest.mark.asyncio
-async def test_manual_open_close():
+async def test_manual_open_close() -> None:
     etp_client = await etp_connect(uri=etp_server_url)
     await etp_client.close()  # close
 

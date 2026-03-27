@@ -37,8 +37,8 @@ gri = ro.obj_Grid2dRepresentation.from_regular_surface(
 )
 
 uri = "ws://localhost:9100"
-data_partition_id = None
-access_token = None
+data_partition_id = ""
+access_token = ""
 dataspace_path = "rddms_io/sync-demo"
 
 rddms_client = RDDMSClientSync(
@@ -53,6 +53,9 @@ rddms_client.create_dataspace(
     viewers=["viewers-1", "viewers-2"],
     ignore_if_exists=True,
 )
+
+assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
 
 rddms_client.upload_model(
     dataspace_path,
@@ -80,6 +83,12 @@ assert len(ret_models) == 1
 
 ret_model = ret_models[0]
 ret_gri = ret_model.obj
+
+assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
+assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+assert isinstance(
+    ret_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
+)
 
 assert len(ret_model.linked_models) == 1
 
