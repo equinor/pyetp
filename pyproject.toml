@@ -71,3 +71,4 @@ exclude = ["*.ipynb", "venv", ".venv", "src/pyetp/types.py"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
+exclude = ["examples"]
