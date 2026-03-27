@@ -55,6 +55,10 @@ jobs:
     - name: Check linting
       run: |
         ruff check
+
+    - name: Check typing
+      run: |
+        mypy src tests --strict
         
     - name: Upload coverage reports to Codecov
       if: ${{ github.event_name == 'push'}}
