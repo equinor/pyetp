@@ -124,7 +124,7 @@ similarly to how it is done in the [previous
 tutorial](using_the_rddms_client.md#uploading-the-surface).
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:57:63
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:60:66
 --8<--
 ```
 
@@ -134,7 +134,7 @@ We can search using [`RDDMSClientSync`][rddms_io.sync_client.RDDMSClientSync]
 in the same way we did the concurrent client.
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:65:71
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:68:74
 --8<--
 ```
 See the [previous
@@ -148,7 +148,7 @@ We download the surface using
 [`RDDMSClientSync.download_models`][rddms_io.sync_client.RDDMSClientSync].
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:73:77
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:76:80
 --8<--
 ```
 As we only asked for a single uri (the `gri_lo.start_uri`) in the
@@ -157,7 +157,7 @@ As we only asked for a single uri (the `gri_lo.start_uri`) in the
 The `obj_Grid2dRepresentation`-object is then found via:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:81:82
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:84:85
 --8<--
 ```
 Since we used the flags `download_arrays=True` and
@@ -170,13 +170,13 @@ excluded from being added to the `RDDMSModel.linked_models`), and to get it we
 run:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:86:86
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:95:95
 --8<--
 ```
 The array is found using the `path_in_hdf_file` from the grid-object:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:87:89
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:96:98
 --8<--
 ```
 
@@ -185,7 +185,7 @@ Here as in the previous tutorial we end by deleting all the objects and then
 delete the dataspace.
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:95:97
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:104:106
 --8<--
 ```
 
