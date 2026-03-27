@@ -36,7 +36,7 @@ from energistics.etp.v12.datatypes.message_header import MessageHeaderFlags
 from energistics.etp.v12.datatypes.object import DataObject, Dataspace, Resource
 from energistics.etp.v12.protocol.core import CloseSession
 from energistics.types import ETPArrayType, ETPBasicArrayType
-from tests.test_etp_objects.conftest import avro_roundtrip
+from tests.test_etp_objects.conftest import avro_roundtrip, avro_roundtrip_uuid
 
 
 @pytest.mark.parametrize(
@@ -372,4 +372,4 @@ def test_uuid() -> None:
     assert u == uuid.UUID(str(etp_u_1.root))
     assert etp_u_1 == etp_u_2 == etp_u_3 == etp_u_4
 
-    assert etp_u_1 == avro_roundtrip(etp_u_1)
+    assert etp_u_1 == avro_roundtrip_uuid(etp_u_1)

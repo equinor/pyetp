@@ -3,9 +3,12 @@ import io
 import fastavro
 
 import energistics.base
+from energistics.etp.v12.datatypes import Uuid
 
 
-def avro_roundtrip(obj: energistics.base.ETPBaseModel) -> energistics.base.ETPBaseModel:
+def _avro_roundtrip(
+    obj: energistics.base.ETPBaseModel | Uuid,
+) -> energistics.base.ETPBaseModel | Uuid:
     cls = type(obj)
     with io.BytesIO() as fb:
         fastavro.write.schemaless_writer(
@@ -28,6 +31,20 @@ def avro_roundtrip(obj: energistics.base.ETPBaseModel) -> energistics.base.ETPBa
             ret_obj = cls(**record)
         else:
             # Handle the case when we get bytes in return.
+            # Explicitly verify that `cls` is `Uuid`.
+            assert issubclass(cls, Uuid)
             ret_obj = cls(record)
 
+    return ret_obj
+
+
+def avro_roundtrip(obj: energistics.base.ETPBaseModel) -> energistics.base.ETPBaseModel:
+    ret_obj = _avro_roundtrip(obj)
+    assert not isinstance(ret_obj, Uuid)
+    return ret_obj
+
+
+def avro_roundtrip_uuid(obj: Uuid) -> Uuid:
+    ret_obj = _avro_roundtrip(obj)
+    assert isinstance(ret_obj, Uuid)
     return ret_obj
