@@ -8,10 +8,6 @@ etp_server_url = "ws://localhost:9100"
 dataspace = "test/test"
 
 
-async def get_app_token(rc=None):
-    return None
-
-
 def check_if_server_is_accesible() -> bool:
     parsed_url = urllib.parse.urlparse(etp_server_url)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
