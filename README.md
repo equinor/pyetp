@@ -30,10 +30,12 @@ pip install pip --upgrade
 pip install -e .
 pip install --group dev
 ```
+After doing changes to the code, make sure to lint, format, check the types,
+and run tests and see that they pass.
 
 
-## Linting and formatting
-We use ruff as a linter and formatter. To lint run:
+### Linting and formatting
+We use `ruff` as a linter and formatter. To lint run:
 ```bash
 ruff check
 ```
@@ -47,7 +49,27 @@ ruff format --check
 ```
 
 
-## Building the documentation
+### Type checking
+We use `mypy` to check type annotations via:
+```bash
+mypy src tests --strict
+```
+
+
+### Running tests
+We have set up tests against a local open-etp-server. To start this server run:
+```bash
+docker compose -f tests/compose.yml up [--detach]
+```
+If you want to re-use the same terminal window you should use the
+`--detach`-option, otherwise start a new terminal. We use `pytest` for testing,
+which can be run via:
+```bash
+py.test
+```
+
+
+### Building the documentation
 We use [Material for Mkdocs](https://squidfunk.github.io/mkdocs-material/) for
 the documentation.
 To install the documentation dependencies run
@@ -74,25 +96,5 @@ downloaded
 [here](https://publications.opengroup.org/standards/energistics-standards/v231a).
 
 # Generated Python objects from RESQML spec
-Under `src/pyetp/resqml_objects` you will find Python objects generated from
-the RESQML xml spec.
-
-# Documentation
-See `/examples` for 2D grid usage
-
-`tests/test_mesh.py` for Unstructured/structured mesh
-
-# Running the unit tests
-We have set up unit tests against a local open-etp-server. To start this server
-run:
-```bash
-docker compose -f tests/compose.yml up [--detach]
-```
-If you want to re-use the same terminal window you should use the
-`--detach`-option, otherwise start a new terminal. We use `pytest` for testing,
-which can be run via:
-```bash
-py.test
-```
-
-# This library is under active development and subject to breaking changes
+Under `src/pyetp/resqml_objects/v201/generated.py` you will find Python objects
+generated from the RESQML xml spec.
