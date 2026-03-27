@@ -19,12 +19,14 @@ def _avro_roundtrip(
         bs = fb.getvalue()
 
     with io.BytesIO(bs) as fb:
+        # TODO: Remove the `#type: ignore`-below once a new release of
+        # `fastavro` is in place (greater than `1.12.1`).
         record = fastavro.read.schemaless_reader(
             fo=fb,
             writer_schema=cls.avro_schema,
             return_record_name=True,
             return_named_type_override=True,
-        )
+        )  # type: ignore
 
         assert isinstance(record, dict | bytes)
         if isinstance(record, dict):

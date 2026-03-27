@@ -119,12 +119,14 @@ def decode_message(
     message: bytes, decompression_func: Callable[[bytes], bytes] | None = None
 ) -> tuple[MessageHeader, energistics.base.ETPBaseProtocolModel]:
     with io.BytesIO(message) as fo:
+        # TODO: Remove the `#type: ignore`-below once a new release of
+        # `fastavro` is in place (greater than `1.12.1`).
         header_record = fastavro.read.schemaless_reader(
             fo=fo,
             writer_schema=MessageHeader.avro_schema,
             return_record_name=True,
             return_named_type_override=True,
-        )
+        )  # type: ignore
         assert isinstance(header_record, dict)
         header = MessageHeader(**header_record)
         body_bytes = fo.read()
@@ -144,12 +146,14 @@ def decode_message(
         body_bytes = decompression_func(body_bytes)
 
     with io.BytesIO(body_bytes) as fo:
+        # TODO: Remove the `#type: ignore`-below once a new release of
+        # `fastavro` is in place (greater than `1.12.1`).
         body_record = fastavro.read.schemaless_reader(
             fo=fo,
             writer_schema=body_cls.avro_schema,
             return_record_name=True,
             return_named_type_override=True,
-        )
+        )  # type: ignore
         assert isinstance(body_record, dict)
         body = body_cls(**body_record)
 
