@@ -454,7 +454,9 @@ class RDDMSClient:
     async def list_objects_under_dataspace(
         self,
         dataspace_uri: DataspaceURI | str,
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: typing.Sequence[
+            str | typing.Type[ro.AbstractCitedDataObject]
+        ] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
     ) -> list[Resource]:
@@ -527,7 +529,9 @@ class RDDMSClient:
     async def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: typing.Sequence[
+            str | typing.Type[ro.AbstractCitedDataObject]
+        ] = [],
         store_last_write_filter: datetime.datetime | int | None = None,
         depth: int = 1,
     ) -> LinkedObjects:
@@ -539,9 +543,9 @@ class RDDMSClient:
 
         Parameters
         ----------
-        start_uri: DataObjectURI | str
+        start_uri
             An ETP data object uri to start the query from.
-        data_object_types: list[str | typing.Type[ro.AbstractCitedDataObject]]
+        data_object_types
             A filter to limit which types of objects to include in the results.
             As a string it is on the form `eml20.obj_EpcExternalPartReference`
             for a specific object, or `eml20.*` for all Energistics Common
@@ -550,12 +554,12 @@ class RDDMSClient:
             can also be classes from `resqml_objects.v201`, in which case the
             filter will be constructed. Default is `[]`, meaning no filter is
             applied.
-        store_last_write_filter: datetime.datetime | int | None
+        store_last_write_filter
             Filter to only include objects that are written after the provided
             datetime or timestamp. Default is `None`, meaning no filter is
             applied. Note that the timestamp should be in microsecond
             resolution.
-        depth: int
+        depth
             The number of links to return. Setting `depth = 1` will only return
             targets and sources that are directly linked to the start object.
             With `depth = 2` we get links to objects that linkes to the targets
@@ -673,7 +677,7 @@ class RDDMSClient:
 
     async def list_array_metadata(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: typing.Sequence[str | DataObjectURI],
     ) -> dict[str, dict[str, DataArrayMetadata]]:
         """
         Method used for listing array metadata for all connected arrays to the
@@ -1429,7 +1433,7 @@ class RDDMSClient:
 
     async def download_models(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: typing.Sequence[str | DataObjectURI],
         download_arrays: bool = False,
         download_linked_objects: bool = False,
     ) -> list[RDDMSModel]:
@@ -1608,7 +1612,7 @@ class RDDMSClient:
 
     async def delete_model(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: typing.Sequence[str | DataObjectURI],
         prune_contained_objects: bool = False,
         handle_transaction: bool = True,
         debounce: bool | float = False,

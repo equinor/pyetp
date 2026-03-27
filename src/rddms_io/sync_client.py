@@ -433,7 +433,7 @@ class RDDMSClientSync:
 
     def delete_model(
         self,
-        ml_uris: list[str | DataObjectURI],
+        ml_uris: typing.Sequence[str | DataObjectURI],
         prune_contained_objects: bool = False,
         debounce: bool | float = False,
     ) -> None:
