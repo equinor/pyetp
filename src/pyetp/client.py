@@ -138,7 +138,7 @@ class ETPClient:
                 "becomes unstable."
             )
         self.etp_timeout = etp_timeout
-        self.__recvtask = asyncio.create_task(self.__receiver_loop())
+        self._recvtask = asyncio.create_task(self._receiver_loop())
 
     @staticmethod
     def get_default_server_supported_protocols(
@@ -285,9 +285,9 @@ class ETPClient:
                     await self._recv_events[correlation_id].wait()
             except TimeoutError:
                 # Check if the receiver task is still running.
-                if self.__recvtask.done():
+                if self._recvtask.done():
                     # Raise any errors by waiting for the task to finish.
-                    await self.__recvtask
+                    await self._recvtask
 
                     # Check that the receiver task stopped due to a
                     # (successfully) closed websockets connection.
@@ -330,7 +330,7 @@ class ETPClient:
 
         return bodies
 
-    async def __receiver_loop(self) -> None:
+    async def _receiver_loop(self) -> None:
         logger.debug("Starting receiver loop")
 
         # Using `async for` makes the receiver task exit without errors on a
@@ -470,13 +470,13 @@ class ETPClient:
             )
         finally:
             # Check if the receive task is done, and if not, stop it.
-            if not self.__recvtask.done():
-                self.__recvtask.cancel("stopped")
+            if not self._recvtask.done():
+                self._recvtask.cancel("stopped")
 
         try:
             # Raise any potential exceptions that might have occured in the
             # receive task
-            await self.__recvtask
+            await self._recvtask
         except asyncio.CancelledError:
             # No errors except for a cancellation, which is to be expected.
             pass
