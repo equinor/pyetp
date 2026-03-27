@@ -148,7 +148,7 @@ class LogicalArrayTypeMapping:
 
     @staticmethod
     def get_array_size(
-        dimensions: list[int] | tuple[int], array_type: AnyLogicalArrayType | str
+        dimensions: typing.Sequence[int], array_type: AnyLogicalArrayType | str
     ) -> int:
         dtype = LogicalArrayTypeMapping.get_dtype(array_type)
         return math.prod(dimensions) * dtype.itemsize
@@ -198,7 +198,7 @@ class TransportArrayTypeMapping:
 
     @staticmethod
     def get_array_size(
-        dimensions: list[int] | tuple[int], array_type: AnyArrayType | str
+        dimensions: typing.Sequence[int], array_type: AnyArrayType | str
     ) -> int:
         dtype = TransportArrayTypeMapping.get_dtype(array_type)
         return math.prod(dimensions) * dtype.itemsize

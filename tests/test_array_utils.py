@@ -12,6 +12,7 @@ from energistics.etp.v12.datatypes import (
     AnyArrayType,
     AnyLogicalArrayType,
 )
+from energistics.types import ETPNumpyArrayDType
 from rddms_io.block_array import get_array_block_sizes
 
 
@@ -22,13 +23,13 @@ from rddms_io.block_array import get_array_block_sizes
         # pyetp.utils_arrays.py.
         np.dtype(np.bool_),
         np.dtype(np.int8),
-        np.dtype("<i4"),
-        np.dtype("<i8"),
-        np.dtype("<f4"),
-        np.dtype("<f8"),
+        np.dtype(np.int32),
+        np.dtype(np.int64),
+        np.dtype(np.float32),
+        np.dtype(np.float64),
     ],
 )
-def test_allowed_mappings(dtype: npt.DTypeLike) -> None:
+def test_allowed_mappings(dtype: ETPNumpyArrayDType) -> None:
     # See section 13.2.2.1 in the ETP v1.2 specification.
     logical_array_type, transport_array_type = get_logical_and_transport_array_types(
         dtype
@@ -80,7 +81,7 @@ def test_allowed_mappings(dtype: npt.DTypeLike) -> None:
         np.dtype("<f8"),
     ],
 )
-def test_transport_array_size(dtype: npt.DTypeLike) -> None:
+def test_transport_array_size(dtype: ETPNumpyArrayDType) -> None:
     for i in range(10):
         shape = tuple(random.randint(1, 15) for i in range(random.randint(1, 5)))
         data = np.random.random(shape).astype(dtype)
@@ -116,7 +117,7 @@ def test_transport_array_size(dtype: npt.DTypeLike) -> None:
         (234, 39, 104),
     ],
 )
-def test_array_block_sizes(dtype: npt.DTypeLike, shape: tuple[int]) -> None:
+def test_array_block_sizes(dtype: ETPNumpyArrayDType, shape: tuple[int]) -> None:
     max_array_size = 10_000 - 512
 
     data = np.random.random(shape).astype(dtype)
