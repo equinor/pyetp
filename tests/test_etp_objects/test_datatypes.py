@@ -368,9 +368,11 @@ def test_messsage_header() -> None:
 def test_uuid() -> None:
     u = uuid.uuid4()
     etp_u_1 = Uuid(u)
-    etp_u_2 = Uuid(u.bytes)
-    etp_u_3 = Uuid(str(u))
-    etp_u_4 = Uuid(etp_u_1)
+    # TODO: Remove all `#type: ignore` below if this issue gets resolved:
+    # https://github.com/pydantic/pydantic/issues/12978
+    etp_u_2 = Uuid(u.bytes)  # type: ignore
+    etp_u_3 = Uuid(str(u))  # type: ignore
+    etp_u_4 = Uuid(etp_u_1)  # type: ignore
 
     assert u == uuid.UUID(str(etp_u_1.root))
     assert etp_u_1 == etp_u_2 == etp_u_3 == etp_u_4
