@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 import datetime
 import typing
-from collections.abc import Awaitable, Mapping, Sequence
+from collections.abc import Coroutine, Mapping, Sequence
 
 import numpy.typing as npt
 from pydantic import SecretStr
@@ -22,7 +22,8 @@ from rddms_io.data_types import LinkedObjects, RDDMSModel
 
 T = typing.TypeVar("T")
 
-def run_coroutine_sync(coro: Awaitable[T]) -> T:
+
+def run_coroutine_sync(coro: Coroutine[typing.Any, typing.Any, T]) -> T:
     # Start a new thread.
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         # Submit the coroutine to run via `asyncio.run` in the new thread.
