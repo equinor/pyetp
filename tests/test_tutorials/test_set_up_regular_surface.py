@@ -4,6 +4,7 @@ import numpy as np
 from lxml import etree
 
 import examples.tutorials.set_up_regular_surface.set_up_regular_surface as mod
+import resqml_objects.v201 as ro
 from resqml_objects.parsers import parse_resqml_v201_object
 
 p = pathlib.Path("examples") / "tutorials" / "set_up_regular_surface"
@@ -17,6 +18,9 @@ def test_set_up_regular_surface() -> None:
     ret_epc = parse_resqml_v201_object(epc_xml)
     ret_crs = parse_resqml_v201_object(crs_xml)
     ret_gri = parse_resqml_v201_object(gri_xml)
+    assert isinstance(ret_epc, ro.obj_EpcExternalPartReference)
+    assert isinstance(ret_crs, ro.obj_LocalDepth3dCrs)
+    assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
 
     # The format string depends on the version of pyetp, and changes for each
     # commit. We ignore this field in the tests below by setting them to the
@@ -39,5 +43,9 @@ def test_set_up_regular_surface() -> None:
     )
 
     origin = np.array([mod.X[0, 0], mod.Y[0, 0]])
+    assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(
+        ret_gri.grid2d_patch.geometry.points.supporting_geometry, ro.Point3dLatticeArray
+    )
     go = ret_gri.grid2d_patch.geometry.points.supporting_geometry.origin
     np.testing.assert_equal(origin, np.array([go.coordinate1, go.coordinate2]))
