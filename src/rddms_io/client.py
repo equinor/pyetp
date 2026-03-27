@@ -4,7 +4,7 @@ import logging
 import sys
 import typing
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from types import TracebackType
 
 import numpy as np
@@ -460,9 +460,7 @@ class RDDMSClient:
     async def list_objects_under_dataspace(
         self,
         dataspace_uri: DataspaceURI | str,
-        data_object_types: typing.Sequence[
-            str | typing.Type[ro.AbstractCitedDataObject]
-        ] = [],
+        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
     ) -> list[Resource]:
@@ -535,9 +533,7 @@ class RDDMSClient:
     async def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-        data_object_types: typing.Sequence[
-            str | typing.Type[ro.AbstractCitedDataObject]
-        ] = [],
+        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
         store_last_write_filter: datetime.datetime | int | None = None,
         depth: int = 1,
     ) -> LinkedObjects:
@@ -683,7 +679,7 @@ class RDDMSClient:
 
     async def list_array_metadata(
         self,
-        ml_uris: typing.Sequence[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
     ) -> dict[str, dict[str, DataArrayMetadata]]:
         """
         Method used for listing array metadata for all connected arrays to the
@@ -1215,7 +1211,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str | DataspaceURI,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[str, npt.NDArray[ETPNumpyArrayType]] = {},
+        data_arrays: Mapping[str, npt.NDArray[ETPNumpyArrayType]] = {},
         handle_transaction: bool = True,
         debounce: bool | float = False,
     ) -> list[str]:
@@ -1342,7 +1338,7 @@ class RDDMSClient:
         self,
         dataspace_uri: str,
         ml_objects: Sequence[ro.AbstractCitedDataObject],
-        data_arrays: typing.Mapping[str, npt.NDArray[ETPNumpyArrayType]],
+        data_arrays: Mapping[str, npt.NDArray[ETPNumpyArrayType]],
     ) -> list[str]:
         logger.debug(
             f"Starting to upload model of {len(ml_objects)} objects and "
@@ -1439,7 +1435,7 @@ class RDDMSClient:
 
     async def download_models(
         self,
-        ml_uris: typing.Sequence[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
         download_arrays: bool = False,
         download_linked_objects: bool = False,
     ) -> list[RDDMSModel]:
@@ -1618,7 +1614,7 @@ class RDDMSClient:
 
     async def delete_model(
         self,
-        ml_uris: typing.Sequence[str | DataObjectURI],
+        ml_uris: Sequence[str | DataObjectURI],
         prune_contained_objects: bool = False,
         handle_transaction: bool = True,
         debounce: bool | float = False,

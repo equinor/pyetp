@@ -137,6 +137,8 @@ def test_upload_and_download_surface() -> None:
 @pytest.mark.asyncio
 async def test_upload_and_download_surface_async() -> None:
     (epc, crs, gri), data_arrays = get_random_surface()
+    assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
     key = gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
 
     rddms_client = RDDMSClientSync(uri=etp_server_url)
