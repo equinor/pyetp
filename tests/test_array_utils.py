@@ -1,7 +1,6 @@
 import random
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 
 from energistics.array_mapping import (
