@@ -101,7 +101,7 @@ def test_datetime() -> None:
     now = datetime.datetime.now()
     dt = ro.DateTime(value=now)
 
-    assert isinstance(dt, XmlDateTime)
+    assert isinstance(dt.value, XmlDateTime)
     assert dt.value.to_datetime() == now
 
     _, _ = compare_serialization_parsing_roundtrip(dt)
