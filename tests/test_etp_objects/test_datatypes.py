@@ -58,6 +58,7 @@ def test_etp_array_types(
     array_instance: ETPArrayType,
 ) -> None:
     ret_array_instance = avro_roundtrip(array_instance)
+    assert isinstance(ret_array_instance, ETPArrayType)
     np.testing.assert_equal(array_instance.values, ret_array_instance.values)
 
 
@@ -140,6 +141,7 @@ def test_data_value(item: ItemType) -> None:
     dv = DataValue(item=item)
     ret_dv = avro_roundtrip(dv)
 
+    assert isinstance(ret_dv, DataValue)
     assert type(ret_dv.item) is type(dv.item)
 
     if isinstance(
@@ -214,6 +216,7 @@ def test_dataspace() -> None:
 
     ret_ds = avro_roundtrip(ds)
     assert ret_ds == ds
+    assert isinstance(ret_ds, Dataspace)
     assert (
         datetime.datetime.fromtimestamp(
             ret_ds.store_last_write / 1e6, tz=datetime.timezone.utc

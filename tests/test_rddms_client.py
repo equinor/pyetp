@@ -143,6 +143,8 @@ async def test_upload_and_download_model() -> None:
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
         crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
             ml_objects=[crs, epc, gri],
@@ -171,6 +173,7 @@ async def test_upload_and_download_model() -> None:
     ret_crs = ret_models[0].obj
     ret_epc = ret_models[1].obj
     ret_gri = ret_models[2].obj
+    assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
 
     assert ret_crs == crs
     assert ret_epc == epc
@@ -183,6 +186,8 @@ async def test_upload_and_download_model() -> None:
 
     ret_Z = ret_models[2].arrays
 
+    assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(ret_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
     np.testing.assert_equal(
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
     )
@@ -204,11 +209,14 @@ async def test_upload_and_download_model() -> None:
 
     ret_gri = ret_model.obj
     ret_crs = ret_model.linked_models[0].obj
+    assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
 
     assert ret_crs == crs
     assert ret_gri == gri
 
     ret_Z = ret_model.arrays
+    assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(ret_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
     np.testing.assert_equal(
         ret_Z[ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file], Z
     )
@@ -246,6 +254,8 @@ async def test_list_linked_objects() -> None:
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
         crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
             ml_objects=[crs, epc, gri],
@@ -297,7 +307,14 @@ async def test_list_array_metadata() -> None:
         gri_1.grid2d_patch.fastest_axis_count,
     )
 
+    assert isinstance(gri_1.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri_1.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+
     sg = gri_1.grid2d_patch.geometry.points.supporting_geometry
+
+    assert isinstance(sg, ro.Point3dLatticeArray)
+    assert isinstance(sg.offset[0].spacing, ro.DoubleConstantArray)
+    assert isinstance(sg.offset[1].spacing, ro.DoubleConstantArray)
 
     origin = np.array([sg.origin.coordinate1, sg.origin.coordinate2])
     spacing = np.array([sg.offset[0].spacing.value, sg.offset[1].spacing.value])
@@ -325,6 +342,14 @@ async def test_list_array_metadata() -> None:
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
 
+        assert isinstance(gri_1.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(
+            gri_1.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
+        )
+        assert isinstance(gri_2.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(
+            gri_2.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
+        )
         crs_uri, epc_uri, gri_1_uri, gri_2_uri = await rddms_client.upload_model(
             dataspace_uri=dataspace_uri,
             ml_objects=[crs, epc, gri_1, gri_2],
@@ -405,7 +430,14 @@ async def test_partial_deletion() -> None:
         gri_1.grid2d_patch.fastest_axis_count,
     )
 
+    assert isinstance(gri_1.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri_1.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+
     sg = gri_1.grid2d_patch.geometry.points.supporting_geometry
+
+    assert isinstance(sg, ro.Point3dLatticeArray)
+    assert isinstance(sg.offset[0].spacing, ro.DoubleConstantArray)
+    assert isinstance(sg.offset[1].spacing, ro.DoubleConstantArray)
 
     origin = np.array([sg.origin.coordinate1, sg.origin.coordinate2])
     spacing = np.array([sg.offset[0].spacing.value, sg.offset[1].spacing.value])
@@ -427,6 +459,9 @@ async def test_partial_deletion() -> None:
         unit_vec_2=unit_vec_2,
     )
     gri_1_pir = gri_1.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+
+    assert isinstance(gri_2.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri_2.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
     gri_2_pir = gri_2.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
 
     dataspace_path = "rddms-io/test-partial-deletion"
@@ -677,6 +712,9 @@ async def test_debouncing_on_upload() -> None:
         gri: ro.obj_Grid2dRepresentation,
         Z: npt.NDArray[np.float64],
     ) -> None:
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+
         data_arrays = {
             gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file: Z,
         }
@@ -730,7 +768,13 @@ async def test_debouncing_on_upload() -> None:
 )
 @pytest.mark.asyncio
 async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
-    ml_objects = get_resqml_v201_objects(input_mesh_file)
+    epc_file_objects = get_resqml_v201_objects(input_mesh_file)
+    ml_objects: list[ro.AbstractCitedDataObject] = []
+
+    for eo in epc_file_objects:
+        assert isinstance(eo, ro.AbstractCitedDataObject)
+        ml_objects.append(eo)
+
     input_hdf_file = input_mesh_file.with_suffix(".h5")
     data_arrays = get_arrays_and_paths_in_hdf_file(input_hdf_file)
 

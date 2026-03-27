@@ -177,6 +177,7 @@ def test_delete_data_objects_response() -> None:
     assert ddor._is_multipart
 
     ret_ddor = avro_roundtrip(ddor)
+    assert isinstance(ret_ddor, DeleteDataObjectsResponse)
 
     for k, v in ddor.deleted_uris.items():
         assert k in ret_ddor.deleted_uris

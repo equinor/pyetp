@@ -122,7 +122,7 @@ def test_get_data_arrays_response() -> None:
     assert gdar._is_multipart
 
     ret_gdar = avro_roundtrip(gdar)
-    assert type(ret_gdar) is type(gdar)
+    assert isinstance(ret_gdar, GetDataArraysResponse)
     assert len(ret_gdar.data_arrays) == len(gdar.data_arrays) and list(
         ret_gdar.data_arrays
     ) == list(gdar.data_arrays)
@@ -193,7 +193,7 @@ def test_get_data_subarrays_response() -> None:
     assert gdsr._is_multipart
 
     ret_gdsr = avro_roundtrip(gdsr)
-    assert type(ret_gdsr) is type(gdsr)
+    assert isinstance(ret_gdsr, GetDataSubarraysResponse)
     assert len(ret_gdsr.data_subarrays) == len(gdsr.data_subarrays) and list(
         ret_gdsr.data_subarrays
     ) == list(gdsr.data_subarrays)
@@ -260,7 +260,7 @@ def test_put_data_arrays() -> None:
     assert not pda._is_multipart
 
     ret_pda = avro_roundtrip(pda)
-    assert type(ret_pda) is type(pda)
+    assert isinstance(ret_pda, PutDataArrays)
     assert len(ret_pda.data_arrays) == len(pda.data_arrays) and list(
         ret_pda.data_arrays
     ) == list(pda.data_arrays)
@@ -336,7 +336,7 @@ def test_put_data_subarrays() -> None:
     assert not pds._is_multipart
 
     ret_pds = avro_roundtrip(pds)
-    assert type(ret_pds) is type(pds)
+    assert isinstance(ret_pds, PutDataSubarrays)
     assert len(ret_pds.data_subarrays) == len(pds.data_subarrays) and list(
         ret_pds.data_subarrays
     ) == list(pds.data_subarrays)

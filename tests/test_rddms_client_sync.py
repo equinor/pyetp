@@ -9,11 +9,11 @@ from tests.conftest import etp_server_url, skip_decorator
 
 def get_random_surface() -> tuple[
     tuple[
-        ro.obj_LocalDepth3dCrs,
         ro.obj_EpcExternalPartReference,
+        ro.obj_LocalDepth3dCrs,
         ro.obj_Grid2dRepresentation,
     ],
-    npt.NDArray[np.float64],
+    dict[str, npt.NDArray[np.float64]],
 ]:
     shape = tuple(np.random.randint(10, 123, size=2).tolist())
 
@@ -66,6 +66,8 @@ def get_random_surface() -> tuple[
         unit_vec_1=grid_unit_vectors[:, 0],
         unit_vec_2=grid_unit_vectors[:, 1],
     )
+    assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
     key = gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
 
     return (epc, crs, gri), {key: Z}
@@ -74,6 +76,8 @@ def get_random_surface() -> tuple[
 @skip_decorator
 def test_upload_and_download_surface() -> None:
     (epc, crs, gri), data_arrays = get_random_surface()
+    assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
     key = gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
 
     rddms_client = RDDMSClientSync(uri=etp_server_url)

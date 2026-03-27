@@ -4,6 +4,7 @@ import typing
 
 import numpy as np
 from lxml import etree
+from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
 from pyetp._version import version
@@ -34,6 +35,7 @@ def test_default_citation() -> None:
     now = datetime.datetime.now()
     cit = ro.Citation(title="foo", originator="pyetp-tester", creation=now)
 
+    assert isinstance(cit.creation, XmlDateTime)
     assert cit.creation.to_datetime() == now
 
 
@@ -87,6 +89,7 @@ def test_timestamp() -> None:
     now = datetime.datetime.now()
     timestamp = ro.Timestamp(date_time=now)
 
+    assert isinstance(timestamp.date_time, XmlDateTime)
     assert timestamp.date_time.to_datetime() == now
     assert timestamp.year_offset is None
 
@@ -97,6 +100,7 @@ def test_datetime() -> None:
     now = datetime.datetime.now()
     dt = ro.DateTime(value=now)
 
+    assert isinstance(dt, XmlDateTime)
     assert dt.value.to_datetime() == now
 
     _, _ = compare_serialization_parsing_roundtrip(dt)
@@ -161,6 +165,7 @@ def test_regular_grid_2d_representation() -> None:
     )
 
     ret_gri, _ = compare_serialization_parsing_roundtrip(gri)
+    assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
 
     dor = ro.DataObjectReference.from_object(gri)
     assert (
@@ -181,7 +186,9 @@ def test_regular_grid_2d_representation() -> None:
 
     assert ret_shape == shape
 
+    assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
     sg = ret_gri.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(sg, ro.Point3dLatticeArray)
 
     ret_origin = np.array(
         [
@@ -193,6 +200,9 @@ def test_regular_grid_2d_representation() -> None:
 
     np.testing.assert_equal(ret_origin[:2], origin)
     np.testing.assert_equal(ret_origin[2], 0.0)
+
+    assert isinstance(sg.offset[0].spacing, ro.DoubleConstantArray)
+    assert isinstance(sg.offset[1].spacing, ro.DoubleConstantArray)
 
     ret_spacing = np.array(
         [
@@ -349,6 +359,16 @@ def test_rotated_regular_grid_2d_representation() -> None:
     )
 
     dor = ro.DataObjectReference.from_object(epc)
+
+    assert isinstance(uu_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(rt_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(aligned_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+
+    assert isinstance(uu_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+    assert isinstance(rt_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+    assert isinstance(
+        aligned_gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array
+    )
 
     assert uu_gri.grid2d_patch.geometry.points.zvalues.values.hdf_proxy == dor
     assert rt_gri.grid2d_patch.geometry.points.zvalues.values.hdf_proxy == dor
