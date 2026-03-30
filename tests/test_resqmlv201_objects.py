@@ -247,6 +247,114 @@ def test_regular_grid_2d_representation() -> None:
     np.testing.assert_allclose(Y, _Y)
 
 
+def test_regular_grid_2d_representation_from_angle() -> None:
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(0, 1, shape[0])
+    y = np.linspace(1, 2, shape[1])
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    angle = 0.0
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Grid CRS", originator="pyetp-tester"),
+        vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=1234),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Grid epc", originator="pyetp-tester"),
+    )
+
+    citation = ro.Citation(title="Grid", originator="pyetp-tester")
+
+    # Create using from_regular_surface_angle
+    gri = ro.obj_Grid2dRepresentation.from_regular_surface_angle(
+        citation=citation,
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        angle=angle,
+    )
+
+    # Create using from_regular_surface with equivalent unit vectors
+    unit_vec_1 = np.array([np.cos(angle), np.sin(angle)])
+    unit_vec_2 = np.array([-np.sin(angle), np.cos(angle)])
+    gri_ref = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=citation,
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=unit_vec_1,
+        unit_vec_2=unit_vec_2,
+        uuid=gri.uuid,
+        path_in_hdf_file=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore[attr-defined]
+    )
+
+    # Both should produce identical objects
+    assert gri == gri_ref
+
+    ret_gri, _ = compare_serialization_parsing_roundtrip(gri)
+    assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
+
+    ret_shape = (
+        ret_gri.grid2d_patch.slowest_axis_count,
+        ret_gri.grid2d_patch.fastest_axis_count,
+    )
+    assert ret_shape == shape
+
+    assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    sg = ret_gri.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(sg, ro.Point3dLatticeArray)
+
+    # Verify unit vectors match the angle
+    np.testing.assert_allclose(
+        sg.offset[0].offset.coordinate1, np.cos(angle), atol=1e-10
+    )
+    np.testing.assert_allclose(
+        sg.offset[0].offset.coordinate2, np.sin(angle), atol=1e-10
+    )
+    np.testing.assert_allclose(
+        sg.offset[1].offset.coordinate1, -np.sin(angle), atol=1e-10
+    )
+    np.testing.assert_allclose(
+        sg.offset[1].offset.coordinate2, np.cos(angle), atol=1e-10
+    )
+
+    # Test with a non-zero angle
+    angle2 = np.pi / 6  # 30 degrees
+    gri2 = ro.obj_Grid2dRepresentation.from_regular_surface_angle(
+        citation=ro.Citation(title="Grid rotated", originator="pyetp-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        angle=angle2,
+    )
+
+    assert isinstance(gri2.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    sg2 = gri2.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(sg2, ro.Point3dLatticeArray)
+    np.testing.assert_allclose(
+        sg2.offset[0].offset.coordinate1, np.cos(angle2), atol=1e-10
+    )
+    np.testing.assert_allclose(
+        sg2.offset[0].offset.coordinate2, np.sin(angle2), atol=1e-10
+    )
+    np.testing.assert_allclose(
+        sg2.offset[1].offset.coordinate1, -np.sin(angle2), atol=1e-10
+    )
+    np.testing.assert_allclose(
+        sg2.offset[1].offset.coordinate2, np.cos(angle2), atol=1e-10
+    )
+
+
 def test_rotated_regular_grid_2d_representation() -> None:
     # Here we compare the results of a rotated surface in three different
     # CRS's:
