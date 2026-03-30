@@ -293,7 +293,7 @@ def test_regular_grid_2d_representation_from_angle() -> None:
         unit_vec_1=unit_vec_1,
         unit_vec_2=unit_vec_2,
         uuid=gri.uuid,
-        path_in_hdf_file=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore[union-attr]
+        path_in_hdf_file=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore[attr-defined]
     )
 
     # Both should produce identical objects
@@ -340,6 +340,7 @@ def test_regular_grid_2d_representation_from_angle() -> None:
 
     assert isinstance(gri2.grid2d_patch.geometry.points, ro.Point3dZValueArray)
     sg2 = gri2.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(sg2, ro.Point3dLatticeArray)
     np.testing.assert_allclose(
         sg2.offset[0].offset.coordinate1, np.cos(angle2), atol=1e-10
     )
