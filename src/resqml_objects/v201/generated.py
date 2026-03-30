@@ -24219,8 +24219,6 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
 
         return rgp.to_xy_grid(to_global_crs=True)
 
-    
-    
     @classmethod
     def from_regular_surface_angle(
         cls,
