@@ -267,9 +267,11 @@ def test_regular_grid_2d_representation_from_angle() -> None:
         citation=ro.Citation(title="Grid epc", originator="pyetp-tester"),
     )
 
+    citation = ro.Citation(title="Grid", originator="pyetp-tester")
+
     # Create using from_regular_surface_angle
     gri = ro.obj_Grid2dRepresentation.from_regular_surface_angle(
-        citation=ro.Citation(title="Grid", originator="pyetp-tester"),
+        citation=citation,
         crs=crs,
         epc_external_part_reference=epc,
         shape=shape,
@@ -282,7 +284,7 @@ def test_regular_grid_2d_representation_from_angle() -> None:
     unit_vec_1 = np.array([np.cos(angle), np.sin(angle)])
     unit_vec_2 = np.array([-np.sin(angle), np.cos(angle)])
     gri_ref = ro.obj_Grid2dRepresentation.from_regular_surface(
-        citation=ro.Citation(title="Grid", originator="pyetp-tester"),
+        citation=citation,
         crs=crs,
         epc_external_part_reference=epc,
         shape=shape,
