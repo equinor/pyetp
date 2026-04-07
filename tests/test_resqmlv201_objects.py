@@ -584,8 +584,11 @@ def test_point3d_from_representation_lattice_array() -> None:
     )
 
     # Verify that the supporting geometry is the expected type.
-    sg = referencing_gri.grid2d_patch.geometry.points.supporting_geometry
-    assert isinstance(sg, ro.Point3dFromRepresentationLatticeArray)
+    points = referencing_gri.grid2d_patch.geometry.points
+    assert isinstance(points, ro.Point3dZValueArray)
+    assert isinstance(
+        points.supporting_geometry, ro.Point3dFromRepresentationLatticeArray
+    )
 
     # Without supporting_representation, get_xy_grid should raise ValueError.
     with pytest.raises(ValueError, match="supporting_representation"):
