@@ -2,6 +2,7 @@ import dataclasses
 import datetime
 
 import numpy as np
+import pytest
 from lxml import etree
 from xsdata.models.datatype import XmlDateTime
 
@@ -422,3 +423,110 @@ def test_rotated_regular_grid_2d_representation() -> None:
 
     np.testing.assert_allclose(aligned_X, X)
     np.testing.assert_allclose(aligned_Y, Y)
+
+
+def test_point3d_from_representation_lattice_array() -> None:
+    """Test that get_xy_grid and get_regular_surface_parameters work when the
+    supporting geometry is a Point3dFromRepresentationLatticeArray, i.e., a
+    reference to another Grid2dRepresentation's lattice."""
+
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(0, 1, shape[0])
+    y = np.linspace(1, 2, shape[1])
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    unit_vectors = np.eye(2)
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Test CRS", originator="pyetp-tester"),
+        vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=1234),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Test epc", originator="pyetp-tester"),
+    )
+
+    # Create a "supporting" grid with Point3dLatticeArray (like ST15M04_VEL).
+    supporting_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Supporting grid", originator="pyetp-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
+    )
+
+    # Get expected X, Y from the supporting grid directly.
+    expected_X, expected_Y = supporting_gri.get_xy_grid()
+    print("Expected X:\n", expected_X)
+    print("Expected Y:\n", expected_Y)
+    expected_params = supporting_gri.get_regular_surface_parameters()
+
+    # Create a grid that references the supporting grid via
+    # Point3dFromRepresentationLatticeArray (like the Landmark Kolje surface).
+    referencing_gri = ro.obj_Grid2dRepresentation(
+        citation=ro.Citation(title="Referencing grid", originator="pyetp-tester"),
+        surface_role=ro.SurfaceRole.MAP,
+        grid2d_patch=ro.Grid2dPatch(
+            patch_index=0,
+            slowest_axis_count=shape[0],
+            fastest_axis_count=shape[1],
+            geometry=ro.PointGeometry(
+                local_crs=ro.DataObjectReference.from_object(crs),
+                points=ro.Point3dZValueArray(
+                    supporting_geometry=ro.Point3dFromRepresentationLatticeArray(
+                        node_indices_on_supporting_representation=ro.IntegerLatticeArray(
+                            start_value=0,
+                            offset=[
+                                ro.IntegerConstantArray(
+                                    value=1, count=shape[0] - 1
+                                ),
+                                ro.IntegerConstantArray(
+                                    value=1, count=shape[1] - 1
+                                ),
+                            ],
+                        ),
+                        supporting_representation=ro.DataObjectReference.from_object(
+                            supporting_gri
+                        ),
+                    ),
+                    zvalues=ro.DoubleHdf5Array(
+                        values=ro.Hdf5Dataset(
+                            path_in_hdf_file="/RESQML/test/zvalues",
+                            hdf_proxy=ro.DataObjectReference.from_object(epc),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    # Verify that the supporting geometry is the expected type.
+    sg = referencing_gri.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(sg, ro.Point3dFromRepresentationLatticeArray)
+
+    # Without supporting_representation, get_xy_grid should raise ValueError.
+    with pytest.raises(ValueError, match="supporting_representation"):
+        referencing_gri.get_xy_grid()
+
+    with pytest.raises(ValueError, match="supporting_representation"):
+        referencing_gri.get_regular_surface_parameters()
+
+    # With supporting_representation, it should resolve the lattice.
+    X, Y = referencing_gri.get_xy_grid(supporting_representation=supporting_gri)
+    params = referencing_gri.get_regular_surface_parameters(
+        supporting_representation=supporting_gri
+    )
+
+    np.testing.assert_allclose(X, expected_X)
+    np.testing.assert_allclose(Y, expected_Y)
+
+    assert params.shape == expected_params.shape
+    np.testing.assert_allclose(params.origin, expected_params.origin)
+    np.testing.assert_allclose(params.spacing, expected_params.spacing)
+    np.testing.assert_allclose(params.angle, expected_params.angle)
