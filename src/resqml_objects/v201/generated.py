@@ -24094,7 +24094,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         raise NotImplementedError(
             f"We do not support a supporting geometry of type '{sg.__class__.__name__}'"
         )
-    
+
     def get_regular_surface_parameters(
         self,
         crs: AbstractLocal3dCrs | None = None,

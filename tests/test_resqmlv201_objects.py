@@ -564,12 +564,8 @@ def test_point3d_from_representation_lattice_array() -> None:
                         node_indices_on_supporting_representation=ro.IntegerLatticeArray(
                             start_value=0,
                             offset=[
-                                ro.IntegerConstantArray(
-                                    value=1, count=shape[0] - 1
-                                ),
-                                ro.IntegerConstantArray(
-                                    value=1, count=shape[1] - 1
-                                ),
+                                ro.IntegerConstantArray(value=1, count=shape[0] - 1),
+                                ro.IntegerConstantArray(value=1, count=shape[1] - 1),
                             ],
                         ),
                         supporting_representation=ro.DataObjectReference.from_object(
