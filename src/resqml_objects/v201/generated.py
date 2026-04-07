@@ -24220,6 +24220,64 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         return rgp.to_xy_grid(to_global_crs=True)
 
     @classmethod
+    def from_regular_surface_angle(
+        cls,
+        citation: Citation,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        shape: tuple[int, int],
+        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        angle: float,
+        patch_index: int = 0,
+        path_in_hdf_file: str = "",
+        uuid: str | uuid_lib.UUID | None = None,
+        surface_role: SurfaceRole | str = SurfaceRole.MAP,
+        boundaries: list[PatchBoundaries] | None = None,
+        represented_interpretation: AbstractFeatureInterpretation | None = None,
+        extra_metadata: list[NameValuePair] | None = None,
+        custom_data: CustomData | None = None,
+        object_version: str | None = None,
+        aliases: list[ObjectAlias] | None = None,
+    ) -> Self:
+        """
+        Class method that sets up an `obj_Grid2dRepresentation`-object for a
+        regular surface, similar to `from_regular_surface`, but takes an
+        `angle` (in radians) instead of explicit unit vectors. The angle is
+        converted to two orthogonal unit vectors.
+
+        Parameters
+        ----------
+        angle
+            The rotation angle in radians, measured counter-clockwise from the
+            positive x-axis (easting). The second unit vector is perpendicular
+            (90 degrees counter-clockwise) to the first.
+        """
+        unit_vec_1 = np.array([np.cos(angle), np.sin(angle)])
+        unit_vec_2 = np.array([-np.sin(angle), np.cos(angle)])
+
+        return cls.from_regular_surface(
+            citation=citation,
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            shape=shape,
+            origin=origin,
+            spacing=spacing,
+            unit_vec_1=unit_vec_1,
+            unit_vec_2=unit_vec_2,
+            patch_index=patch_index,
+            path_in_hdf_file=path_in_hdf_file,
+            uuid=uuid,
+            surface_role=surface_role,
+            boundaries=boundaries,
+            represented_interpretation=represented_interpretation,
+            extra_metadata=extra_metadata,
+            custom_data=custom_data,
+            object_version=object_version,
+            aliases=aliases,
+        )
+
+    @classmethod
     def from_regular_surface(
         cls,
         citation: Citation,
