@@ -530,7 +530,7 @@ def test_point3d_from_representation_lattice_array() -> None:
         citation=ro.Citation(title="Test epc", originator="pyetp-tester"),
     )
 
-    # Create a "supporting" grid with Point3dLatticeArray.
+    # Create a "supporting" grid with Point3dLatticeArray (like ST15M04_VEL).
     supporting_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
         citation=ro.Citation(title="Supporting grid", originator="pyetp-tester"),
         crs=crs,
@@ -544,10 +544,12 @@ def test_point3d_from_representation_lattice_array() -> None:
 
     # Get expected X, Y from the supporting grid directly.
     expected_X, expected_Y = supporting_gri.get_xy_grid()
+    print("Expected X:\n", expected_X)
+    print("Expected Y:\n", expected_Y)
     expected_params = supporting_gri.get_regular_surface_parameters()
 
     # Create a grid that references the supporting grid via
-    # Point3dFromRepresentationLatticeArray.
+    # Point3dFromRepresentationLatticeArray (like the Landmark Kolje surface).
     referencing_gri = ro.obj_Grid2dRepresentation(
         citation=ro.Citation(title="Referencing grid", originator="pyetp-tester"),
         surface_role=ro.SurfaceRole.MAP,
@@ -562,8 +564,12 @@ def test_point3d_from_representation_lattice_array() -> None:
                         node_indices_on_supporting_representation=ro.IntegerLatticeArray(
                             start_value=0,
                             offset=[
-                                ro.IntegerConstantArray(value=1, count=shape[0] - 1),
-                                ro.IntegerConstantArray(value=1, count=shape[1] - 1),
+                                ro.IntegerConstantArray(
+                                    value=1, count=shape[0] - 1
+                                ),
+                                ro.IntegerConstantArray(
+                                    value=1, count=shape[1] - 1
+                                ),
                             ],
                         ),
                         supporting_representation=ro.DataObjectReference.from_object(
@@ -582,33 +588,21 @@ def test_point3d_from_representation_lattice_array() -> None:
     )
 
     # Verify that the supporting geometry is the expected type.
-    points = referencing_gri.grid2d_patch.geometry.points
-    assert isinstance(points, ro.Point3dZValueArray)
-    assert isinstance(
-        points.supporting_geometry, ro.Point3dFromRepresentationLatticeArray
-    )
+    sg = referencing_gri.grid2d_patch.geometry.points.supporting_geometry
+    assert isinstance(sg, ro.Point3dFromRepresentationLatticeArray)
 
-    # Without populate_data_references, get_xy_grid should raise ValueError
-    # because the supporting_representation is still a DataObjectReference.
-    with pytest.raises(ValueError, match="populate_data_references"):
+    # Without supporting_representation, get_xy_grid should raise ValueError.
+    with pytest.raises(ValueError, match="supporting_representation"):
         referencing_gri.get_xy_grid()
 
-    with pytest.raises(ValueError, match="populate_data_references"):
+    with pytest.raises(ValueError, match="supporting_representation"):
         referencing_gri.get_regular_surface_parameters()
 
-    # After populate_data_references, get_xy_grid should work without
-    # any extra parameters because the DataObjectReference has been
-    # replaced with the actual object.
-    model = RDDMSModel(
-        obj=referencing_gri,
-        arrays={},
-        linked_models=[RDDMSModel(obj=supporting_gri, arrays={}, linked_models=[])],
+    # With supporting_representation, it should resolve the lattice.
+    X, Y = referencing_gri.get_xy_grid(supporting_representation=supporting_gri)
+    params = referencing_gri.get_regular_surface_parameters(
+        supporting_representation=supporting_gri
     )
-    populated_obj = model.populate_data_references()
-    assert isinstance(populated_obj, ro.obj_Grid2dRepresentation)
-
-    X, Y = populated_obj.get_xy_grid()
-    params = populated_obj.get_regular_surface_parameters()
 
     np.testing.assert_allclose(X, expected_X)
     np.testing.assert_allclose(Y, expected_Y)

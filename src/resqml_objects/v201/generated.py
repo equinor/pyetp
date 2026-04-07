@@ -24044,7 +24044,10 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             return points.supporting_geometry
         return None
 
-    def _get_lattice_array(self) -> Point3dLatticeArray:
+    def _get_lattice_array(
+        self,
+        supporting_representation: Self | None = None,
+    ) -> Point3dLatticeArray:
         """Extract the `Point3dLatticeArray` from the geometry points.
 
         Supports three cases:
@@ -24054,9 +24057,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
            `Point3dLatticeArray` as supporting geometry.
         3. `geometry.points` is a `Point3dZValueArray` with a
            `Point3dFromRepresentationLatticeArray` as supporting geometry,
-           where the `supporting_representation` field has been populated
-           with the actual object (via
-           `RDDMSModel.populate_data_references`).
+           where the lattice is resolved from the `supporting_representation`.
         """
         points = self.grid2d_patch.geometry.points
 
@@ -24071,37 +24072,33 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
 
         sg = points.supporting_geometry
         if isinstance(sg, Point3dFromRepresentationLatticeArray):
-            sup_rep = sg.supporting_representation
-
-            if isinstance(sup_rep, obj_Grid2dRepresentation):
-                sr_points = sup_rep.grid2d_patch.geometry.points
-                lattice = self._find_lattice_in_points(sr_points)
-                if lattice is not None:
-                    return lattice
-
-                raise NotImplementedError(
-                    "The supporting representation's points are of type "
-                    f"'{sr_points.__class__.__name__}', expected "
-                    "'Point3dLatticeArray'."
+            if supporting_representation is None:
+                raise ValueError(
+                    "The supporting geometry is a "
+                    "'Point3dFromRepresentationLatticeArray', which requires "
+                    "the 'supporting_representation' parameter to resolve "
+                    "the lattice array."
                 )
 
-            raise ValueError(
-                "The supporting geometry is a "
-                "'Point3dFromRepresentationLatticeArray', but the "
-                "'supporting_representation' field has not been populated "
-                "with the actual object. Use "
-                "'RDDMSModel.populate_data_references()' or "
-                "'download_models(download_linked_objects=True)' to "
-                "resolve the reference."
+            sr_points = supporting_representation.grid2d_patch.geometry.points
+            lattice = self._find_lattice_in_points(sr_points)
+            if lattice is not None:
+                return lattice
+
+            raise NotImplementedError(
+                "The supporting representation's points are of type "
+                f"'{sr_points.__class__.__name__}', expected "
+                "'Point3dLatticeArray'."
             )
 
         raise NotImplementedError(
             f"We do not support a supporting geometry of type '{sg.__class__.__name__}'"
         )
-
+    
     def get_regular_surface_parameters(
         self,
         crs: AbstractLocal3dCrs | None = None,
+        supporting_representation: Self | None = None,
     ) -> RegularSurfaceParameters:
 
         crs_angle = 0.0
@@ -24111,7 +24108,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             crs_angle = crs.areal_rotation.get_angle_in_rad()
             crs_origin = np.array([crs.xoffset, crs.yoffset])
 
-        sg = self._get_lattice_array()
+        sg = self._get_lattice_array(supporting_representation)
 
         shape = (
             self.grid2d_patch.slowest_axis_count,
@@ -24164,6 +24161,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
     def get_xy_grid(
         self,
         crs: AbstractLocal3dCrs | None = None,
+        supporting_representation: Self | None = None,
     ) -> tuple[
         npt.NDArray[np.float64],
         npt.NDArray[np.float64],
@@ -24188,6 +24186,10 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             have to be the same as referenced by the grid-object, but if it
             does not match a warning is raised. Setting `crs=None` avoids any
             transformation from the crs. Default is `None`.
+        supporting_representation: obj_Grid2dRepresentation | None
+            The supporting representation to resolve the lattice array from
+            when the supporting geometry is a
+            `Point3dFromRepresentationLatticeArray`. Default is `None`.
 
         Returns
         -------
@@ -24196,7 +24198,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             to the surface described by the grid-object. For an unrotated
             surface this corresponds to a meshgrid.
         """
-        sg = self._get_lattice_array()
+        sg = self._get_lattice_array(supporting_representation)
 
         from resqml_objects.surface_helpers import RegularGridParameters
 
