@@ -463,8 +463,6 @@ def test_point3d_from_representation_lattice_array() -> None:
 
     # Get expected X, Y from the supporting grid directly.
     expected_X, expected_Y = supporting_gri.get_xy_grid()
-    print("Expected X:\n", expected_X)
-    print("Expected Y:\n", expected_Y)
     expected_params = supporting_gri.get_regular_surface_parameters()
 
     # Create a grid that references the supporting grid via
