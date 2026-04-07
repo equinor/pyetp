@@ -109,7 +109,10 @@ def test_etp_array_types(
                     start=-5,
                     slice=AnyArray(
                         item=ArrayOfLong(
-                            values=2**51 * np.random.randint(low=-10, high=10, size=20)
+                            values=2**51
+                            * np.random.randint(
+                                low=-10, high=10, size=20, dtype=np.int64
+                            )
                         ),
                     ),
                 ),

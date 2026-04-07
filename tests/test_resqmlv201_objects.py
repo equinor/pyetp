@@ -255,7 +255,7 @@ def test_regular_grid_2d_representation_from_angle() -> None:
 
     origin = np.array([x[0], y[0]])
     spacing = np.array([x[1] - x[0], y[1] - y[0]])
-    angle = 0.0
+    angle = np.random.rand() * 2 * np.pi
 
     crs = ro.obj_LocalDepth3dCrs(
         citation=ro.Citation(title="Grid CRS", originator="pyetp-tester"),
@@ -324,34 +324,6 @@ def test_regular_grid_2d_representation_from_angle() -> None:
     )
     np.testing.assert_allclose(
         sg.offset[1].offset.coordinate2, np.cos(angle), atol=1e-10
-    )
-
-    # Test with a non-zero angle
-    angle2 = np.pi / 6  # 30 degrees
-    gri2 = ro.obj_Grid2dRepresentation.from_regular_surface_angle(
-        citation=ro.Citation(title="Grid rotated", originator="pyetp-tester"),
-        crs=crs,
-        epc_external_part_reference=epc,
-        shape=shape,
-        origin=origin,
-        spacing=spacing,
-        angle=angle2,
-    )
-
-    assert isinstance(gri2.grid2d_patch.geometry.points, ro.Point3dZValueArray)
-    sg2 = gri2.grid2d_patch.geometry.points.supporting_geometry
-    assert isinstance(sg2, ro.Point3dLatticeArray)
-    np.testing.assert_allclose(
-        sg2.offset[0].offset.coordinate1, np.cos(angle2), atol=1e-10
-    )
-    np.testing.assert_allclose(
-        sg2.offset[0].offset.coordinate2, np.sin(angle2), atol=1e-10
-    )
-    np.testing.assert_allclose(
-        sg2.offset[1].offset.coordinate1, -np.sin(angle2), atol=1e-10
-    )
-    np.testing.assert_allclose(
-        sg2.offset[1].offset.coordinate2, np.cos(angle2), atol=1e-10
     )
 
 
