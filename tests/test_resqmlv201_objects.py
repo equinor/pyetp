@@ -588,17 +588,35 @@ def test_point3d_from_representation_lattice_array() -> None:
         points.supporting_geometry, ro.Point3dFromRepresentationLatticeArray
     )
 
-    # Without supporting_representation, get_xy_grid should raise ValueError.
-    with pytest.raises(ValueError, match="supporting_representation"):
+    # Without linked_representations, get_xy_grid should raise ValueError.
+    with pytest.raises(ValueError, match="linked_representations"):
         referencing_gri.get_xy_grid()
 
-    with pytest.raises(ValueError, match="supporting_representation"):
+    with pytest.raises(ValueError, match="linked_representations"):
         referencing_gri.get_regular_surface_parameters()
 
-    # With supporting_representation, it should resolve the lattice.
-    X, Y = referencing_gri.get_xy_grid(supporting_representation=supporting_gri)
+    # With linked_representations containing a wrong uuid, should raise ValueError.
+    wrong_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Wrong grid", originator="pyetp-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
+    )
+    with pytest.raises(ValueError, match="none of the"):
+        referencing_gri.get_xy_grid(linked_representations=[wrong_gri])
+
+    # With linked_representations, it should automatically find the correct
+    # representation by matching the uuid from the supporting geometry
+    # reference.
+    X, Y = referencing_gri.get_xy_grid(
+        linked_representations=[wrong_gri, supporting_gri]
+    )
     params = referencing_gri.get_regular_surface_parameters(
-        supporting_representation=supporting_gri
+        linked_representations=[supporting_gri]
     )
 
     np.testing.assert_allclose(X, expected_X)
