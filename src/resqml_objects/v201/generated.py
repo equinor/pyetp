@@ -24046,7 +24046,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
 
     def _get_lattice_array(
         self,
-        supporting_representation: Self | None = None,
+        linked_representations: list[Self] | None = None,
     ) -> Point3dLatticeArray:
         """Extract the `Point3dLatticeArray` from the geometry points.
 
@@ -24057,7 +24057,9 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
            `Point3dLatticeArray` as supporting geometry.
         3. `geometry.points` is a `Point3dZValueArray` with a
            `Point3dFromRepresentationLatticeArray` as supporting geometry,
-           where the lattice is resolved from the `supporting_representation`.
+           where the lattice is resolved by finding the matching
+           representation from `linked_representations` using the UUID
+           from the supporting representation reference.
         """
         points = self.grid2d_patch.geometry.points
 
@@ -24072,15 +24074,27 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
 
         sg = points.supporting_geometry
         if isinstance(sg, Point3dFromRepresentationLatticeArray):
-            if supporting_representation is None:
+            ref_uuid = sg.supporting_representation.uuid
+
+            if linked_representations is None:
                 raise ValueError(
                     "The supporting geometry is a "
-                    "'Point3dFromRepresentationLatticeArray', which requires "
-                    "the 'supporting_representation' parameter to resolve "
-                    "the lattice array."
+                    "'Point3dFromRepresentationLatticeArray' referencing "
+                    f"uuid '{ref_uuid}', but no 'linked_representations' "
+                    "were provided to resolve it."
                 )
 
-            sr_points = supporting_representation.grid2d_patch.geometry.points
+            matching = [rep for rep in linked_representations if rep.uuid == ref_uuid]
+
+            if len(matching) == 0:
+                raise ValueError(
+                    "The supporting geometry references a representation "
+                    f"with uuid '{ref_uuid}', but none of the "
+                    f"{len(linked_representations)} linked representations "
+                    "match this uuid."
+                )
+
+            sr_points = matching[0].grid2d_patch.geometry.points
             lattice = self._find_lattice_in_points(sr_points)
             if lattice is not None:
                 return lattice
@@ -24098,7 +24112,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
     def get_regular_surface_parameters(
         self,
         crs: AbstractLocal3dCrs | None = None,
-        supporting_representation: Self | None = None,
+        linked_representations: list[Self] | None = None,
     ) -> RegularSurfaceParameters:
 
         crs_angle = 0.0
@@ -24108,7 +24122,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             crs_angle = crs.areal_rotation.get_angle_in_rad()
             crs_origin = np.array([crs.xoffset, crs.yoffset])
 
-        sg = self._get_lattice_array(supporting_representation)
+        sg = self._get_lattice_array(linked_representations)
 
         shape = (
             self.grid2d_patch.slowest_axis_count,
@@ -24161,7 +24175,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
     def get_xy_grid(
         self,
         crs: AbstractLocal3dCrs | None = None,
-        supporting_representation: Self | None = None,
+        linked_representations: list[Self] | None = None,
     ) -> tuple[
         npt.NDArray[np.float64],
         npt.NDArray[np.float64],
@@ -24186,10 +24200,12 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             have to be the same as referenced by the grid-object, but if it
             does not match a warning is raised. Setting `crs=None` avoids any
             transformation from the crs. Default is `None`.
-        supporting_representation: obj_Grid2dRepresentation | None
-            The supporting representation to resolve the lattice array from
-            when the supporting geometry is a
-            `Point3dFromRepresentationLatticeArray`. Default is `None`.
+        linked_representations: list[obj_Grid2dRepresentation] | None
+            A list of linked `obj_Grid2dRepresentation` objects. When the
+            supporting geometry is a `Point3dFromRepresentationLatticeArray`,
+            the correct representation is automatically selected by matching
+            the UUID from the supporting representation reference. Default
+            is `None`.
 
         Returns
         -------
@@ -24198,7 +24214,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             to the surface described by the grid-object. For an unrotated
             surface this corresponds to a meshgrid.
         """
-        sg = self._get_lattice_array(supporting_representation)
+        sg = self._get_lattice_array(linked_representations)
 
         from resqml_objects.surface_helpers import RegularGridParameters
 
