@@ -39,20 +39,15 @@ class RDDMSModel(typing.NamedTuple):
         """Return a copy of ``self.obj`` with ``DataObjectReference`` fields
         replaced by the actual objects from ``self.linked_models``.
 
-        The original model is not modified. If ``linked_models`` is empty
-        or ``None``, the original ``obj`` is returned without copying.
+        The original model is not modified.
 
         Returns
         -------
         ro.AbstractCitedDataObject
             A deep copy of ``self.obj`` where every ``DataObjectReference``
             whose UUID matches a linked model's object has been replaced by
-            that object, or the original ``self.obj`` if there are no
-            linked models.
+            that object.
         """
-        if not self.linked_models:
-            return self.obj
-
         uuid_to_obj: dict[str, ro.AbstractCitedDataObject] = {
             lm.obj.uuid: lm.obj for lm in self.linked_models
         }

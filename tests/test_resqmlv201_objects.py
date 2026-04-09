@@ -15,6 +15,7 @@ from resqml_objects.serializers import (
     RO201SubObj,
     serialize_resqml_v201_object,
 )
+from rddms_io.data_types import RDDMSModel
 from resqml_objects.surface_helpers import RegularGridParameters
 
 
@@ -530,7 +531,7 @@ def test_point3d_from_representation_lattice_array() -> None:
         citation=ro.Citation(title="Test epc", originator="pyetp-tester"),
     )
 
-    # Create a "supporting" grid with Point3dLatticeArray (like ST15M04_VEL).
+    # Create a "supporting" grid with Point3dLatticeArray.
     supporting_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
         citation=ro.Citation(title="Supporting grid", originator="pyetp-tester"),
         crs=crs,
@@ -547,7 +548,7 @@ def test_point3d_from_representation_lattice_array() -> None:
     expected_params = supporting_gri.get_regular_surface_parameters()
 
     # Create a grid that references the supporting grid via
-    # Point3dFromRepresentationLatticeArray (like the Landmark Kolje surface).
+    # Point3dFromRepresentationLatticeArray.
     referencing_gri = ro.obj_Grid2dRepresentation(
         citation=ro.Citation(title="Referencing grid", originator="pyetp-tester"),
         surface_role=ro.SurfaceRole.MAP,
@@ -588,36 +589,26 @@ def test_point3d_from_representation_lattice_array() -> None:
         points.supporting_geometry, ro.Point3dFromRepresentationLatticeArray
     )
 
-    # Without linked_representations, get_xy_grid should raise ValueError.
-    with pytest.raises(ValueError, match="linked_representations"):
+    # Without populate_data_references, get_xy_grid should raise ValueError
+    # because the supporting_representation is still a DataObjectReference.
+    with pytest.raises(ValueError, match="populate_data_references"):
         referencing_gri.get_xy_grid()
 
-    with pytest.raises(ValueError, match="linked_representations"):
+    with pytest.raises(ValueError, match="populate_data_references"):
         referencing_gri.get_regular_surface_parameters()
 
-    # With linked_representations containing a wrong uuid, should raise ValueError.
-    wrong_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
-        citation=ro.Citation(title="Wrong grid", originator="pyetp-tester"),
-        crs=crs,
-        epc_external_part_reference=epc,
-        shape=shape,
-        origin=origin,
-        spacing=spacing,
-        unit_vec_1=unit_vectors[:, 0],
-        unit_vec_2=unit_vectors[:, 1],
+    # After populate_data_references, get_xy_grid should work without
+    # any extra parameters because the DataObjectReference has been
+    # replaced with the actual object.
+    model = RDDMSModel(
+        obj=referencing_gri,
+        arrays={},
+        linked_models=[RDDMSModel(obj=supporting_gri, arrays={}, linked_models=[])],
     )
-    with pytest.raises(ValueError, match="none of the"):
-        referencing_gri.get_xy_grid(linked_representations=[wrong_gri])
+    populated_obj = model.populate_data_references()
 
-    # With linked_representations, it should automatically find the correct
-    # representation by matching the uuid from the supporting geometry
-    # reference.
-    X, Y = referencing_gri.get_xy_grid(
-        linked_representations=[wrong_gri, supporting_gri]
-    )
-    params = referencing_gri.get_regular_surface_parameters(
-        linked_representations=[supporting_gri]
-    )
+    X, Y = populated_obj.get_xy_grid()
+    params = populated_obj.get_regular_surface_parameters()
 
     np.testing.assert_allclose(X, expected_X)
     np.testing.assert_allclose(Y, expected_Y)

@@ -1488,12 +1488,6 @@ class RDDMSClient:
         if len(ml_uris) == 0:
             raise ValueError("No uris in input 'ml_uris'")
 
-        if populate_linked_references and not download_linked_objects:
-            raise ValueError(
-                "'populate_linked_references=True' requires "
-                "'download_linked_objects=True'."
-            )
-
         models = await asyncio.gather(
             *[
                 self._download_model(
@@ -1505,9 +1499,12 @@ class RDDMSClient:
             ]
         )
 
-        if populate_linked_references:
+        if download_linked_objects:
             models = [
-                model._replace(obj=model.populate_data_references()) for model in models
+                model._replace(obj=model.populate_data_references())
+                if model.linked_models
+                else model
+                for model in models
             ]
 
         return models
