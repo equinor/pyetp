@@ -212,7 +212,11 @@ async def test_upload_and_download_model() -> None:
     assert isinstance(ret_gri, ro.obj_Grid2dRepresentation)
 
     assert ret_crs == crs
-    assert ret_gri == gri
+    # After downloading with download_linked_objects=True, the
+    # DataObjectReference fields are replaced with actual objects via
+    # populate_data_references, so we compare key fields instead.
+    assert ret_gri.uuid == gri.uuid
+    assert ret_gri.citation == gri.citation
 
     ret_Z = ret_model.arrays
     assert isinstance(ret_gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
