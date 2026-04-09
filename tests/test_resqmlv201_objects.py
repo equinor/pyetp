@@ -15,7 +15,6 @@ from resqml_objects.serializers import (
     RO201SubObj,
     serialize_resqml_v201_object,
 )
-from rddms_io.data_types import RDDMSModel
 from resqml_objects.surface_helpers import RegularGridParameters
 
 
