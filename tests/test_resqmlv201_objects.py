@@ -8,13 +8,13 @@ from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
 from pyetp._version import version
+from rddms_io.data_types import RDDMSModel
 from resqml_objects.parsers import parse_resqml_v201_object
 from resqml_objects.serializers import (
     RO201Obj,
     RO201SubObj,
     serialize_resqml_v201_object,
 )
-from rddms_io.data_types import RDDMSModel
 from resqml_objects.surface_helpers import RegularGridParameters
 
 
