@@ -525,6 +525,7 @@ def test_point3d_from_representation_lattice_array() -> None:
         linked_models=[RDDMSModel(obj=supporting_gri, arrays={}, linked_models=[])],
     )
     populated_obj = model.populate_data_references()
+    assert isinstance(populated_obj, ro.obj_Grid2dRepresentation)
 
     X, Y = populated_obj.get_xy_grid()
     params = populated_obj.get_regular_surface_parameters()
