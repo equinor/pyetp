@@ -97,19 +97,7 @@ ret_z = ret_model.arrays[
     ret_gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
 ]
 
-# After downloading with download_linked_objects=True, the
-# DataObjectReference fields in ret_gri are replaced with the actual linked
-# objects via populate_data_references. We therefore compare key fields.
-assert ret_gri.uuid == gri.uuid
-assert ret_gri.citation == gri.citation
-assert (
-    ret_gri.grid2d_patch.slowest_axis_count
-    == gri.grid2d_patch.slowest_axis_count
-)
-assert (
-    ret_gri.grid2d_patch.fastest_axis_count
-    == gri.grid2d_patch.fastest_axis_count
-)
+assert ret_gri == gri
 assert ret_crs == crs
 np.testing.assert_equal(z, ret_z)
 

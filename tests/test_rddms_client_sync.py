@@ -122,14 +122,10 @@ def test_upload_and_download_surface() -> None:
         download_arrays=True,
         download_linked_objects=True,
     )
-    # After downloading with download_linked_objects=True, the
-    # DataObjectReference fields are replaced with actual objects via
-    # populate_data_references, so we compare key fields instead.
-    assert ret_models[0].obj.uuid == epc.uuid
-    assert ret_models[1].obj.uuid == crs.uuid
-    assert ret_models[2].obj.uuid == gri.uuid
-    assert ret_models[2].obj.citation == gri.citation
-    assert ret_models[2].linked_models[0].obj.uuid == crs.uuid
+    assert ret_models[0].obj == epc
+    assert ret_models[1].obj == crs
+    assert ret_models[2].obj == gri
+    assert ret_models[2].linked_models[0].obj == crs
 
     np.testing.assert_equal(ret_models[2].arrays[key], data_arrays[key])
 
@@ -186,14 +182,10 @@ async def test_upload_and_download_surface_async() -> None:
         download_arrays=True,
         download_linked_objects=True,
     )
-    # After downloading with download_linked_objects=True, the
-    # DataObjectReference fields are replaced with actual objects via
-    # populate_data_references, so we compare key fields instead.
-    assert ret_models[0].obj.uuid == epc.uuid
-    assert ret_models[1].obj.uuid == crs.uuid
-    assert ret_models[2].obj.uuid == gri.uuid
-    assert ret_models[2].obj.citation == gri.citation
-    assert ret_models[2].linked_models[0].obj.uuid == crs.uuid
+    assert ret_models[0].obj == epc
+    assert ret_models[1].obj == crs
+    assert ret_models[2].obj == gri
+    assert ret_models[2].linked_models[0].obj == crs
 
     np.testing.assert_equal(ret_models[2].arrays[key], data_arrays[key])
 
