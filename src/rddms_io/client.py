@@ -1438,6 +1438,7 @@ class RDDMSClient:
         ml_uris: Sequence[str | DataObjectURI],
         download_arrays: bool = False,
         download_linked_objects: bool = False,
+        populate_linked_references: bool = False,
     ) -> list[RDDMSModel]:
         """
         Download RESQML-models from the RDDMS server.
@@ -1472,6 +1473,12 @@ class RDDMSClient:
             `obj_EpcExternalPartReference`- and
             `EpcExternalPartReference`-objects.  Default is `False` meaning no
             linked objects will be downloaded.
+        populate_linked_references
+            When set to `True` (requires `download_linked_objects=True`),
+            the ``DataObjectReference`` fields in each model's ``obj`` are
+            replaced with the actual objects from ``linked_models`` via
+            [`RDDMSModel.populate_data_references`][rddms_io.data_types.RDDMSModel.populate_data_references].
+            Default is `False`.
 
         Returns
         -------
@@ -1481,7 +1488,13 @@ class RDDMSClient:
         if len(ml_uris) == 0:
             raise ValueError("No uris in input 'ml_uris'")
 
-        return await asyncio.gather(
+        if populate_linked_references and not download_linked_objects:
+            raise ValueError(
+                "'populate_linked_references=True' requires "
+                "'download_linked_objects=True'."
+            )
+
+        models = await asyncio.gather(
             *[
                 self._download_model(
                     ml_uri=str(ml_uri),
@@ -1491,6 +1504,13 @@ class RDDMSClient:
                 for ml_uri in ml_uris
             ]
         )
+
+        if populate_linked_references:
+            models = [
+                model._replace(obj=model.populate_data_references()) for model in models
+            ]
+
+        return models
 
     async def _recv_get_data_objects(
         self, gdo: GetDataObjects

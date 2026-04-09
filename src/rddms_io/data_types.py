@@ -1,3 +1,4 @@
+import copy
 import typing
 
 import numpy.typing as npt
@@ -5,6 +6,7 @@ import numpy.typing as npt
 import resqml_objects.v201 as ro
 from energistics.etp.v12.datatypes.object import Edge, Resource
 from energistics.types import ETPNumpyArrayType
+from resqml_objects.v201.utils import replace_data_object_references
 
 
 class RDDMSModel(typing.NamedTuple):
@@ -32,6 +34,32 @@ class RDDMSModel(typing.NamedTuple):
     obj: ro.AbstractCitedDataObject
     arrays: dict[str, npt.NDArray[ETPNumpyArrayType]]
     linked_models: list["RDDMSModel"]
+
+    def populate_data_references(self) -> ro.AbstractCitedDataObject:
+        """Return a copy of ``self.obj`` with ``DataObjectReference`` fields
+        replaced by the actual objects from ``self.linked_models``.
+
+        The original model is not modified. If ``linked_models`` is empty
+        or ``None``, the original ``obj`` is returned without copying.
+
+        Returns
+        -------
+        ro.AbstractCitedDataObject
+            A deep copy of ``self.obj`` where every ``DataObjectReference``
+            whose UUID matches a linked model's object has been replaced by
+            that object, or the original ``self.obj`` if there are no
+            linked models.
+        """
+        if not self.linked_models:
+            return self.obj
+
+        uuid_to_obj: dict[str, ro.AbstractCitedDataObject] = {
+            lm.obj.uuid: lm.obj for lm in self.linked_models
+        }
+
+        obj_copy = copy.deepcopy(self.obj)
+        replace_data_object_references(obj_copy, uuid_to_obj)
+        return obj_copy
 
 
 class LinkedObjects(typing.NamedTuple):

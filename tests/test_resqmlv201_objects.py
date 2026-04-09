@@ -2,11 +2,13 @@ import dataclasses
 import datetime
 
 import numpy as np
+import pytest
 from lxml import etree
 from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
 from pyetp._version import version
+from rddms_io.data_types import RDDMSModel
 from resqml_objects.parsers import parse_resqml_v201_object
 from resqml_objects.serializers import (
     RO201Obj,
@@ -502,3 +504,116 @@ def test_rotated_regular_grid_2d_representation() -> None:
 
     np.testing.assert_allclose(aligned_X, X)
     np.testing.assert_allclose(aligned_Y, Y)
+
+
+def test_point3d_from_representation_lattice_array() -> None:
+    """Test that get_xy_grid and get_regular_surface_parameters work when the
+    supporting geometry is a Point3dFromRepresentationLatticeArray, i.e., a
+    reference to another Grid2dRepresentation's lattice."""
+
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(0, 1, shape[0])
+    y = np.linspace(1, 2, shape[1])
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    unit_vectors = np.eye(2)
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Test CRS", originator="pyetp-tester"),
+        vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=1234),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Test epc", originator="pyetp-tester"),
+    )
+
+    # Create a "supporting" grid with Point3dLatticeArray.
+    supporting_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Supporting grid", originator="pyetp-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
+    )
+
+    # Get expected X, Y from the supporting grid directly.
+    expected_X, expected_Y = supporting_gri.get_xy_grid()
+    expected_params = supporting_gri.get_regular_surface_parameters()
+
+    # Create a grid that references the supporting grid via
+    # Point3dFromRepresentationLatticeArray.
+    referencing_gri = ro.obj_Grid2dRepresentation(
+        citation=ro.Citation(title="Referencing grid", originator="pyetp-tester"),
+        surface_role=ro.SurfaceRole.MAP,
+        grid2d_patch=ro.Grid2dPatch(
+            patch_index=0,
+            slowest_axis_count=shape[0],
+            fastest_axis_count=shape[1],
+            geometry=ro.PointGeometry(
+                local_crs=ro.DataObjectReference.from_object(crs),
+                points=ro.Point3dZValueArray(
+                    supporting_geometry=ro.Point3dFromRepresentationLatticeArray(
+                        node_indices_on_supporting_representation=ro.IntegerLatticeArray(
+                            start_value=0,
+                            offset=[
+                                ro.IntegerConstantArray(value=1, count=shape[0] - 1),
+                                ro.IntegerConstantArray(value=1, count=shape[1] - 1),
+                            ],
+                        ),
+                        supporting_representation=ro.DataObjectReference.from_object(
+                            supporting_gri
+                        ),
+                    ),
+                    zvalues=ro.DoubleHdf5Array(
+                        values=ro.Hdf5Dataset(
+                            path_in_hdf_file="/RESQML/test/zvalues",
+                            hdf_proxy=ro.DataObjectReference.from_object(epc),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    # Verify that the supporting geometry is the expected type.
+    points = referencing_gri.grid2d_patch.geometry.points
+    assert isinstance(points, ro.Point3dZValueArray)
+    assert isinstance(
+        points.supporting_geometry, ro.Point3dFromRepresentationLatticeArray
+    )
+
+    # Without populate_data_references, get_xy_grid should raise ValueError
+    # because the supporting_representation is still a DataObjectReference.
+    with pytest.raises(ValueError, match="populate_data_references"):
+        referencing_gri.get_xy_grid()
+
+    with pytest.raises(ValueError, match="populate_data_references"):
+        referencing_gri.get_regular_surface_parameters()
+
+    # After populate_data_references, get_xy_grid should work without
+    # any extra parameters because the DataObjectReference has been
+    # replaced with the actual object.
+    model = RDDMSModel(
+        obj=referencing_gri,
+        arrays={},
+        linked_models=[RDDMSModel(obj=supporting_gri, arrays={}, linked_models=[])],
+    )
+    populated_obj = model.populate_data_references()
+    assert isinstance(populated_obj, ro.obj_Grid2dRepresentation)
+
+    X, Y = populated_obj.get_xy_grid()
+    params = populated_obj.get_regular_surface_parameters()
+
+    np.testing.assert_allclose(X, expected_X)
+    np.testing.assert_allclose(Y, expected_Y)
+
+    assert params.shape == expected_params.shape
+    np.testing.assert_allclose(params.origin, expected_params.origin)
+    np.testing.assert_allclose(params.spacing, expected_params.spacing)
+    np.testing.assert_allclose(params.angle, expected_params.angle)
