@@ -2,6 +2,7 @@ import dataclasses
 import datetime
 
 import numpy as np
+import pytest
 from lxml import etree
 from xsdata.models.datatype import XmlDateTime
 
@@ -509,17 +510,11 @@ def test_point3d_from_representation_lattice_array() -> None:
 
     # Without populate_data_references, get_xy_grid should raise ValueError
     # because the supporting_representation is still a DataObjectReference.
-    try:
+    with pytest.raises(ValueError, match="populate_data_references"):
         referencing_gri.get_xy_grid()
-        assert False, "Expected ValueError"
-    except ValueError:
-        pass
 
-    try:
+    with pytest.raises(ValueError, match="populate_data_references"):
         referencing_gri.get_regular_surface_parameters()
-        assert False, "Expected ValueError"
-    except ValueError:
-        pass
 
     # After populate_data_references, get_xy_grid should work without
     # any extra parameters because the DataObjectReference has been
