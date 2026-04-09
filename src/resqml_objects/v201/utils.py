@@ -61,3 +61,28 @@ def _find_data_object_references(obj: typing.Any) -> list[ro.DataObjectReference
             dors.extend(_find_data_object_references(getattr(obj, f.name)))
 
     return dors
+
+
+def replace_data_object_references(
+    obj: typing.Any,
+    uuid_to_obj: dict[str, ro.AbstractCitedDataObject],
+) -> None:
+    """Recursively walk *obj* and replace ``DataObjectReference`` fields
+    in-place when a matching UUID is found in *uuid_to_obj*."""
+    if isinstance(obj, list):
+        for item in obj:
+            replace_data_object_references(item, uuid_to_obj)
+        return
+
+    try:
+        _fields = fields(obj)
+    except TypeError:
+        return
+
+    for f in _fields:
+        value = getattr(obj, f.name)
+        if isinstance(value, ro.DataObjectReference):
+            if value.uuid in uuid_to_obj:
+                object.__setattr__(obj, f.name, uuid_to_obj[value.uuid])
+        else:
+            replace_data_object_references(value, uuid_to_obj)

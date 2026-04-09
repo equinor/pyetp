@@ -1481,7 +1481,7 @@ class RDDMSClient:
         if len(ml_uris) == 0:
             raise ValueError("No uris in input 'ml_uris'")
 
-        return await asyncio.gather(
+        models = await asyncio.gather(
             *[
                 self._download_model(
                     ml_uri=str(ml_uri),
@@ -1491,6 +1491,16 @@ class RDDMSClient:
                 for ml_uri in ml_uris
             ]
         )
+
+        if download_linked_objects:
+            models = [
+                model._replace(obj=model.populate_data_references())
+                if model.linked_models
+                else model
+                for model in models
+            ]
+
+        return models
 
     async def _recv_get_data_objects(
         self, gdo: GetDataObjects
