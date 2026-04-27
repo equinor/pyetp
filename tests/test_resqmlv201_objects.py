@@ -617,3 +617,107 @@ def test_point3d_from_representation_lattice_array() -> None:
     np.testing.assert_allclose(params.origin, expected_params.origin)
     np.testing.assert_allclose(params.spacing, expected_params.spacing)
     np.testing.assert_allclose(params.angle, expected_params.angle)
+
+
+def test_is_supported_regular_surface() -> None:
+    """`is_supported_regular_surface` should distinguish between:
+    - A regular Z-value surface (supported).
+    - A scaffold surface with no Z-values (not supported).
+    - A surface with an unresolved Point3dFromRepresentationLatticeArray
+      reference (not supported until populate_data_references is called).
+    """
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(0, 1, shape[0])
+    y = np.linspace(1, 2, shape[1])
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+    unit_vectors = np.eye(2)
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Test CRS", originator="pyetp-tester"),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+    )
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Test EPC", originator="pyetp-tester"),
+    )
+
+    # Case 1: regular surface with Z-values — supported.
+    regular_gri = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Regular surface", originator="pyetp-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=unit_vectors[:, 0],
+        unit_vec_2=unit_vectors[:, 1],
+    )
+    assert regular_gri.is_supported_regular_surface() is True
+
+    # Case 2: scaffold — geometry.points is a bare Point3dLatticeArray, no zvalues.
+    regular_points = regular_gri.grid2d_patch.geometry.points
+    assert isinstance(regular_points, ro.Point3dZValueArray)
+    scaffold_gri = ro.obj_Grid2dRepresentation(
+        citation=ro.Citation(title="Scaffold", originator="pyetp-tester"),
+        surface_role=ro.SurfaceRole.MAP,
+        grid2d_patch=ro.Grid2dPatch(
+            patch_index=0,
+            slowest_axis_count=shape[0],
+            fastest_axis_count=shape[1],
+            geometry=ro.PointGeometry(
+                local_crs=ro.DataObjectReference.from_object(crs),
+                points=regular_points.supporting_geometry,
+            ),
+        ),
+    )
+    assert scaffold_gri.is_supported_regular_surface() is False
+
+    # Case 3: unresolved Point3dFromRepresentationLatticeArray reference —
+    # has zvalues but the supporting_representation is still a
+    # DataObjectReference, so get_regular_surface_parameters would raise.
+    referencing_gri = ro.obj_Grid2dRepresentation(
+        citation=ro.Citation(title="Referencing", originator="pyetp-tester"),
+        surface_role=ro.SurfaceRole.MAP,
+        grid2d_patch=ro.Grid2dPatch(
+            patch_index=0,
+            slowest_axis_count=shape[0],
+            fastest_axis_count=shape[1],
+            geometry=ro.PointGeometry(
+                local_crs=ro.DataObjectReference.from_object(crs),
+                points=ro.Point3dZValueArray(
+                    supporting_geometry=ro.Point3dFromRepresentationLatticeArray(
+                        node_indices_on_supporting_representation=ro.IntegerLatticeArray(
+                            start_value=0,
+                            offset=[
+                                ro.IntegerConstantArray(value=1, count=shape[0] - 1),
+                                ro.IntegerConstantArray(value=1, count=shape[1] - 1),
+                            ],
+                        ),
+                        supporting_representation=ro.DataObjectReference.from_object(
+                            scaffold_gri
+                        ),
+                    ),
+                    zvalues=ro.DoubleHdf5Array(
+                        values=ro.Hdf5Dataset(
+                            path_in_hdf_file="/RESQML/test/zvalues",
+                            hdf_proxy=ro.DataObjectReference.from_object(epc),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert referencing_gri.is_supported_regular_surface() is False
+
+    # After populate_data_references, the reference is resolved → supported.
+    model = RDDMSModel(
+        obj=referencing_gri,
+        arrays={},
+        linked_models=[RDDMSModel(obj=scaffold_gri, arrays={}, linked_models=[])],
+    )
+    populated = model.populate_data_references()
+    assert isinstance(populated, ro.obj_Grid2dRepresentation)
+    assert populated.is_supported_regular_surface() is True

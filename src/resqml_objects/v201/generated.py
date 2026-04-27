@@ -24099,6 +24099,30 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             f"We do not support a supporting geometry of type '{sg.__class__.__name__}'"
         )
 
+    def is_supported_regular_surface(self) -> bool:
+        """Return True if this `Grid2dRepresentation` has Z-values and a
+        subsequent call to `get_regular_surface_parameters` is expected to
+        succeed.
+
+        Returns False for:
+        - Scaffold surfaces — `geometry.points` is a `Point3dLatticeArray`
+        directly, with no Z-values.
+        - Surfaces using `Point3dFromRepresentationLatticeArray` whose
+        `supporting_representation` has not been resolved (call
+        `RDDMSModel.populate_data_references()` first).
+        - Surfaces whose lattice offsets are not `DoubleConstantArray`.
+        - Anything else `get_regular_surface_parameters` cannot handle.
+        """
+        if not isinstance(self.grid2d_patch.geometry.points, Point3dZValueArray):
+            return False
+
+        try:
+            self.get_regular_surface_parameters()
+        except (NotImplementedError, ValueError, AttributeError):
+            return False
+
+        return True
+
     def get_regular_surface_parameters(
         self,
         crs: AbstractLocal3dCrs | None = None,
