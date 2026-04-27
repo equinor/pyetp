@@ -658,6 +658,8 @@ def test_is_supported_regular_surface() -> None:
     assert regular_gri.is_supported_regular_surface() is True
 
     # Case 2: scaffold — geometry.points is a bare Point3dLatticeArray, no zvalues.
+    regular_points = regular_gri.grid2d_patch.geometry.points
+    assert isinstance(regular_points, ro.Point3dZValueArray)
     scaffold_gri = ro.obj_Grid2dRepresentation(
         citation=ro.Citation(title="Scaffold", originator="pyetp-tester"),
         surface_role=ro.SurfaceRole.MAP,
@@ -667,7 +669,7 @@ def test_is_supported_regular_surface() -> None:
             fastest_axis_count=shape[1],
             geometry=ro.PointGeometry(
                 local_crs=ro.DataObjectReference.from_object(crs),
-                points=regular_gri.grid2d_patch.geometry.points.supporting_geometry,
+                points=regular_points.supporting_geometry,
             ),
         ),
     )
