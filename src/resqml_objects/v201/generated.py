@@ -18867,6 +18867,31 @@ class Point3dLatticeArray(AbstractPoint3dArray):
         },
     )
 
+    def offset_vectors_are_right_handed(self) -> bool:
+        if len(self.offset) < 2:
+            ## should not happen
+            return True
+        unit_vec_0 = np.array(
+            [self.offset[0].offset.coordinate1, self.offset[0].offset.coordinate2]
+        )
+        unit_vec_1 = np.array(
+            [self.offset[1].offset.coordinate1, self.offset[1].offset.coordinate2]
+        )
+        # right-handed means that the second unit vector is 90 degrees counter-clockwise from the first unit vector
+        unit_vec_angle_0 = np.atan2(
+            unit_vec_0[1], unit_vec_0[0]
+        )  # result is in range [-pi..+pi]
+        unit_vec_angle_1 = np.atan2(unit_vec_1[1], unit_vec_1[0])
+
+        vec_diff = unit_vec_angle_1 - unit_vec_angle_0
+        while vec_diff < -np.pi:
+            vec_diff = vec_diff + 2 * np.pi
+        while vec_diff > np.pi:
+            vec_diff = vec_diff - 2 * np.pi
+
+        # for right-handed, unit_vec_angle_1 - unit_vec_angle_0 is pi/2
+        return bool(vec_diff > 0)
+
 
 @dataclass(slots=True, kw_only=True)
 class PointGeometry(AbstractGeometry):
@@ -24099,6 +24124,30 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             f"We do not support a supporting geometry of type '{sg.__class__.__name__}'"
         )
 
+    def is_supported_regular_surface(self) -> bool:
+        """Return True if this `Grid2dRepresentation` has Z-values and a
+        subsequent call to `get_regular_surface_parameters` is expected to
+        succeed.
+
+        Returns False for:
+        - Scaffold surfaces — `geometry.points` is a `Point3dLatticeArray`
+        directly, with no Z-values.
+        - Surfaces using `Point3dFromRepresentationLatticeArray` whose
+        `supporting_representation` has not been resolved (call
+        `RDDMSModel.populate_data_references()` first).
+        - Surfaces whose lattice offsets are not `DoubleConstantArray`.
+        - Anything else `get_regular_surface_parameters` cannot handle.
+        """
+        if not isinstance(self.grid2d_patch.geometry.points, Point3dZValueArray):
+            return False
+
+        try:
+            self.get_regular_surface_parameters()
+        except (NotImplementedError, ValueError, AttributeError):
+            return False
+
+        return True
+
     def get_regular_surface_parameters(
         self,
         crs: AbstractLocal3dCrs | None = None,
@@ -24151,14 +24200,16 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         # Here we assume that the axis order is EASTING_NORTHING, and that the
         # second unit vector lies 90 degrees counter-clockwise of the first
         # unit vector.
-
         angle = float(np.atan2(unit_vec_1[1], unit_vec_1[0]))
+
+        # If the axis order is inverted (i.e. left-handed), we must set the yflip flag
 
         return RegularSurfaceParameters(
             shape=shape,
             origin=origin + crs_origin,
             spacing=spacing,
             angle=angle + crs_angle,
+            yflip=not sg.offset_vectors_are_right_handed(),
         )
 
     def get_xy_grid(
