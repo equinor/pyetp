@@ -18866,8 +18866,9 @@ class Point3dLatticeArray(AbstractPoint3dArray):
             "min_occurs": 1,
         },
     )
+
     def offset_vectors_are_right_handed(self) -> bool:
-        if len(self.offset)<2:
+        if len(self.offset) < 2:
             ## should not happen
             return True
         unit_vec_0 = np.array(
@@ -18877,17 +18878,20 @@ class Point3dLatticeArray(AbstractPoint3dArray):
             [self.offset[1].offset.coordinate1, self.offset[1].offset.coordinate2]
         )
         # right-handed means that the second unit vector is 90 degrees counter-clockwise from the first unit vector
-        unit_vec_angle_0 = np.atan2(unit_vec_0[1], unit_vec_0[0])  # result is in range [-pi..+pi]
+        unit_vec_angle_0 = np.atan2(
+            unit_vec_0[1], unit_vec_0[0]
+        )  # result is in range [-pi..+pi]
         unit_vec_angle_1 = np.atan2(unit_vec_1[1], unit_vec_1[0])
-        
+
         vec_diff = unit_vec_angle_1 - unit_vec_angle_0
         while vec_diff < -np.pi:
-            vec_diff = vec_diff + 2*np.pi
+            vec_diff = vec_diff + 2 * np.pi
         while vec_diff > np.pi:
-            vec_diff = vec_diff - 2*np.pi
+            vec_diff = vec_diff - 2 * np.pi
 
         # for right-handed, unit_vec_angle_1 - unit_vec_angle_0 is pi/2
         return bool(vec_diff > 0)
+
 
 @dataclass(slots=True, kw_only=True)
 class PointGeometry(AbstractGeometry):

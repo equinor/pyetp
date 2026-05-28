@@ -341,10 +341,9 @@ def test_regular_grid_2d_representation_from_angle() -> None:
         uuid=gri.uuid,
         path_in_hdf_file=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore[attr-defined]
     )
-    
+
     assert not gri_ref.get_regular_surface_parameters().yflip
     assert gri_ref_left_handed.get_regular_surface_parameters().yflip
-
 
 
 def test_rotated_regular_grid_2d_representation() -> None:
