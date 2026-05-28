@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid as uuid_lib
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -10,8 +11,13 @@ import resqml_objects.v201 as ro
 
 
 def polyline_set_to_geojson(
-    polyline_set, arrays, crs=None, *, extra_properties=None, name=None
-):
+    polyline_set: ro.obj_PolylineSetRepresentation,
+    arrays: dict[str, npt.NDArray[Any]],
+    crs: ro.AbstractLocal3dCrs | None = None,
+    *,
+    extra_properties: dict[str, Any] | None = None,
+    name: str | None = None,
+) -> Any:
     return polyline_set.get_geojson(
         arrays, crs, extra_properties=extra_properties, name=name
     )
@@ -31,7 +37,7 @@ def get_random_crs(
     test needs a specific CRS shape (e.g. EPSG-in-extra-metadata).
     """
 
-    base_kwargs: dict = dict(
+    base_kwargs: dict[str, Any] = dict(
         citation=ro.Citation(title=title, originator="geojson-tester"),
         projected_crs=projected_crs
         or ro.ProjectedUnknownCrs(unknown="No EPSG code specified"),
@@ -49,7 +55,7 @@ def get_random_crs(
 
 def get_random_polyline_set(
     *,
-    crs: ro.obj_LocalDepth3dCrs | None = None,
+    crs: ro.AbstractLocal3dCrs | None = None,
     node_counts: list[int] | None = None,
     closed: bool | list[bool] = False,
     points: npt.NDArray[np.float64] | None = None,
@@ -58,7 +64,7 @@ def get_random_polyline_set(
     ro.AbstractLocal3dCrs,
     ro.obj_EpcExternalPartReference,
     ro.obj_PolylineSetRepresentation,
-    dict[str, npt.NDArray[np.float64]],
+    dict[str, npt.NDArray[Any]],
 ]:
     """Build a random synthetic polyline-set for tests.
 
@@ -112,7 +118,7 @@ def get_random_polyline_set(
         citation=ro.Citation(title="Random epc", originator="geojson-tester"),
     )
 
-    arrays: dict[str, npt.NDArray] = {}
+    arrays: dict[str, npt.NDArray[Any]] = {}
 
     # node_count_per_polyline: use ConstantArray when all values agree, else HDF5.
     if len(set(node_counts_arr.tolist())) == 1:
@@ -172,7 +178,7 @@ def get_random_polyline_set(
     return crs, epc, pls, arrays
 
 
-def test_resolve_crs_epsg_proper():
+def test_resolve_crs_epsg_proper() -> None:
     crs = get_random_crs(
         projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
         vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=5715),
@@ -196,7 +202,7 @@ _TEST_BOUND_PROJECTED = (
 )
 
 
-def test_resolve_crs_epsg_in_extra_metadata():
+def test_resolve_crs_epsg_in_extra_metadata() -> None:
     """ProjectedUnknownCrs + extra_metadata carrying a
     ``BoundProjected:EPSG::P_EPSG::V`` string — proper CRS fields are
     unknown, but the EPSG codes are recoverable from the extra_metadata.
@@ -214,7 +220,7 @@ def test_resolve_crs_epsg_in_extra_metadata():
     assert info["z_domain"] == "time"
 
 
-def test_resolve_crs_epsg_only_in_citation_title():
+def test_resolve_crs_epsg_only_in_citation_title() -> None:
     """If extra_metadata is absent but the citation title carries the
     ``P<digits>_T<digits>`` pattern, we should still recover it.
     """
@@ -225,7 +231,7 @@ def test_resolve_crs_epsg_only_in_citation_title():
     assert info["source"] == "citation_title"
 
 
-def test_resolve_crs_wkt_string():
+def test_resolve_crs_wkt_string() -> None:
     """WKT supplied as the projected_crs.unknown text."""
     wkt = (
         'PROJCS["Test Projected CRS",GEOGCS["Test Geographic CRS",'
@@ -239,7 +245,7 @@ def test_resolve_crs_wkt_string():
     assert info["name"] == "Test Projected CRS"
 
 
-def test_resolve_crs_wkt_in_extra_metadata_captures_just_value():
+def test_resolve_crs_wkt_in_extra_metadata_captures_just_value() -> None:
     """When WKT is in extra_metadata alongside unrelated entries (project
     metadata, ingest tool tags, etc.), the captured ``wkt`` must be just
     the value of the WKT entry — no leading junk from the joined blob.
@@ -267,7 +273,7 @@ def test_resolve_crs_wkt_in_extra_metadata_captures_just_value():
     assert info["name"] == "Test UTM Zone"
 
 
-def test_resolve_crs_ow_style_name():
+def test_resolve_crs_ow_style_name() -> None:
     """ProjectedUnknownCrs whose ``unknown`` holds a name-like string
     with no EPSG digits or WKT pattern. We just surface it as
     ``unknown_name``.
@@ -286,35 +292,35 @@ def test_resolve_crs_ow_style_name():
 # -----------------------------------------------------------------------------
 
 
-def test_get_epsg_code_epsg_proper():
+def test_get_epsg_code_epsg_proper() -> None:
     crs = get_random_crs(projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031))
     assert crs.get_epsg_code() == 23031
 
 
-def test_get_epsg_code_bound_projected_in_extra_metadata():
+def test_get_epsg_code_bound_projected_in_extra_metadata() -> None:
     crs = get_random_crs(
         extra_metadata=[ro.NameValuePair(name="crs", value=_TEST_BOUND_PROJECTED)],
     )
     assert crs.get_epsg_code() == _TEST_PROJ_EPSG
 
 
-def test_get_epsg_code_from_citation_title_pattern():
+def test_get_epsg_code_from_citation_title_pattern() -> None:
     crs = get_random_crs(title=_TEST_CRS_TITLE_WITH_PT)
     assert crs.get_epsg_code() == _TEST_PROJ_EPSG
 
 
-def test_get_epsg_code_none_when_truly_unknown():
+def test_get_epsg_code_none_when_truly_unknown() -> None:
     crs = get_random_crs()  # ProjectedUnknownCrs, default title, no extras
     assert crs.get_epsg_code() is None
 
 
-def test_get_wkt_from_projected_unknown():
+def test_get_wkt_from_projected_unknown() -> None:
     wkt = 'PROJCS["TestCRS",GEOGCS["g",DATUM["d",SPHEROID["s",6378137,298.257]]]]'
     crs = get_random_crs(projected_crs=ro.ProjectedUnknownCrs(unknown=wkt))
     assert crs.get_wkt() == wkt
 
 
-def test_get_wkt_from_extra_metadata():
+def test_get_wkt_from_extra_metadata() -> None:
     wkt = 'PROJCS["Other",GEOGCS["g",DATUM["d",SPHEROID["s",6378137,298.257]]]]'
     crs = get_random_crs(
         extra_metadata=[
@@ -325,14 +331,14 @@ def test_get_wkt_from_extra_metadata():
     assert crs.get_wkt() == wkt
 
 
-def test_get_wkt_none_when_only_epsg_code():
+def test_get_wkt_none_when_only_epsg_code() -> None:
     """Naive accessor: do NOT synthesise WKT from an EPSG code."""
     crs = get_random_crs(projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031))
     assert crs.get_epsg_code() == 23031
     assert crs.get_wkt() is None
 
 
-def test_is_time_and_depth_domain_are_exclusive():
+def test_is_time_and_depth_domain_are_exclusive() -> None:
     depth = get_random_crs(domain="depth")
     time = get_random_crs(domain="time")
 
@@ -343,7 +349,7 @@ def test_is_time_and_depth_domain_are_exclusive():
     assert time.is_depth_domain() is False
 
 
-def test_polyline_set_single_polyline_no_crs():
+def test_polyline_set_single_polyline_no_crs() -> None:
     _, _, pls, arrays = get_random_polyline_set(node_counts=[5])
     fc = polyline_set_to_geojson(pls, arrays, crs=None)
 
@@ -355,7 +361,9 @@ def test_polyline_set_single_polyline_no_crs():
     feat = fc["features"][0]
     assert feat["geometry"]["type"] == "LineString"
     assert len(feat["geometry"]["coordinates"]) == 5
-    points_path = pls.line_patch[0].geometry.points.coordinates.path_in_hdf_file
+    points_arr = pls.line_patch[0].geometry.points
+    assert isinstance(points_arr, ro.Point3dHdf5Array)
+    points_path = points_arr.coordinates.path_in_hdf_file
     np.testing.assert_allclose(
         feat["geometry"]["coordinates"], arrays[points_path], atol=1e-5
     )
@@ -364,7 +372,7 @@ def test_polyline_set_single_polyline_no_crs():
     assert feat["properties"]["closed"] is False
 
 
-def test_polyline_set_multiple_polylines_with_constant_node_count():
+def test_polyline_set_multiple_polylines_with_constant_node_count() -> None:
     _, _, pls, arrays = get_random_polyline_set(node_counts=[3, 3, 3])
     fc = polyline_set_to_geojson(pls, arrays, crs=None)
 
@@ -375,7 +383,7 @@ def test_polyline_set_multiple_polylines_with_constant_node_count():
         assert len(f["geometry"]["coordinates"]) == 3
 
 
-def test_polyline_set_emits_crs_block_for_epsg_in_extra_metadata_shape():
+def test_polyline_set_emits_crs_block_for_epsg_in_extra_metadata_shape() -> None:
     """End-to-end on the epsg-in-extra-metadata shape: Time CRS with
     BoundProjected EPSG codes hidden in extra_metadata. The resulting
     FeatureCollection should carry the resolved EPSG codes at the top
@@ -406,7 +414,7 @@ def test_polyline_set_emits_crs_block_for_epsg_in_extra_metadata_shape():
         assert f["properties"]["fault_interpretation_title"] == "Test-Fault"
 
 
-def test_polyline_set_skips_degenerate_single_point_polylines():
+def test_polyline_set_skips_degenerate_single_point_polylines() -> None:
     _, _, pls, arrays = get_random_polyline_set(node_counts=[1, 3])
     fc = polyline_set_to_geojson(pls, arrays, crs=None)
 
@@ -416,23 +424,25 @@ def test_polyline_set_skips_degenerate_single_point_polylines():
     assert fc["features"][0]["properties"]["polyline_index"] == 1
 
 
-def test_polyline_set_unknown_points_path_raises():
+def test_polyline_set_unknown_points_path_raises() -> None:
     _, _, pls, _ = get_random_polyline_set(node_counts=[3])
     with pytest.raises(KeyError):
         polyline_set_to_geojson(pls, arrays={}, crs=None)
 
 
-def test_polyline_set_inconsistent_node_count_sum_raises():
+def test_polyline_set_inconsistent_node_count_sum_raises() -> None:
     _, _, pls, arrays = get_random_polyline_set(node_counts=[3, 3])
     # Tamper with the points array so the sum no longer matches.
-    points_path = pls.line_patch[0].geometry.points.coordinates.path_in_hdf_file
+    points_arr = pls.line_patch[0].geometry.points
+    assert isinstance(points_arr, ro.Point3dHdf5Array)
+    points_path = points_arr.coordinates.path_in_hdf_file
     arrays = dict(arrays)
     arrays[points_path] = arrays[points_path][:5]
     with pytest.raises(ValueError, match="node_count_per_polyline sums to"):
         polyline_set_to_geojson(pls, arrays, crs=None)
 
 
-def test_get_geojson_method_matches_free_function():
+def test_get_geojson_method_matches_free_function() -> None:
     """``polyline.get_geojson(arrays, crs)`` must produce the same output as
     calling ``polyline_set_to_geojson(polyline, arrays, crs)`` directly.
     """
@@ -449,7 +459,7 @@ def test_get_geojson_method_matches_free_function():
     assert dict(via_method) == dict(via_function)
 
 
-def test_get_geojson_method_accepts_extra_properties_and_name():
+def test_get_geojson_method_accepts_extra_properties_and_name() -> None:
     _, _, pls, arrays = get_random_polyline_set(node_counts=[3])
     fc = pls.get_geojson(
         arrays,
@@ -464,7 +474,7 @@ def test_get_geojson_method_accepts_extra_properties_and_name():
     )
 
 
-def test_patch_decode_returns_arrays():
+def test_patch_decode_returns_arrays() -> None:
     _, _, pls, arrays = get_random_polyline_set(node_counts=[3, 3, 3])
 
     points, node_counts, closed = pls.line_patch[0].decode(arrays)
@@ -477,13 +487,15 @@ def test_patch_decode_returns_arrays():
     assert closed.dtype == np.bool_
 
 
-def test_patch_decode_xy_z_access_via_points():
+def test_patch_decode_xy_z_access_via_points() -> None:
     """``points[:, 0]`` etc. is how you get raw x / y / z columns."""
     _, _, pls, arrays = get_random_polyline_set(node_counts=[5])
     points, _, _ = pls.line_patch[0].decode(arrays)
 
     # x/y/z columns must round-trip from the original input array.
-    points_path = pls.line_patch[0].geometry.points.coordinates.path_in_hdf_file
+    points_arr = pls.line_patch[0].geometry.points
+    assert isinstance(points_arr, ro.Point3dHdf5Array)
+    points_path = points_arr.coordinates.path_in_hdf_file
     expected = arrays[points_path]
     np.testing.assert_array_equal(points[:, 0], expected[:, 0])
     np.testing.assert_array_equal(points[:, 1], expected[:, 1])

@@ -9,3 +9,4 @@ class RegularSurfaceParameters(typing.NamedTuple):
     origin: typing.Annotated[npt.NDArray[np.float64], dict(shape=(2,))]
     spacing: typing.Annotated[npt.NDArray[np.float64], dict(shape=(2,))]
     angle: float
+    yflip: typing.Optional[bool] = False

@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Annotated, Any, Self, Type
 
-import geojson
+import geojson  # type: ignore[import-untyped]
 import numpy as np
 import numpy.typing as npt
 from typing_extensions import override
@@ -18960,6 +18960,31 @@ class Point3dLatticeArray(AbstractPoint3dArray):
         },
     )
 
+    def offset_vectors_are_right_handed(self) -> bool:
+        if len(self.offset) < 2:
+            ## should not happen
+            return True
+        unit_vec_0 = np.array(
+            [self.offset[0].offset.coordinate1, self.offset[0].offset.coordinate2]
+        )
+        unit_vec_1 = np.array(
+            [self.offset[1].offset.coordinate1, self.offset[1].offset.coordinate2]
+        )
+        # right-handed means that the second unit vector is 90 degrees counter-clockwise from the first unit vector
+        unit_vec_angle_0 = np.atan2(
+            unit_vec_0[1], unit_vec_0[0]
+        )  # result is in range [-pi..+pi]
+        unit_vec_angle_1 = np.atan2(unit_vec_1[1], unit_vec_1[0])
+
+        vec_diff = unit_vec_angle_1 - unit_vec_angle_0
+        while vec_diff < -np.pi:
+            vec_diff = vec_diff + 2 * np.pi
+        while vec_diff > np.pi:
+            vec_diff = vec_diff - 2 * np.pi
+
+        # for right-handed, unit_vec_angle_1 - unit_vec_angle_0 is pi/2
+        return bool(vec_diff > 0)
+
 
 @dataclass(slots=True, kw_only=True)
 class PointGeometry(AbstractGeometry):
@@ -20064,7 +20089,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         """True if this CRS is a depth-domain CRS (``obj_LocalDepth3dCrs``)."""
         return isinstance(self, obj_LocalDepth3dCrs)
 
-    def _resolve_crs(self) -> dict:
+    def _resolve_crs(self) -> dict[str, Any]:
         """Resolve this local-3d-CRS into a flat dict of raw fields.
 
         Handles all four CRS-storage variants observed in RDDMS:
@@ -20091,7 +20116,7 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         downstream format it needs (GeoJSON ``crs`` block, OGC URN string,
         etc.).
         """
-        info: dict = {
+        info: dict[str, Any] = {
             "z_domain": "time" if self.is_time_domain() else "depth",
             "projected_uom": self.projected_uom.value,
             "vertical_uom": self.vertical_uom.value,
@@ -22654,9 +22679,9 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
         arrays: dict[str, npt.NDArray[Any]],
         crs: "AbstractLocal3dCrs | None" = None,
         *,
-        extra_properties: dict | None = None,
+        extra_properties: dict[str, Any] | None = None,
         name: str | None = None,
-    ):
+    ) -> Any:
         """Convert this polyline set to a GeoJSON ``FeatureCollection``.
 
         Walks the polyline-set's HDF5 geometry via ``patch.decode(arrays)``
@@ -22684,7 +22709,7 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
         geojson.FeatureCollection
         """
         if crs is None:
-            crs_block: dict | None = None
+            crs_block: dict[str, Any] | None = None
         else:
             info = crs._resolve_crs()
             crs_name = info["name"]
@@ -22697,7 +22722,7 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
                 "properties": {"name": crs_name, **block_props},
             }
 
-        features: list = []
+        features: list[Any] = []
         polyline_index = 0
         for patch in self.line_patch:
             points, node_counts, closed = patch.decode(arrays)
@@ -22717,7 +22742,7 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
                 if is_closed and coords[0] != coords[-1]:
                     coords = coords + [list(coords[0])]
 
-                properties: dict = {
+                properties: dict[str, Any] = {
                     "polyline_index": idx,
                     "node_count": n_int,
                     "closed": is_closed,
@@ -24526,6 +24551,30 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             f"We do not support a supporting geometry of type '{sg.__class__.__name__}'"
         )
 
+    def is_supported_regular_surface(self) -> bool:
+        """Return True if this `Grid2dRepresentation` has Z-values and a
+        subsequent call to `get_regular_surface_parameters` is expected to
+        succeed.
+
+        Returns False for:
+        - Scaffold surfaces — `geometry.points` is a `Point3dLatticeArray`
+        directly, with no Z-values.
+        - Surfaces using `Point3dFromRepresentationLatticeArray` whose
+        `supporting_representation` has not been resolved (call
+        `RDDMSModel.populate_data_references()` first).
+        - Surfaces whose lattice offsets are not `DoubleConstantArray`.
+        - Anything else `get_regular_surface_parameters` cannot handle.
+        """
+        if not isinstance(self.grid2d_patch.geometry.points, Point3dZValueArray):
+            return False
+
+        try:
+            self.get_regular_surface_parameters()
+        except (NotImplementedError, ValueError, AttributeError):
+            return False
+
+        return True
+
     def get_regular_surface_parameters(
         self,
         crs: AbstractLocal3dCrs | None = None,
@@ -24578,14 +24627,16 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         # Here we assume that the axis order is EASTING_NORTHING, and that the
         # second unit vector lies 90 degrees counter-clockwise of the first
         # unit vector.
-
         angle = float(np.atan2(unit_vec_1[1], unit_vec_1[0]))
+
+        # If the axis order is inverted (i.e. left-handed), we must set the yflip flag
 
         return RegularSurfaceParameters(
             shape=shape,
             origin=origin + crs_origin,
             spacing=spacing,
             angle=angle + crs_angle,
+            yflip=not sg.offset_vectors_are_right_handed(),
         )
 
     def get_xy_grid(
