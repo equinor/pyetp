@@ -328,6 +328,24 @@ def test_regular_grid_2d_representation_from_angle() -> None:
         sg.offset[1].offset.coordinate2, np.cos(angle), atol=1e-10
     )
 
+    # Test yflip attribute for left-handed supports
+    gri_ref_left_handed = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=citation,
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vec_1=unit_vec_2,
+        unit_vec_2=unit_vec_1,
+        uuid=gri.uuid,
+        path_in_hdf_file=gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file,  # type: ignore[attr-defined]
+    )
+    
+    assert not gri_ref.get_regular_surface_parameters().yflip
+    assert gri_ref_left_handed.get_regular_surface_parameters().yflip
+
+
 
 def test_rotated_regular_grid_2d_representation() -> None:
     # Here we compare the results of a rotated surface in three different
