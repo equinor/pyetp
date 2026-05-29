@@ -16,8 +16,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Annotated, Any, Self, Type
 
+import geojson  # type: ignore[import-untyped]
 import numpy as np
 import numpy.typing as npt
+from typing_extensions import override
 from xsdata.models.datatype import XmlDate, XmlDateTime, XmlPeriod
 
 from resqml_objects.data_types import RegularSurfaceParameters
@@ -6496,6 +6498,30 @@ class AbstractPoint3dArray:
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
+    def to_numpy(
+        self, arrays: dict[str, npt.NDArray[Any]]
+    ) -> "npt.NDArray[np.float64]":
+        """Decode this 3D-point array to an ``(N, 3)`` float64 array.
+
+        Subclasses provide the actual load; this base then enforces the
+        ``(N, 3)`` shape so every caller can rely on it.
+        """
+        arr = self._load_numpy(arrays)
+        if arr.ndim != 2 or arr.shape[-1] != 3:
+            raise ValueError(
+                f"Expected {type(self).__name__} to decode to (N, 3); "
+                f"got shape {arr.shape}"
+            )
+        return arr
+
+    def _load_numpy(
+        self, arrays: dict[str, npt.NDArray[Any]]
+    ) -> "npt.NDArray[np.float64]":
+        raise NotImplementedError(
+            f"3D-point array type {type(self).__name__} is not supported "
+            f"(only Point3dHdf5Array)."
+        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -13579,6 +13605,15 @@ class AbstractBooleanArray(AbstractValueArray):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.bool_]":
+        """Decode this boolean array to a flat ``bool`` numpy array.
+
+        Subclasses override.
+        """
+        raise NotImplementedError(
+            f"Unsupported AbstractBooleanArray subclass: {type(self).__name__}"
+        )
+
 
 @dataclass(slots=True, kw_only=True)
 class AbstractContactInterpretationPart:
@@ -13653,6 +13688,15 @@ class AbstractIntegerArray(AbstractValueArray):
 
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
+
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.int64]":
+        """Decode this integer array to a flat ``int64`` numpy array.
+
+        Subclasses override.
+        """
+        raise TypeError(
+            f"Unsupported AbstractIntegerArray subclass: {type(self).__name__}"
+        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -15774,6 +15818,10 @@ class BooleanConstantArray(AbstractBooleanArray):
         }
     )
 
+    @override
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.bool_]":
+        return np.full(int(self.count), bool(self.value), dtype=np.bool_)
+
 
 @dataclass(slots=True, kw_only=True)
 class BooleanHdf5Array(AbstractBooleanArray):
@@ -15797,6 +15845,17 @@ class BooleanHdf5Array(AbstractBooleanArray):
             "required": True,
         }
     )
+
+    @override
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.bool_]":
+        path = self.values.path_in_hdf_file
+        if path not in arrays:
+            raise KeyError(
+                f"BooleanHdf5Array references HDF5 path {path!r} which is "
+                f"not in the supplied arrays dict (have: "
+                f"{sorted(arrays.keys())!r})"
+            )
+        return np.asarray(arrays[path], dtype=np.bool_)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -16433,6 +16492,10 @@ class IntegerConstantArray(AbstractIntegerArray):
         }
     )
 
+    @override
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.int64]":
+        return np.full(int(self.count), int(self.value), dtype=np.int64)
+
 
 @dataclass(slots=True, kw_only=True)
 class IntegerHdf5Array(AbstractIntegerArray):
@@ -16467,6 +16530,23 @@ class IntegerHdf5Array(AbstractIntegerArray):
             "required": True,
         }
     )
+
+    @override
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.int64]":
+        path = self.values.path_in_hdf_file
+        if path not in arrays:
+            raise KeyError(
+                f"IntegerHdf5Array references HDF5 path {path!r} which is "
+                f"not in the supplied arrays dict (have: "
+                f"{sorted(arrays.keys())!r})"
+            )
+        raw = arrays[path]
+        if not np.issubdtype(np.asarray(raw).dtype, np.integer):
+            raise TypeError(
+                f"IntegerHdf5Array at {path!r} expects an integer dtype; "
+                f"got {np.asarray(raw).dtype}."
+            )
+        return np.asarray(raw, dtype=np.int64)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -17050,6 +17130,19 @@ class Point3dHdf5Array(AbstractPoint3dArray):
             "required": True,
         }
     )
+
+    @override
+    def _load_numpy(
+        self, arrays: dict[str, npt.NDArray[Any]]
+    ) -> "npt.NDArray[np.float64]":
+        path = self.coordinates.path_in_hdf_file
+        if path not in arrays:
+            raise KeyError(
+                f"Point3dHdf5Array references HDF5 path {path!r} which is "
+                f"not in the supplied arrays dict (have: "
+                f"{sorted(arrays.keys())!r})"
+            )
+        return np.asarray(arrays[path], dtype=np.float64)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -19876,6 +19969,215 @@ class AbstractLocal3dCrs(AbstractResqmlDataObject):
         }
     )
 
+    _BOUND_PROJECTED_RE = re.compile(
+        r"BoundProjected:EPSG::(?P<projected>\d+)_EPSG::(?P<vertical>\d+)"
+    )
+    _TITLE_EPSG_RE = re.compile(r"P(?P<projected>\d+)_T(?P<vertical>\d+)")
+    _PLAIN_EPSG_RE = re.compile(r"EPSG::?(?P<code>\d+)")
+    _WKT_RE = re.compile(r"\b(?:PROJCS|PROJCRS|GEOGCS|GEOGCRS|COMPD_CS|COMPOUNDCRS)\[")
+
+    def _find_epsg_and_source(self) -> tuple[int | None, int | None, str | None]:
+        """Private: like ``get_epsg_code`` but also returns the vertical EPSG
+        (when the matching source provides one) and the source tag.
+
+        Returns ``(projected_epsg, vertical_epsg, source)``. All None when
+        nothing matched. ``vertical_epsg`` is only populated for sources that
+        carry both codes (ProjectedCrsEpsgCode+VerticalCrsEpsgCode,
+        BoundProjected pattern, or ``P<n>_T<n>`` title pattern).
+        """
+        if isinstance(self.projected_crs, ProjectedCrsEpsgCode):
+            proj = int(self.projected_crs.epsg_code)
+            vert = (
+                int(self.vertical_crs.epsg_code)
+                if isinstance(self.vertical_crs, VerticalCrsEpsgCode)
+                else None
+            )
+            return proj, vert, "projected_crs"
+
+        unknown_text = ""
+        if isinstance(self.projected_crs, ProjectedUnknownCrs):
+            unknown_text = (self.projected_crs.unknown or "").strip()
+        extra_blob = " ".join(
+            f"{nv.name}={nv.value}" for nv in (self.extra_metadata or [])
+        )
+        title = self.citation.title or ""
+
+        cls = AbstractLocal3dCrs
+        bp = cls._BOUND_PROJECTED_RE.search(
+            extra_blob
+        ) or cls._BOUND_PROJECTED_RE.search(unknown_text)
+        if bp:
+            return (
+                int(bp.group("projected")),
+                int(bp.group("vertical")),
+                "extra_metadata",
+            )
+
+        tm = cls._TITLE_EPSG_RE.search(title)
+        if tm:
+            return (
+                int(tm.group("projected")),
+                int(tm.group("vertical")),
+                "citation_title",
+            )
+
+        plain = cls._PLAIN_EPSG_RE.search(extra_blob) or cls._PLAIN_EPSG_RE.search(
+            unknown_text
+        )
+        if plain:
+            return int(plain.group("code")), None, "extra_metadata"
+
+        return None, None, None
+
+    def _find_wkt_and_source(self) -> tuple[str | None, str | None]:
+        """Private: like ``get_wkt`` but also returns the source tag.
+
+        Returns ``(wkt, source)``. Both None when no WKT is found.
+        """
+        cls = AbstractLocal3dCrs
+
+        if isinstance(self.projected_crs, ProjectedUnknownCrs):
+            unknown_text = (self.projected_crs.unknown or "").strip()
+            if cls._WKT_RE.search(unknown_text):
+                return unknown_text, "projected_crs.unknown"
+
+        for nv in self.extra_metadata or []:
+            v = nv.value or ""
+            if cls._WKT_RE.search(v):
+                return v.strip(), "extra_metadata"
+
+        title = self.citation.title or ""
+        if cls._WKT_RE.search(title):
+            return title, "citation.title"
+
+        return None, None
+
+    def get_epsg_code(self) -> int | None:
+        """Return the projected EPSG code if findable, else None.
+
+        Tries each storage shape we've seen in RDDMS, in priority order:
+
+        1. ``ProjectedCrsEpsgCode.epsg_code`` — the RESQML-correct shape.
+        2. ``BoundProjected:EPSG::P_EPSG::V`` pattern in ``extra_metadata``
+           or in ``ProjectedUnknownCrs.unknown``.
+        3. ``P<n>_T<n>`` pattern in ``citation.title`` (OW-style).
+        4. Plain ``EPSG::<n>`` substring in ``extra_metadata`` or
+           ``ProjectedUnknownCrs.unknown``.
+
+        Returns ``None`` if no EPSG code is recoverable from any of these.
+        """
+        proj, _vert, _source = self._find_epsg_and_source()
+        return proj
+
+    def get_wkt(self) -> str | None:
+        """Return a WKT string if literally stored on this CRS, else None.
+
+        Looks in (in order):
+
+        1. ``ProjectedUnknownCrs.unknown``
+        2. Each ``extra_metadata`` entry's value
+        3. ``citation.title``
+        """
+        wkt, _source = self._find_wkt_and_source()
+        return wkt
+
+    def is_time_domain(self) -> bool:
+        """True if this CRS is a time-domain CRS (``obj_LocalTime3dCrs``)."""
+        return isinstance(self, obj_LocalTime3dCrs)
+
+    def is_depth_domain(self) -> bool:
+        """True if this CRS is a depth-domain CRS (``obj_LocalDepth3dCrs``)."""
+        return isinstance(self, obj_LocalDepth3dCrs)
+
+    def _resolve_crs(self) -> dict[str, Any]:
+        """Resolve this local-3d-CRS into a flat dict of raw fields.
+
+        Handles all four CRS-storage variants observed in RDDMS:
+
+        1. ``ProjectedCrsEpsgCode`` (RESQML-correct shape).
+        2. ``ProjectedUnknownCrs`` + ``extra_metadata`` carrying
+           ``BoundProjected:EPSG::P_EPSG::V``.
+        3. ``PROJCS[...]`` / ``PROJCRS[...]`` WKT blob anywhere.
+        4. OW-style name like ``ST_ED50_UTM32N_P23231_T2233``.
+
+        Returns a dict with always-present keys:
+
+        - ``name``: human-readable identifier (urn:..., WKT title, OW name,
+          or ``"unknown"``)
+        - ``z_domain``: ``"depth"`` or ``"time"``
+        - ``projected_uom``, ``vertical_uom``, ``crs_uuid``,
+          ``crs_citation_title``
+
+        Optional keys (only set when resolved):
+        ``projected_epsg_code``, ``vertical_epsg_code``, ``wkt``,
+        ``unknown_name``, ``source``.
+
+        The caller is responsible for shaping these fields into whatever
+        downstream format it needs (GeoJSON ``crs`` block, OGC URN string,
+        etc.).
+        """
+        info: dict[str, Any] = {
+            "z_domain": "time" if self.is_time_domain() else "depth",
+            "projected_uom": self.projected_uom.value,
+            "vertical_uom": self.vertical_uom.value,
+            "crs_uuid": self.uuid,
+            "crs_citation_title": self.citation.title,
+        }
+
+        proj_epsg: int | None = None
+        vert_epsg: int | None = None
+        wkt: str | None = None
+        ow_name: str | None = None
+        source: str | None = None
+
+        # Priority: epsg-proper > wkt > epsg-in-extra > ow-name > truly-unknown.
+        if isinstance(self.projected_crs, ProjectedCrsEpsgCode):
+            proj_epsg, vert_epsg, source = self._find_epsg_and_source()
+        else:
+            wkt, source = self._find_wkt_and_source()
+            if wkt is None:
+                proj_epsg, vert_epsg, source = self._find_epsg_and_source()
+                if proj_epsg is None:
+                    # Last-resort fallback: surface any free-form text as a name.
+                    unknown_text = ""
+                    if isinstance(self.projected_crs, ProjectedUnknownCrs):
+                        unknown_text = (self.projected_crs.unknown or "").strip()
+                    title = self.citation.title or ""
+                    if unknown_text or title:
+                        ow_name = unknown_text or title
+                        source = (
+                            "projected_crs.unknown"
+                            if unknown_text
+                            else "citation.title"
+                        )
+
+        if proj_epsg is not None:
+            info["projected_epsg_code"] = proj_epsg
+        if vert_epsg is not None:
+            info["vertical_epsg_code"] = vert_epsg
+        if wkt is not None:
+            info["wkt"] = wkt
+        if ow_name is not None:
+            info["unknown_name"] = ow_name
+        if source is not None:
+            info["source"] = source
+
+        if proj_epsg is not None:
+            name = f"urn:ogc:def:crs:EPSG::{proj_epsg}"
+        elif wkt is not None:
+            projcs_match = re.search(
+                r'(?:PROJCS|PROJCRS|GEOGCS|GEOGCRS|COMPD_CS|COMPOUNDCRS)\["([^"]+)"',
+                wkt,
+            )
+            name = projcs_match.group(1) if projcs_match else wkt
+        elif ow_name is not None:
+            name = ow_name
+        else:
+            name = "unknown"
+        info["name"] = name
+
+        return info
+
 
 @dataclass(slots=True, kw_only=True)
 class AbstractParentWindow:
@@ -20498,6 +20800,35 @@ class PolylineSetPatch(Patch):
             "required": True,
         }
     )
+
+    def decode(
+        self,
+        arrays: dict[str, npt.NDArray[Any]],
+    ) -> "tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.bool_]]":
+        """Decode this patch's HDF5 geometry into ``(points, node_counts, closed)``.
+
+        - ``points``: ``(N, 3)`` float64 — concatenated XYZ for every polyline.
+        - ``node_counts``: ``(n_polylines,)`` int64 — how many rows of ``points``
+          belong to each polyline.
+        - ``closed``: ``(n_polylines,)`` bool — whether each polyline loops back.
+
+        Falls back to all-False for ``closed_polylines`` if the underlying
+        boolean array is a subclass we don't recognise (real fault sticks are
+        virtually never closed, so this is safe).
+        """
+        points = self.geometry.points.to_numpy(arrays)
+        node_counts = self.node_count_per_polyline.to_numpy(arrays)
+        if int(node_counts.sum()) != len(points):
+            raise ValueError(
+                f"Patch {self.patch_index}: node_count_per_polyline sums "
+                f"to {int(node_counts.sum())} but the points array has "
+                f"{len(points)} rows."
+            )
+        try:
+            closed = self.closed_polylines.to_numpy(arrays)
+        except NotImplementedError:
+            closed = np.zeros(len(node_counts), dtype=np.bool_)
+        return points, node_counts, closed
 
 
 @dataclass(slots=True, kw_only=True)
@@ -22342,6 +22673,102 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
             "min_occurs": 1,
         },
     )
+
+    def get_geojson(
+        self,
+        arrays: dict[str, npt.NDArray[Any]],
+        crs: "AbstractLocal3dCrs | None" = None,
+        *,
+        extra_properties: dict[str, Any] | None = None,
+        name: str | None = None,
+    ) -> Any:
+        """Convert this polyline set to a GeoJSON ``FeatureCollection``.
+
+        Walks the polyline-set's HDF5 geometry via ``patch.decode(arrays)``
+        and resolves the CRS via ``crs._resolve_crs()``, emitting one
+        ``LineString`` Feature per polyline. Coordinates stay in the source
+        CRS
+
+        Parameters
+        ----------
+        arrays
+            Dict of ``path_in_hdf_file -> numpy array``, typically
+            ``RDDMSModel.arrays``.
+        crs
+            The linked CRS (``obj_LocalDepth3dCrs`` or ``obj_LocalTime3dCrs``).
+            If ``None`` the FeatureCollection will have no ``crs`` block.
+        extra_properties
+            Optional mapping copied into every emitted Feature (e.g.
+            fault interpretation title/uuid).
+        name
+            Optional ``name`` for the FeatureCollection (default: this
+            polyline-set's citation title).
+
+        Returns
+        -------
+        geojson.FeatureCollection
+        """
+        if crs is None:
+            crs_block: dict[str, Any] | None = None
+        else:
+            info = crs._resolve_crs()
+            crs_name = info["name"]
+            # `crs_uuid` is a RESQML identifier; not useful in the GeoJSON
+            # crs block. `name` is hoisted to the top of the properties.
+            excluded = {"name", "crs_uuid"}
+            block_props = {k: v for k, v in info.items() if k not in excluded}
+            crs_block = {
+                "type": "name",
+                "properties": {"name": crs_name, **block_props},
+            }
+
+        features: list[Any] = []
+        polyline_index = 0
+        for patch in self.line_patch:
+            points, node_counts, closed = patch.decode(arrays)
+            cursor = 0
+            for i_in_patch, n in enumerate(node_counts):
+                idx = polyline_index
+                polyline_index += 1
+                n_int = int(n)
+                slice_pts = points[cursor : cursor + n_int]
+                cursor += n_int
+
+                if n_int < 2:
+                    continue
+
+                coords = [[float(x) for x in row] for row in slice_pts]
+                is_closed = bool(closed[i_in_patch])
+                if is_closed and coords[0] != coords[-1]:
+                    coords = coords + [list(coords[0])]
+
+                properties: dict[str, Any] = {
+                    "polyline_index": idx,
+                    "node_count": n_int,
+                    "closed": is_closed,
+                }
+                if extra_properties:
+                    properties.update(extra_properties)
+
+                features.append(
+                    geojson.Feature(
+                        geometry=geojson.LineString(coords),
+                        properties=properties,
+                    )
+                )
+
+        fc = geojson.FeatureCollection(features)
+        if name is not None:
+            fc["name"] = name
+        elif self.citation and self.citation.title:
+            fc["name"] = self.citation.title
+        if crs_block is not None:
+            fc["crs"] = crs_block
+        fc["properties"] = {
+            "polyline_set_uuid": self.uuid,
+            "polyline_count": len(features),
+        }
+        return fc
 
 
 @dataclass(slots=True, kw_only=True)

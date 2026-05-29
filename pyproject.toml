@@ -27,6 +27,7 @@ dependencies = [
     "xsdata >= 25.4",
     "fastavro>=1.12.1",
     "h5py>=3.16.0",
+    "geojson>=3.2.0",
 ]
 
 [project.urls]
