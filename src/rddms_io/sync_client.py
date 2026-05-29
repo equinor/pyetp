@@ -289,6 +289,49 @@ class RDDMSClientSync:
 
         return run_coroutine_sync(list_objects_under_dataspace())
 
+    def list_polylinesets(
+        self,
+        dataspace_uri: DataspaceURI | str,
+        store_last_write_filter: int | None = None,
+    ) -> list[Resource]:
+        """
+        Method for listing all `obj_PolylineSetRepresentation`-objects under a
+        given dataspace. This is a more specific version of the
+        `RDDMSClientSync.list_objects_under_dataspace`-method, and is included
+        to make it easier to find these objects which are commonly used for
+        storing faults.
+
+        Parameters
+        ----------
+        dataspace_uri
+            The uri of the dataspace to list objects.
+        store_last_write_filter
+            Filter to only include objects that are written after the provided
+            datetime or timestamp. Default is `None`, meaning no filter is
+            applied. Note that the timestamp should be in microsecond
+            resolution.
+
+        Returns
+        -------
+        list[Resource]
+            A list of
+            [`Resource`][energistics.etp.v12.datatypes.object.Resource]-objects.
+
+        See Also
+        --------
+        [`RDDMSClient.list_polylinesets`][rddms_io.client.RDDMSClient.list_polylinesets]:
+            The asynchronous version of this method.
+        """
+
+        async def list_polylinesets() -> list[Resource]:
+            async with rddms_connect(**self.connection_args) as rddms_client:
+                return await rddms_client.list_polylinesets(
+                    dataspace_uri=dataspace_uri,
+                    store_last_write_filter=store_last_write_filter,
+                )
+
+        return run_coroutine_sync(list_polylinesets())
+
     def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
