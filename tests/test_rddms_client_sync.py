@@ -133,6 +133,113 @@ def test_upload_and_download_surface() -> None:
     rddms_client.delete_dataspace(dataspace_path)
 
 
+def create_random_polyline_set() -> tuple[
+    tuple[
+        ro.obj_EpcExternalPartReference,
+        ro.obj_LocalDepth3dCrs,
+        ro.obj_PolylineSetRepresentation,
+    ],
+    dict[str, npt.NDArray[np.float64]],
+    list[npt.NDArray[np.float64]],
+    list[bool],
+]:
+    n_polylines = int(np.random.randint(2, 6))
+    node_counts_in = [int(np.random.randint(2, 8)) for _ in range(n_polylines)]
+    # Guarantee at least one differing length so node_count_per_polyline
+    # becomes an IntegerHdf5Array (and not an IntegerConstantArray).
+    if all(n == node_counts_in[0] for n in node_counts_in):
+        node_counts_in[0] = (
+            node_counts_in[0] + 1 if node_counts_in[0] < 7 else node_counts_in[0] - 1
+        )
+    polylines = [
+        np.random.rand(n, 3).astype(np.float64) * 1000.0 for n in node_counts_in
+    ]
+    closed_in = [bool(np.random.randint(0, 2)) for _ in range(n_polylines)]
+    # Guarantee at least one differing flag so closed becomes an Hdf5 array.
+    if all(c == closed_in[0] for c in closed_in):
+        closed_in[0] = not closed_in[0]
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(title="Random crs", originator="rddms-io-tester"),
+        vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=5715),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
+    )
+
+    pls, data_arrays = ro.obj_PolylineSetRepresentation.from_polylines(
+        citation=ro.Citation(title="Random polyline-set", originator="rddms-io-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        polylines=polylines,
+        closed=closed_in,
+        line_role=ro.LineRole.INTERPRETATION_LINE,
+    )
+
+    return (epc, crs, pls), data_arrays, polylines, closed_in
+
+
+@skip_decorator
+def test_upload_and_download_polyline_set() -> None:
+    (epc, crs, pls), data_arrays, polylines_in, closed_in = create_random_polyline_set()
+
+    rddms_client = RDDMSClientSync(uri=etp_server_url)
+
+    dataspace_path = "rddms-io-sync/test-upload-and-download-polyline-set"
+
+    rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
+    dataspaces = rddms_client.list_dataspaces()
+    assert dataspace_path in [d.path for d in dataspaces]
+
+    epc_uri, crs_uri, pls_uri = rddms_client.upload_model(
+        dataspace_uri=dataspace_path,
+        ml_objects=[epc, crs, pls],
+        data_arrays=data_arrays,
+        debounce=True,
+    )
+
+    resources = rddms_client.list_objects_under_dataspace(dataspace_path)
+    uris = [r.uri for r in resources]
+
+    assert epc_uri in uris
+    assert crs_uri in uris
+    assert pls_uri in uris
+
+    pls_lo = rddms_client.list_linked_objects(start_uri=pls_uri)
+    assert pls_uri == pls_lo.start_uri
+    assert crs_uri == pls_lo.target_edges[0].target_uri
+
+    ret_models = rddms_client.download_models(
+        ml_uris=[epc_uri, crs_uri, pls_uri],
+        download_arrays=True,
+        download_linked_objects=True,
+    )
+    assert ret_models[0].obj == epc
+    assert ret_models[1].obj == crs
+    assert ret_models[2].obj == pls
+    assert ret_models[2].linked_models[0].obj == crs
+
+    # The HDF5 payload should round-trip exactly for every path we uploaded.
+    for path, arr in data_arrays.items():
+        np.testing.assert_equal(ret_models[2].arrays[path], arr)
+
+    # Decode the patch back to (points, node_counts, closed) and confirm
+    # we recovered the original inputs.
+    pls_read = ret_models[2].obj
+    assert isinstance(pls_read, ro.obj_PolylineSetRepresentation)
+    points, node_counts, closed_out = pls_read.line_patch[0].decode(
+        ret_models[2].arrays
+    )
+    np.testing.assert_allclose(points, np.concatenate(polylines_in, axis=0))
+    assert node_counts.tolist() == [int(p.shape[0]) for p in polylines_in]
+    assert closed_out.tolist() == closed_in
+
+    rddms_client.delete_model(ml_uris=uris)
+    rddms_client.delete_dataspace(dataspace_path)
+
+
 @skip_decorator
 @pytest.mark.asyncio
 async def test_upload_and_download_surface_async() -> None:
