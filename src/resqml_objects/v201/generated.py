@@ -22958,8 +22958,11 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
 
         Walks the polyline-set's HDF5 geometry via ``patch.decode(arrays)``
         and resolves the CRS via ``crs._resolve_crs()``, emitting one
-        ``LineString`` Feature per polyline. Coordinates stay in the source
-        CRS
+        ``LineString`` Feature per polyline. When a ``crs`` is supplied, the
+        stored local-CRS coordinates are lifted into the CRS's projected frame
+        by adding ``crs.xoffset`` / ``crs.yoffset`` (the same translation the
+        surface path applies in ``get_regular_surface_parameters``), so the
+        emitted coordinates match the projected EPSG code in the ``crs`` block.
 
         Parameters
         ----------
@@ -22993,11 +22996,17 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
                 "type": "name",
                 "properties": {"name": crs_name, **block_props},
             }
+        x_offset = float(crs.xoffset) if crs is not None else 0.0
+        y_offset = float(crs.yoffset) if crs is not None else 0.0
 
         features: list[Any] = []
         polyline_index = 0
         for patch in self.line_patch:
             points, node_counts, closed = patch.decode(arrays)
+            if x_offset or y_offset:
+                points = points.astype(float, copy=True)
+                points[:, 0] += x_offset
+                points[:, 1] += y_offset
             cursor = 0
             for i_in_patch, n in enumerate(node_counts):
                 idx = polyline_index
