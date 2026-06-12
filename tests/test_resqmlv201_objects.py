@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import pytest
 from lxml import etree
+from xsdata.exceptions import ConverterError
 from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
@@ -738,3 +739,39 @@ def test_is_supported_regular_surface() -> None:
     populated = model.populate_data_references()
     assert isinstance(populated, ro.obj_Grid2dRepresentation)
     assert populated.is_supported_regular_surface() is True
+
+
+_MALFORMED_CITATION_XML = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b"<eml:Citation"
+    b' xmlns:eml="http://www.energistics.org/energyml/data/commonv2"'
+    b' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+    b' xsi:type="eml:Citation">'
+    b'<eml:Title xsi:type="xsd:string">fault</eml:Title>'
+    b'<eml:Originator xsi:type="xsd:string">test producer</eml:Originator>'
+    b'<eml:Format xsi:type="xsd:string">RESQML v2.0</eml:Format>'
+    b"</eml:Citation>"
+)
+
+
+def test_parser_auto_patches_missing_xsd_namespace_by_default() -> None:
+    """The parser should tolerate malformed RESQML that uses `xsd:` without
+    declaring `xmlns:xsd` — by injecting the declaration on the way in.
+    """
+    parsed = parse_resqml_v201_object(_MALFORMED_CITATION_XML)
+    assert isinstance(parsed, ro.Citation)
+    assert parsed.title == "fault"
+    assert parsed.originator == "test producer"
+
+
+def test_parser_can_be_made_strict_via_env_var(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Setting `PYETP_PATCH_MISSING_XSD_NAMESPACE=0` (or any falsy value)
+    disables the auto-patch — the strict xsdata behaviour returns and the
+    same malformed payload raises ConverterError.
+    """
+
+    monkeypatch.setenv("PYETP_PATCH_MISSING_XSD_NAMESPACE", "0")
+    with pytest.raises(ConverterError, match="Unknown namespace prefix"):
+        parse_resqml_v201_object(_MALFORMED_CITATION_XML)
