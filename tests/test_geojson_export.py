@@ -287,6 +287,48 @@ def test_resolve_crs_ow_style_name() -> None:
     assert info["name"] == "TEST_CRS_NAME_OW_STYLE"
 
 
+def test_polyline_set_applies_crs_xy_offset_to_coordinates() -> None:
+    """Local-CRS points must be lifted into the projected frame using the CRS
+    x/y offset, so faults line up with surfaces decoded via
+    ``get_regular_surface_parameters`` (which adds the same offset).
+    """
+    crs = get_random_crs(
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+        vertical_crs=ro.VerticalCrsEpsgCode(epsg_code=6230),
+    )
+    crs.xoffset = 420000.0
+    crs.yoffset = 6470000.0
+
+    points = np.array(
+        [
+            [13725.0, 9583.0, 3490.0],
+            [13700.0, 9500.0, 3490.0],
+            [13670.0, 9440.0, 3490.0],
+        ],
+        dtype=np.float64,
+    )
+    _, _, pls, arrays = get_random_polyline_set(crs=crs, node_counts=[3], points=points)
+
+    fc = polyline_set_to_geojson(pls, arrays, crs=crs)
+    coords = np.asarray(fc["features"][0]["geometry"]["coordinates"])
+
+    expected = points.copy()
+    expected[:, 0] += crs.xoffset
+    expected[:, 1] += crs.yoffset
+    np.testing.assert_allclose(coords, expected, atol=1e-6)
+
+
+def test_polyline_set_no_offset_leaves_coordinates_unchanged() -> None:
+    """A CRS with zero x/y offset (the default) must not move coordinates."""
+    points = np.array([[10.0, 20.0, 30.0], [11.0, 21.0, 31.0]], dtype=np.float64)
+    crs, _, pls, arrays = get_random_polyline_set(node_counts=[2], points=points)
+    assert crs.xoffset == 0.0 and crs.yoffset == 0.0
+
+    fc = polyline_set_to_geojson(pls, arrays, crs=crs)
+    coords = np.asarray(fc["features"][0]["geometry"]["coordinates"])
+    np.testing.assert_allclose(coords, points, atol=1e-9)
+
+
 # -----------------------------------------------------------------------------
 # Naive helpers — get_epsg_code / get_wkt / is_time_domain / is_depth_domain
 # -----------------------------------------------------------------------------
