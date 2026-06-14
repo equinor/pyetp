@@ -1,4 +1,4 @@
-import os
+from os import environ
 
 from lxml import etree
 from xsdata.exceptions import ConverterError
@@ -15,7 +15,7 @@ _XSI_DECL = b'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
 
 
 def _patch_missing_xsd_namespace_enabled() -> bool:
-    raw = os.environ.get(_PATCH_FLAG_ENV)
+    raw = environ.get(_PATCH_FLAG_ENV)
     if raw is None:
         return True
     return raw.strip().lower() not in {"0", "false", "no", "off", ""}
@@ -25,8 +25,7 @@ def _inject_xsd_namespace(raw_data: bytes) -> bytes:
     """Inject ``xmlns:xsd="..."`` into the root element by piggy-backing on
     the existing ``xmlns:xsi`` declaration.
 
-    Returns the bytes unchanged when there is nothing to patch (no ``xsi``
-    declaration to hook onto, or ``xsd`` is already declared).
+    Returns the bytes unchanged when there is nothing to patch
     """
 
     if _XSD_DECL in raw_data:
@@ -57,14 +56,15 @@ def _parse(raw_data: bytes) -> RO201Obj | RO201SubObj:
 
 
 def parse_resqml_v201_object(raw_data: bytes) -> RO201Obj | RO201SubObj:
+    """
+    Parse the RESQML object from raw bytes;  If a flag (env var) is not unset, we prevent
+       xsd namespace declaration errors by patching the raw XML data accordingly.
+       For performance reasons, the patching is done only when a ConverterError was thrown
+    """
     if not _patch_missing_xsd_namespace_enabled():
         return _parse(raw_data)
-
     try:
         return _parse(raw_data)
     except ConverterError:
         patched = _inject_xsd_namespace(raw_data)
-        if patched == raw_data:
-            # Nothing to patch — this is something different error, propagate it.
-            raise
         return _parse(patched)
