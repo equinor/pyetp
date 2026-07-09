@@ -270,6 +270,7 @@ async def test_list_linked_objects() -> None:
 
         assert gri_uri == gri_lo.start_uri
 
+        assert gri_lo.self_resource is not None
         assert gri_uri == gri_lo.self_resource.uri
         assert crs_uri in [r.uri for r in gri_lo.target_resources]
         assert gri_uri in [e.source_uri for e in gri_lo.target_edges]
@@ -294,6 +295,95 @@ async def test_list_linked_objects() -> None:
         assert len(resources) == 0
 
         # Delete the dataspace.
+        await rddms_client.delete_dataspace(dataspace_uri)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_list_linked_objects_self_populated_when_type_filter_excludes_self() -> (
+    None
+):
+    """`list_linked_objects` must always populate `self_resource`, even when the
+    `data_object_types` filter excludes the start object's own type.
+
+    The start object is fetched with a dedicated, unfiltered `SELF`-scoped
+    query, so a filter that only matches the linked objects (here the CRS) does
+    not drop self. This also used to crash with `RuntimeError: coroutine raised
+    StopIteration` before the start object was fetched separately.
+    """
+    crs, epc, gri, Z = get_random_surface()
+
+    dataspace_path = "rddms-io/test-list-linked-objects-type-filter"
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
+
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+        crs_uri, _, gri_uri = await rddms_client.upload_model(
+            dataspace_uri=dataspace_uri,
+            ml_objects=[crs, epc, gri],
+            data_arrays={
+                gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file: Z,
+            },
+        )
+
+        gri_lo = await rddms_client.list_linked_objects(
+            start_uri=gri_uri,
+            data_object_types=[ro.obj_LocalDepth3dCrs],
+        )
+
+        # Self is fetched separately, so it is populated despite the filter
+        # excluding the grid's own type.
+        assert gri_lo.self_resource is not None
+        assert gri_lo.self_resource.uri == gri_uri
+        # The linked CRS still comes through as a target.
+        assert crs_uri in [r.uri for r in gri_lo.target_resources]
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
+        await rddms_client.delete_model([r.uri for r in resources])
+        await rddms_client.delete_dataspace(dataspace_uri)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_list_linked_objects_type_filter_including_self() -> None:
+    crs, epc, gri, Z = get_random_surface()
+
+    dataspace_path = "rddms-io/test-list-linked-objects-type-filter-including-self"
+    dataspace_uri = str(DataspaceURI.from_any_etp_uri(dataspace_path))
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
+
+        assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+        assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+        crs_uri, _, gri_uri = await rddms_client.upload_model(
+            dataspace_uri=dataspace_uri,
+            ml_objects=[crs, epc, gri],
+            data_arrays={
+                gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file: Z,
+            },
+        )
+
+        gri_lo = await rddms_client.list_linked_objects(
+            start_uri=gri_uri,
+            data_object_types=[ro.obj_Grid2dRepresentation, ro.obj_Activity],
+        )
+
+        # Grid type is in the filter, so self_resource is populated.
+        assert gri_lo.self_resource is not None
+        assert gri_lo.self_resource.uri == gri_uri
+        # The Activity is a source of the grid, so it comes through as a source.
+        assert any("obj_Activity" in r.uri for r in gri_lo.source_resources)
+        # The CRS is a different type, so it's excluded from the results.
+        assert crs_uri not in [r.uri for r in gri_lo.target_resources]
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
+        await rddms_client.delete_model([r.uri for r in resources])
         await rddms_client.delete_dataspace(dataspace_uri)
 
 
