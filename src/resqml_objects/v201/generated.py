@@ -24849,6 +24849,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         boundaries = boundaries or []
         extra_metadata = extra_metadata or []
         aliases = aliases or []
+        uuid = str(uuid) if uuid is not None else str(uuid_lib.uuid4())
         path_in_hdf_file = path_in_hdf_file or f"/RESQML/{uuid}/zvalues"
 
         grid2d_patch = Grid2dPatch.from_regular_surface(
@@ -24867,7 +24868,7 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
             citation=citation,
             aliases=aliases,
             custom_data=custom_data,
-            uuid=(str(uuid) if uuid is not None else str(uuid_lib.uuid4())),
+            uuid=uuid,
             object_version=object_version,
             surface_role=surface_role,
             grid2d_patch=grid2d_patch,
