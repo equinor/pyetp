@@ -1,6 +1,7 @@
-import os
+from os import environ
 
 from lxml import etree
+from xsdata.exceptions import ConverterError
 from xsdata.formats.dataclass.models.generics import DerivedElement
 from xsdata.formats.dataclass.parsers import XmlParser
 
@@ -14,21 +15,20 @@ _XSI_DECL = b'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
 
 
 def _patch_missing_xsd_namespace_enabled() -> bool:
-    raw = os.environ.get(_PATCH_FLAG_ENV)
+    raw = environ.get(_PATCH_FLAG_ENV)
     if raw is None:
         return True
     return raw.strip().lower() not in {"0", "false", "no", "off", ""}
 
 
-def _inject_xsd_namespace_if_missing(raw_data: bytes) -> bytes:
-    """If the XML uses the ``xsd:`` prefix but never declares its
-    namespace, inject ``xmlns:xsd="..."`` into the root element.
+def _inject_xsd_namespace(raw_data: bytes) -> bytes:
+    """Inject ``xmlns:xsd="..."`` into the root element by piggy-backing on
+    the existing ``xmlns:xsi`` declaration.
 
-    Returns the bytes unchanged when no patch is needed (well-formed
-    documents are not disturbed).
+    Returns the bytes unchanged when there is nothing to patch
     """
 
-    if b"xsd:" not in raw_data or _XSD_DECL in raw_data[:5000]:
+    if _XSD_DECL in raw_data:
         return raw_data
 
     return raw_data.replace(
@@ -38,10 +38,7 @@ def _inject_xsd_namespace_if_missing(raw_data: bytes) -> bytes:
     )
 
 
-def parse_resqml_v201_object(raw_data: bytes) -> RO201Obj | RO201SubObj:
-    if _patch_missing_xsd_namespace_enabled():
-        raw_data = _inject_xsd_namespace_if_missing(raw_data)
-
+def _parse(raw_data: bytes) -> RO201Obj | RO201SubObj:
     parser = XmlParser()
 
     xml_obj = etree.fromstring(raw_data)
@@ -56,3 +53,18 @@ def parse_resqml_v201_object(raw_data: bytes) -> RO201Obj | RO201SubObj:
     )
 
     return ret_obj
+
+
+def parse_resqml_v201_object(raw_data: bytes) -> RO201Obj | RO201SubObj:
+    """
+    Parse the RESQML object from raw bytes;  If a flag (env var) is not unset, we prevent
+       xsd namespace declaration errors by patching the raw XML data accordingly.
+       For performance reasons, the patching is done only when a ConverterError was thrown
+    """
+    if not _patch_missing_xsd_namespace_enabled():
+        return _parse(raw_data)
+    try:
+        return _parse(raw_data)
+    except ConverterError:
+        patched = _inject_xsd_namespace(raw_data)
+        return _parse(patched)

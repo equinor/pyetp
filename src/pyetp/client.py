@@ -82,7 +82,9 @@ class ETPClient:
         # We need to add some slack to the array messages to handle the rest of
         # the message body. This size is a guess! The only way to be absolutely
         # sure is to encode the message, and then check if it is too large.
-        self.max_array_size_margin = 3000
+        # 3000 was too small a margin; we saw an error for an array chunk that came to
+        # within 3216 bytes of the max_message_size
+        self.max_array_size_margin = 4096
 
         self.message_id = 2
 
@@ -643,7 +645,7 @@ class etp_connect:
         data_partition_id: str = "",
         authorization: str | SecretStr = "",
         etp_timeout: float | None = None,
-        max_message_size: int = 2**20,
+        max_message_size: int = 8 * 2**20,
         use_compression: bool = True,
     ) -> None:
         self.uri = uri

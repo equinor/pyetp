@@ -652,7 +652,28 @@ class RDDMSClient:
             for r in typing.cast(GetResourcesResponse, grr).resources
         ]
 
-        self_resource = next(filter(lambda sr: sr.uri == start_uri, source_resources))
+        self_resource = next(
+            filter(lambda r: r.uri == start_uri, source_resources + target_resources),
+            None,
+        )
+        if self_resource is None:
+            gr_self = GetResources(
+                context=ContextInfo(
+                    uri=start_uri,
+                    depth=1,  # depth is required by contextInfo but is ignored when scope is "self"
+                    data_object_types=[],
+                    navigable_edges=RelationshipKind.PRIMARY,
+                ),
+                scope=ContextScopeKind.SELF,
+            )
+            self_responses = await self.etp_client.send_and_recv(gr_self)
+            (self_resource,) = [
+                r
+                for grr in self_responses
+                if isinstance(grr, GetResourcesResponse)
+                for r in grr.resources
+                if r.uri == start_uri
+            ]
 
         # Remove "self" from list of resources.
         source_resources = list(
