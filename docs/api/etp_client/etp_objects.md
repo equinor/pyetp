@@ -43,3 +43,8 @@ Documentation for ETP v1.2 is found here:
 ### Object
 
 ::: energistics.etp.v12.datatypes.object
+
+
+### Uris
+
+::: energistics.uris
