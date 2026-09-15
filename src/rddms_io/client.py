@@ -1026,7 +1026,7 @@ class RDDMSClient:
         ----------
         dataspace_uri
             An ETP dataspace uri or path. This can be a string or a
-            [`DataspaceURI`][pyetp.uri.DataspaceURI]-object.
+            [`DataspaceURI`][energistics.uris.DataspaceURI]-object.
         ml_object
             An instance of a RESQML-object.
 
