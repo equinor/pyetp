@@ -55,7 +55,7 @@ The [regular surface is set up](set_up_regular_surface.md) in exactly the same
 way as in the tutorial or the concurrent client:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py::37
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py::35
 --8<--
 ```
 The main difference is that instead of importing
@@ -71,13 +71,13 @@ therefore avoid wrapping the script in an asynchronous function.
 The connection parameters are given by:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:39:42
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:37:40
 --8<--
 ```
 And we can then create an instance of the client via:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:44:46
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:42:44
 --8<--
 ```
 The parameters are identical to the ones passed to
@@ -93,7 +93,7 @@ The parameters are identical to the ones in the concurrent counterpart,
 [`RDDMSClient.create_dataspace`][rddms_io.client.RDDMSClient.create_dataspace].
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:48:55
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:46:53
 --8<--
 ```
 ??? Info "Inner workings of `RDDMSClientSync`"
@@ -124,7 +124,7 @@ similarly to how it is done in the [previous
 tutorial](using_the_rddms_client.md#uploading-the-surface).
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:60:66
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:58:64
 --8<--
 ```
 
@@ -134,7 +134,7 @@ We can search using [`RDDMSClientSync`][rddms_io.sync_client.RDDMSClientSync]
 in the same way we did the concurrent client.
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:68:74
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:66:72
 --8<--
 ```
 See the [previous
@@ -148,7 +148,7 @@ We download the surface using
 [`RDDMSClientSync.download_models`][rddms_io.sync_client.RDDMSClientSync].
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:76:80
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:74:78
 --8<--
 ```
 As we only asked for a single uri (the `gri_lo.start_uri`) in the
@@ -157,7 +157,7 @@ As we only asked for a single uri (the `gri_lo.start_uri`) in the
 The `obj_Grid2dRepresentation`-object is then found via:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:84:85
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:82:83
 --8<--
 ```
 Since we used the flags `download_arrays=True` and
@@ -170,13 +170,13 @@ excluded from being added to the `RDDMSModel.linked_models`), and to get it we
 run:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:95:95
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:93:93
 --8<--
 ```
 The array is found using the `path_in_hdf_file` from the grid-object:
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:96:98
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:94:96
 --8<--
 ```
 
@@ -185,7 +185,7 @@ Here as in the previous tutorial we end by deleting all the objects and then
 delete the dataspace.
 ```python
 --8<--
-examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:104:106
+examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:102:104
 --8<--
 ```
 
