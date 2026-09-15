@@ -153,7 +153,7 @@ See the previous section for what these should be set to if the server is set
 up in the cloud.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:42:52
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:42:50
 --8<--
 ```
 The variable `#!python dataspace_path = "rddms_io/demo"` corresponds to the
@@ -180,7 +180,7 @@ We use [`rddms_connect`][rddms_io.client.rddms_connect] as a context manager
 using `#!python async with` to connect to the RDDMS server, viz.:
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:54:58
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:52:56
 --8<--
 ```
 where `rddms_client` is an instance of
@@ -191,7 +191,7 @@ Having connected we can create our dataspace using the method
 
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:59:66
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:57:64
 --8<--
 ```
 
@@ -216,7 +216,7 @@ and pass in the `dataspace_path`, a list of the three objects, and a dictionary
 `path_in_hdf_file` for the surface array and the array as the value.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:75:81
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:73:79
 --8<--
 ```
 
@@ -250,7 +250,7 @@ The method
 applies this kind of search.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:83:83
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:81:81
 --8<--
 ```
 An example output using `#!python rich.print` on the results gives:
@@ -277,7 +277,7 @@ Below is an example where we search for all `obj_Grid2dRepresentation`-objects
 under our dataspace.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:85:88
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:83:86
 --8<--
 ```
 Printing the `gri_resources` we get a description of the `gri`-object that we
@@ -343,7 +343,7 @@ Using the method
 we can get an overview on how an object links to its sources and targets.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:90:92
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:88:90
 --8<--
 ```
 In this case we fetch the grid-uri from the `gri_resources` from the call to
@@ -377,7 +377,7 @@ will optionally download any connected arrays and any referenced objects (the
 method only looks for targets one level down).
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:94:98
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:92:96
 --8<--
 ```
 The returned object is an instance of
@@ -396,7 +396,7 @@ To do that we list all objects under the dataspace, delete these objects, and
 then delete the dataspace.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:124:128
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:122:126
 --8<--
 ```
 
@@ -411,7 +411,7 @@ The `#!python main`-function ends by returning objects that are used as example
 output in this notebook.
 ```python
 --8<--
-examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:133:133
+examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:128:128
 --8<--
 ```
 To run the function in a script you need to call `#!python
