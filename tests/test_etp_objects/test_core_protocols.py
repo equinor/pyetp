@@ -157,7 +157,7 @@ def test_pong() -> None:
 
 
 def test_protocol_exception() -> None:
-    pe = ProtocolException(error=dict(message="foo", code=1))
+    pe = ProtocolException(error={"message": "foo", "code": 1})
 
     assert pe._protocol == energistics.base.Protocol.CORE
     assert pe._message_type == 1000
@@ -173,8 +173,8 @@ def test_protocol_exception() -> None:
         ProtocolException(error=None)
     with pytest.raises(pydantic.ValidationError):
         ProtocolException(
-            error=dict(message="foo", code=2),
-            errors={"bar": dict(message="bar", code=3)},
+            error={"message": "foo", "code": 2},
+            errors={"bar": {"message": "bar", "code": 3}},
         )
 
 

@@ -94,7 +94,7 @@ class RequestSession(energistics.base.ETPBaseProtocolModel):
         alias="currentDateTime",
         default_factory=lambda: int(
             # Return the current (UTC) time in microseconds
-            datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6
+            datetime.datetime.now(datetime.UTC).timestamp() * 1e6
         ),
     )
     # This field is only set by stores

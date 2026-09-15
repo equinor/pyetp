@@ -45,5 +45,5 @@ class GetDataspacesResponse(energistics.base.ETPBaseProtocolModel):
             try:
                 valid.append(Dataspace.model_validate(raw))
             except ValueError as e:
-                logger.warning(f"Dataspace failed validation: {str(e)}")
+                logger.warning(f"Dataspace failed validation: {e!s}")
         return valid

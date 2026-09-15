@@ -37,14 +37,14 @@ def get_random_crs(
     test needs a specific CRS shape (e.g. EPSG-in-extra-metadata).
     """
 
-    base_kwargs: dict[str, Any] = dict(
-        citation=ro.Citation(title=title, originator="geojson-tester"),
-        projected_crs=projected_crs
+    base_kwargs: dict[str, Any] = {
+        "citation": ro.Citation(title=title, originator="geojson-tester"),
+        "projected_crs": projected_crs
         or ro.ProjectedUnknownCrs(unknown="No EPSG code specified"),
-        vertical_crs=vertical_crs
+        "vertical_crs": vertical_crs
         or ro.VerticalUnknownCrs(unknown="No EPSG code specified"),
-        vertical_uom=ro.LengthUom.M,
-    )
+        "vertical_uom": ro.LengthUom.M,
+    }
     if extra_metadata is not None:
         base_kwargs["extra_metadata"] = extra_metadata
 

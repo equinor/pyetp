@@ -8,8 +8,8 @@ DType = typing.TypeVar("DType", bound=np.float32 | np.float64)
 
 
 def rotate_2d_vector(
-    r: typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))], angle: float
-) -> typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))]:
+    r: typing.Annotated[npt.NDArray[DType], {"shape": (2, None)}], angle: float
+) -> typing.Annotated[npt.NDArray[DType], {"shape": (2, None)}]:
     """
     Function used to rotate a set of `N` 2d-vectors stacked in an array of
     shape `(2, N)` by an angle `angle` (in radians) counter-clockwise. This
@@ -37,7 +37,7 @@ def rotate_2d_vector(
     c = np.cos(angle / 2.0)
     s = np.sin(angle / 2.0)
 
-    rotated_vectors: typing.Annotated[npt.NDArray[DType], dict(shape=(2, None))] = (
+    rotated_vectors: typing.Annotated[npt.NDArray[DType], {"shape": (2, None)}] = (
         c**2 - s**2
     ) * r + 2 * c * s * np.stack([-r[1], r[0]])
     return rotated_vectors
@@ -45,7 +45,7 @@ def rotate_2d_vector(
 
 def angle_to_unit_vectors(
     angle: float,
-) -> typing.Annotated[npt.NDArray[np.float64], dict(shape=(2, 2))]:
+) -> typing.Annotated[npt.NDArray[np.float64], {"shape": (2, 2)}]:
     """
     Function that constructs a pair of orthonormal unit vectors from an angle
     (in radians), where the first unit vector (the `x`-direction) is rotated
@@ -70,7 +70,7 @@ def angle_to_unit_vectors(
 
 
 def unit_vectors_to_angle(
-    unit_vectors: typing.Annotated[npt.NDArray[DType], dict(shape=(2, 2))],
+    unit_vectors: typing.Annotated[npt.NDArray[DType], {"shape": (2, 2)}],
 ) -> float:
     """
     Function returning the angle (in radians) from the `x`-axis (i.e., the
@@ -167,10 +167,10 @@ class RegularGridParameters(typing.Generic[DType]):
     """
 
     shape: tuple[int, int]
-    origin: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
-    spacing: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
-    unit_vectors: typing.Annotated[npt.NDArray[DType], dict(shape=(2, 2))]
-    crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))]
+    origin: typing.Annotated[npt.NDArray[DType], {"shape": (2,)}]
+    spacing: typing.Annotated[npt.NDArray[DType], {"shape": (2,)}]
+    unit_vectors: typing.Annotated[npt.NDArray[DType], {"shape": (2, 2)}]
+    crs_offset: typing.Annotated[npt.NDArray[DType], {"shape": (2,)}]
     crs_angle: float = 0.0
     # crs_offset: typing.Annotated[npt.NDArray[DType], dict(shape=(2,))] | None = None
 

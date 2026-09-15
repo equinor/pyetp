@@ -100,9 +100,7 @@ class RDDMSClientSync:
         max_message_size: int = 2**20,
         use_compression: bool = True,
     ) -> None:
-        if isinstance(authorization, SecretStr):
-            authorization = authorization
-        else:
+        if not isinstance(authorization, SecretStr):
             authorization = SecretStr(authorization)
 
         class ConnectionArguments(typing.TypedDict):
@@ -125,10 +123,10 @@ class RDDMSClientSync:
     def create_dataspace(
         self,
         dataspace_uri: str | DataspaceURI,
-        legal_tags: list[str] = [],
-        other_relevant_data_countries: list[str] = [],
-        owners: list[str] = [],
-        viewers: list[str] = [],
+        legal_tags: list[str] | None = None,
+        other_relevant_data_countries: list[str] | None = None,
+        owners: list[str] | None = None,
+        viewers: list[str] | None = None,
         ignore_if_exists: bool = False,
     ) -> None:
         """
@@ -143,14 +141,17 @@ class RDDMSClientSync:
             path (on the form `'foo/bar'`) it will be converted to the
             dataspace uri `"eml:///dataspace('foo/bar')"`.
         legal_tags
-            List of legal tag strings for the ACL. The default is an empty
-            list.
+            List of legal tag strings for the ACL. The default is `None`
+            resulting in an empty list.
         other_relevant_data_countries
-            List of data countries for the ACL. The default is an empty list.
+            List of data countries for the ACL. The default is `None` resulting
+            in an empty list.
         owners
-            List of owners ACL. The default is an empty list.
+            List of owners ACL. The default is `None` resulting in an empty
+            list.
         viewers
-            List of viewers ACL. The default is an empty list.
+            List of viewers ACL. The default is `None` resulting in an empty
+            list.
         ignore_if_exists
             When `True` the method silently ignores any `ETPError` with error
             code `5` (`EINVALID_ARGUMENT`). This error occurs if the dataspace
@@ -237,7 +238,7 @@ class RDDMSClientSync:
     def list_objects_under_dataspace(
         self,
         dataspace_uri: DataspaceURI | str,
-        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | type[ro.AbstractCitedDataObject]] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
     ) -> list[Resource]:
@@ -292,7 +293,7 @@ class RDDMSClientSync:
     def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | type[ro.AbstractCitedDataObject]] = [],
         store_last_write_filter: datetime.datetime | int | None = None,
         depth: int = 1,
     ) -> LinkedObjects:

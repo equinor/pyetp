@@ -91,9 +91,7 @@ _INV_ANY_ARRAY_TYPE_MAP: dict[
 }
 
 
-_ANY_ARRAY_MAP: dict[
-    AnyArrayType, typing.Type[ETPBasicArrayType] | typing.Type[bytes]
-] = {
+_ANY_ARRAY_MAP: dict[AnyArrayType, type[ETPBasicArrayType] | type[bytes]] = {
     AnyArrayType.ARRAY_OF_FLOAT: ArrayOfFloat,
     AnyArrayType.ARRAY_OF_DOUBLE: ArrayOfDouble,
     AnyArrayType.ARRAY_OF_INT: ArrayOfInt,
@@ -103,9 +101,9 @@ _ANY_ARRAY_MAP: dict[
     AnyArrayType.BYTES: bytes,
 }
 
-_INV_ANY_ARRAY_MAP: dict[
-    typing.Type[ETPBasicArrayType] | typing.Type[bytes], AnyArrayType
-] = {v: k for k, v in _ANY_ARRAY_MAP.items()}
+_INV_ANY_ARRAY_MAP: dict[type[ETPBasicArrayType] | type[bytes], AnyArrayType] = {
+    v: k for k, v in _ANY_ARRAY_MAP.items()
+}
 
 
 class LogicalArrayTypeMapping:
@@ -178,7 +176,7 @@ class TransportArrayTypeMapping:
     @staticmethod
     def get_etp_array_class(
         dtype: ETPNumpyArrayDType,
-    ) -> typing.Type[ETPBasicArrayType] | typing.Type[bytes]:
+    ) -> type[ETPBasicArrayType] | type[bytes]:
         array_type = TransportArrayTypeMapping.get_etp_array_type(dtype)
         return _ANY_ARRAY_MAP[array_type]
 
@@ -210,17 +208,11 @@ class TransportArrayTypeMapping:
 
         if array.dtype == np.dtype(np.uint8):
             return np.dtype(np.int8)
-        elif array.dtype == np.dtype("<u2"):
+        elif array.dtype == np.dtype("<u2") or array.dtype == np.dtype(">u2"):
             return np.dtype("<i2")
-        elif array.dtype == np.dtype(">u2"):
-            return np.dtype("<i2")
-        elif array.dtype == np.dtype("<u4"):
+        elif array.dtype == np.dtype("<u4") or array.dtype == np.dtype(">u4"):
             return np.dtype("<i4")
-        elif array.dtype == np.dtype(">u4"):
-            return np.dtype("<i4")
-        elif array.dtype == np.dtype("<u8"):
-            return np.dtype("<i8")
-        elif array.dtype == np.dtype(">u8"):
+        elif array.dtype == np.dtype("<u8") or array.dtype == np.dtype(">u8"):
             return np.dtype("<i8")
         elif array.dtype.type is str:
             return np.dtype(np.str_)

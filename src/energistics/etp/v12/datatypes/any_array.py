@@ -22,7 +22,7 @@ def serialize_item(item: ETPBasicArrayType) -> typing.Any:
     return item
 
 
-cls_list: list[typing.Type[ETPBasicArrayType]] = [
+cls_list: list[type[ETPBasicArrayType]] = [
     ArrayOfBoolean,
     ArrayOfInt,
     ArrayOfLong,
@@ -32,9 +32,7 @@ cls_list: list[typing.Type[ETPBasicArrayType]] = [
 ]
 
 
-validator_map: dict[str, typing.Type[ETPBasicArrayType]] = {
-    c.full_name: c for c in cls_list
-}
+validator_map: dict[str, type[ETPBasicArrayType]] = {c.full_name: c for c in cls_list}
 
 
 def validate_item(item: typing.Any) -> typing.Any:

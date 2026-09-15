@@ -27,7 +27,7 @@ class AuthorizeResponse(energistics.base.ETPBaseProtocolModel):
     success: bool
     challenges: list[str] = Field(default_factory=list)
 
-    def model_post_init(self, __context: typing.Any) -> None:
+    def model_post_init(self, context: typing.Any, /) -> None:
         if self.success and self.challenges:
             # This is not permitted according to the ETP v1.2 spec, but it
             # might be ignored in the wild and so possibly this should be a

@@ -69,7 +69,7 @@ class DataArray(energistics.base.ETPBaseModel):
         # Here `array_cls` can not be `bytes`, but we need to explicitly cast
         # it to any of the ETP-array types for the static type checker.
         assert array_cls is not bytes
-        array_cls = typing.cast(typing.Type[ETPBasicArrayType], array_cls)
+        array_cls = typing.cast(type[ETPBasicArrayType], array_cls)
 
         return cls(
             dimensions=data_array.shape,

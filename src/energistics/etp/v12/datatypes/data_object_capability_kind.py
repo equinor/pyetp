@@ -1,5 +1,4 @@
 import enum
-import typing
 
 import energistics.base
 
@@ -32,7 +31,7 @@ class DataObjectCapabilityKind(enum.StrEnum):
     SUPPORTS_DELETE = "SupportsDelete"
     MAX_SECONDARY_INDEX_COUNT = "MaxSecondaryIndexCount"
 
-    def get_valid_type(self) -> typing.Type[bool | int]:
+    def get_valid_type(self) -> type[bool | int]:
         if self in [
             DataObjectCapabilityKind.ORPHANED_CHILDREN_PRUNED_ON_DELETE,
             DataObjectCapabilityKind.SUPPORTS_GET,

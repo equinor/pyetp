@@ -1,5 +1,4 @@
 import enum
-import typing
 
 import energistics.base
 from energistics.etp.v12.datatypes.array_of_string import ArrayOfString
@@ -55,7 +54,7 @@ class EndpointCapabilityKind(enum.StrEnum):
     # Extra option for the open-etp-server
     MAX_MESSAGE_PAYLOAD_UNCOMPRESSED_SIZE = "MaxMessagePayloadUncompressedSize"
 
-    def get_valid_type(self) -> typing.Type[bool | int | ArrayOfString]:
+    def get_valid_type(self) -> type[bool | int | ArrayOfString]:
         match self:
             case EndpointCapabilityKind.AUTHORIZATION_DETAILS:
                 return ArrayOfString

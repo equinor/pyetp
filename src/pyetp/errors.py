@@ -8,9 +8,7 @@ class ETPTransactionFailure(Exception):
 T = typing.TypeVar("T")
 
 
-def parse_response_errors(
-    responses: list[T], expected: typing.Type[T]
-) -> list[TypeError]:
+def parse_response_errors(responses: list[T], expected: type[T]) -> list[TypeError]:
     errors = []
     for response in responses:
         if not isinstance(response, expected):
@@ -33,7 +31,7 @@ def raise_response_errors(errors: list[TypeError], location: str) -> None:
 
 
 def parse_and_raise_response_errors(
-    responses: list[T], expected: typing.Type[T], location: str
+    responses: list[T], expected: type[T], location: str
 ) -> None:
     errors = parse_response_errors(responses, expected)
     raise_response_errors(errors, location)

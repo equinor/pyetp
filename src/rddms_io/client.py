@@ -217,21 +217,19 @@ class RDDMSClient:
             "RDDMSClient.delete_dataspace",
         )
         assert any(
-            [
-                # Cast `response` to `DeleteDataspacesResponse`. This has been
-                # checked with `parse_and_raise_response_errors` above.
-                dataspace_uri in typing.cast(DeleteDataspacesResponse, response).success
-                for response in responses
-            ]
+            # Cast `response` to `DeleteDataspacesResponse`. This has been
+            # checked with `parse_and_raise_response_errors` above.
+            dataspace_uri in typing.cast(DeleteDataspacesResponse, response).success
+            for response in responses
         )
 
     async def create_dataspace(
         self,
         dataspace_uri: str | DataspaceURI,
-        legal_tags: list[str] = [],
-        other_relevant_data_countries: list[str] = [],
-        owners: list[str] = [],
-        viewers: list[str] = [],
+        legal_tags: list[str] | None = None,
+        other_relevant_data_countries: list[str] | None = None,
+        owners: list[str] | None = None,
+        viewers: list[str] | None = None,
         ignore_if_exists: bool = False,
     ) -> None:
         """
@@ -246,14 +244,17 @@ class RDDMSClient:
             path (on the form `'foo/bar'`) it will be converted to the
             dataspace uri `"eml:///dataspace('foo/bar')"`.
         legal_tags
-            List of legal tag strings for the ACL. The default is an empty
-            list.
-        other_relevant_data_countries: list[str]
-            List of data countries for the ACL. The default is an empty list.
+            List of legal tag strings for the ACL. The default is `None`
+            resulting in an empty list.
+        other_relevant_data_countries
+            List of data countries for the ACL. The default is `None` resulting
+            in an empty list.
         owners
-            List of owners ACL. The default is an empty list.
+            List of owners ACL. The default is `None` resulting in an empty
+            list.
         viewers
-            List of viewers ACL. The default is an empty list.
+            List of viewers ACL. The default is `None` resulting in an empty
+            list.
         ignore_if_exists
             When `True` the method silently ignores any `ETPError` with error
             code `5` (`EINVALID_ARGUMENT`). This error occurs if the dataspace
@@ -263,9 +264,9 @@ class RDDMSClient:
         dataspace_uri = DataspaceURI.from_any_etp_uri(dataspace_uri)
 
         # A UTC timestamp in microseconds.
-        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
+        now = int(datetime.datetime.now(tz=datetime.UTC).timestamp() * 1e6)
 
-        def acl_parsing(acl_key: str, acl: list[str]) -> dict[str, DataValue]:
+        def acl_parsing(acl_key: str, acl: list[str] | None) -> dict[str, DataValue]:
             if not acl:
                 return {}
             return {acl_key: DataValue(item=ArrayOfString(values=acl))}
@@ -304,13 +305,11 @@ class RDDMSClient:
             responses, PutDataspacesResponse, "RDDMSClient.create_dataspace"
         )
         assert any(
-            [
-                str(dataspace_uri)
-                # Cast `response` to `PutDataspacesResponse`. This has been
-                # checked with `parse_and_raise_response_errors` above.
-                in typing.cast(PutDataspacesResponse, response).success
-                for response in responses
-            ]
+            str(dataspace_uri)
+            # Cast `response` to `PutDataspacesResponse`. This has been
+            # checked with `parse_and_raise_response_errors` above.
+            in typing.cast(PutDataspacesResponse, response).success
+            for response in responses
         )
 
     async def start_transaction(
@@ -460,7 +459,7 @@ class RDDMSClient:
     async def list_objects_under_dataspace(
         self,
         dataspace_uri: DataspaceURI | str,
-        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | type[ro.AbstractCitedDataObject]] = [],
         count_objects: bool = True,
         store_last_write_filter: int | None = None,
     ) -> list[Resource]:
@@ -533,7 +532,7 @@ class RDDMSClient:
     async def list_linked_objects(
         self,
         start_uri: DataObjectURI | str,
-        data_object_types: Sequence[str | typing.Type[ro.AbstractCitedDataObject]] = [],
+        data_object_types: Sequence[str | type[ro.AbstractCitedDataObject]] = [],
         store_last_write_filter: datetime.datetime | int | None = None,
         depth: int = 1,
     ) -> LinkedObjects:
@@ -896,7 +895,7 @@ class RDDMSClient:
         )
 
         # Get current time as a UTC-timestamp.
-        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
+        now = int(datetime.datetime.now(tz=datetime.UTC).timestamp() * 1e6)
 
         # Allocate space on server for the array.
         responses = await self.etp_client.send_and_recv(
@@ -1328,7 +1327,7 @@ class RDDMSClient:
         assert chunk_size > 0
         blob_id = str(uuid.uuid4())
 
-        dob_key = list(pdo.data_objects)[0]
+        dob_key = next(iter(pdo.data_objects))
         dob = pdo.data_objects[dob_key]
         data = dob.data
 
@@ -1367,7 +1366,7 @@ class RDDMSClient:
         )
 
         # A UTC timestamp in microseconds.
-        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
+        now = int(datetime.datetime.now(tz=datetime.UTC).timestamp() * 1e6)
 
         ml_uris = []
         ml_hds = []
@@ -1551,7 +1550,7 @@ class RDDMSClient:
         gdor = responses.pop(0)
         assert isinstance(gdor, GetDataObjectsResponse)
         assert len(gdor.data_objects) == 1
-        dob_key = list(gdor.data_objects)[0]
+        dob_key = next(iter(gdor.data_objects))
         dob = gdor.data_objects[dob_key]
         assert len(dob.data) == 0
         blob_id = dob.blob_id
@@ -1567,8 +1566,8 @@ class RDDMSClient:
 
         # The returned `Chunk`-messages are sorted based on the message id in
         # the header (see `ETPClient.__receiver_loop`).
-        assert all([isinstance(r, Chunk) for r in responses])
-        assert all([typing.cast(Chunk, r).blob_id == blob_id for r in responses])
+        assert all(isinstance(r, Chunk) for r in responses)
+        assert all(typing.cast(Chunk, r).blob_id == blob_id for r in responses)
         assert typing.cast(Chunk, responses[-1]).final
 
         gdor.data_objects[dob_key].blob_id = None
@@ -1697,7 +1696,7 @@ class RDDMSClient:
 
         if handle_transaction:
             dataspace_uris = [str(DataspaceURI.from_any_etp_uri(u)) for u in ml_uris]
-            assert all([dataspace_uris[0] == du for du in dataspace_uris])
+            assert all(dataspace_uris[0] == du for du in dataspace_uris)
             transaction_uuid = await self.start_transaction(
                 dataspace_uri=dataspace_uris[0], read_only=False, debounce=debounce
             )
@@ -1837,7 +1836,7 @@ class rddms_connect:
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] | None,
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:

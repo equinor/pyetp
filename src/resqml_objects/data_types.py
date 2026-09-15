@@ -6,7 +6,7 @@ import numpy.typing as npt
 
 class RegularSurfaceParameters(typing.NamedTuple):
     shape: tuple[int, int]
-    origin: typing.Annotated[npt.NDArray[np.float64], dict(shape=(2,))]
-    spacing: typing.Annotated[npt.NDArray[np.float64], dict(shape=(2,))]
+    origin: typing.Annotated[npt.NDArray[np.float64], {"shape": (2,)}]
+    spacing: typing.Annotated[npt.NDArray[np.float64], {"shape": (2,)}]
     angle: float
-    yflip: typing.Optional[bool] = False
+    yflip: bool | None = False

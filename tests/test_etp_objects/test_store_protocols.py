@@ -179,7 +179,7 @@ def test_delete_data_objects_response() -> None:
     ret_ddor = avro_roundtrip(ddor)
     assert isinstance(ret_ddor, DeleteDataObjectsResponse)
 
-    for k, v in ddor.deleted_uris.items():
+    for k in ddor.deleted_uris:
         assert k in ret_ddor.deleted_uris
         np.testing.assert_equal(
             ddor.deleted_uris[k].values, ret_ddor.deleted_uris[k].values

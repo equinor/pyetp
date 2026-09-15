@@ -53,6 +53,7 @@ __all__ = [
     "Contact",
     "DataObjectCapabilityKind",
     "DataValue",
+    "EndpointCapabilityKind",
     "ErrorCode",
     "ErrorInfo",
     "MessageHeader",
@@ -62,5 +63,4 @@ __all__ = [
     "SupportedProtocol",
     "Uuid",
     "Version",
-    "EndpointCapabilityKind",
 ]

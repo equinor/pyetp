@@ -41,7 +41,7 @@ class ProtocolException(energistics.base.ETPBaseProtocolModel):
     error: ErrorInfo | None
     errors: typing.Mapping[str, ErrorInfo] = Field(default_factory=dict)
 
-    def model_post_init(self, __context: typing.Any) -> None:
+    def model_post_init(self, context: typing.Any, /) -> None:
         if self.error is None and not self.errors:
             raise ValueError("No error-fields were populated")
         if self.error is not None and self.errors:

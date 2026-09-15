@@ -17,12 +17,12 @@ class MetaObj(typing.Protocol):
 
 class RO201SubObj(typing.Protocol):
     @property
-    def Meta(self) -> typing.Type[MetaSub]: ...
+    def Meta(self) -> type[MetaSub]: ...
 
 
 class RO201Obj(typing.Protocol):
     @property
-    def Meta(self) -> typing.Type[MetaObj]: ...
+    def Meta(self) -> type[MetaObj]: ...
 
 
 def serialize_resqml_v201_object(
