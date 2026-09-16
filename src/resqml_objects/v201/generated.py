@@ -13614,6 +13614,31 @@ class AbstractBooleanArray(AbstractValueArray):
             f"Unsupported AbstractBooleanArray subclass: {type(self).__name__}"
         )
 
+    @classmethod
+    def from_numpy(
+        cls,
+        values: "npt.NDArray[Any]",
+        epc_external_part_reference: "obj_EpcExternalPartReference",
+        path_in_hdf_file: str,
+    ) -> "AbstractBooleanArray":
+        """Build the most efficient ``AbstractBooleanArray`` subclass for
+        ``values``:
+
+        - All identical → ``BooleanConstantArray`` (no HDF storage needed).
+        - Mixed values → ``BooleanHdf5Array`` referencing ``path_in_hdf_file``;
+          the caller is responsible for putting the actual array there in the
+          ``data_arrays`` dict.
+        """
+        arr = np.asarray(values, dtype=np.bool_).ravel()
+        if arr.size > 0 and bool(np.all(arr == arr[0])):
+            return BooleanConstantArray(value=bool(arr[0]), count=int(arr.size))
+        return BooleanHdf5Array(
+            values=Hdf5Dataset(
+                path_in_hdf_file=path_in_hdf_file,
+                hdf_proxy=DataObjectReference.from_object(epc_external_part_reference),
+            ),
+        )
+
 
 @dataclass(slots=True, kw_only=True)
 class AbstractContactInterpretationPart:
@@ -13696,6 +13721,33 @@ class AbstractIntegerArray(AbstractValueArray):
         """
         raise TypeError(
             f"Unsupported AbstractIntegerArray subclass: {type(self).__name__}"
+        )
+
+    @classmethod
+    def from_numpy(
+        cls,
+        values: "npt.NDArray[Any]",
+        epc_external_part_reference: "obj_EpcExternalPartReference",
+        path_in_hdf_file: str,
+        null_value: int = 2_147_483_647,
+    ) -> "AbstractIntegerArray":
+        """Build the most efficient ``AbstractIntegerArray`` subclass for
+        ``values``:
+
+        - All identical → ``IntegerConstantArray`` (no HDF storage needed).
+        - Mixed values → ``IntegerHdf5Array`` referencing ``path_in_hdf_file``;
+          the caller is responsible for putting the actual array there in the
+          ``data_arrays`` dict.
+        """
+        arr = np.asarray(values).ravel()
+        if arr.size > 0 and bool(np.all(arr == arr[0])):
+            return IntegerConstantArray(value=int(arr[0]), count=int(arr.size))
+        return IntegerHdf5Array(
+            null_value=null_value,
+            values=Hdf5Dataset(
+                path_in_hdf_file=path_in_hdf_file,
+                hdf_proxy=DataObjectReference.from_object(epc_external_part_reference),
+            ),
         )
 
 
@@ -17131,6 +17183,24 @@ class Point3dHdf5Array(AbstractPoint3dArray):
         }
     )
 
+    @classmethod
+    def _from_path(
+        cls,
+        epc_external_part_reference: "obj_EpcExternalPartReference",
+        path_in_hdf_file: str,
+    ) -> Self:
+        """Build a ``Point3dHdf5Array`` referencing the HDF5 dataset at
+        ``path_in_hdf_file`` inside the file owned by the given EPC.
+        The caller is expected to populate the actual ``(N, 3) float64``
+        array at this path in the ``data_arrays`` dict.
+        """
+        return cls(
+            coordinates=Hdf5Dataset(
+                path_in_hdf_file=path_in_hdf_file,
+                hdf_proxy=DataObjectReference.from_object(epc_external_part_reference),
+            ),
+        )
+
     @override
     def _load_numpy(
         self, arrays: dict[str, npt.NDArray[Any]]
@@ -19039,6 +19109,27 @@ class PointGeometry(AbstractGeometry):
 
         return cls(local_crs=local_crs, points=points)
 
+    @classmethod
+    def from_polyline_points(
+        cls,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        points_path_in_hdf_file: str,
+    ) -> Self:
+        """Build a ``PointGeometry`` for a polyline-set whose points live as
+        an HDF5 ``(N_total, 3)`` array at ``points_path_in_hdf_file``.
+
+        Delegates the inner ``Point3dHdf5Array`` construction to
+        ``Point3dHdf5Array._from_path``.
+        """
+        return cls(
+            local_crs=DataObjectReference.from_object(crs),
+            points=Point3dHdf5Array._from_path(
+                epc_external_part_reference=epc_external_part_reference,
+                path_in_hdf_file=points_path_in_hdf_file,
+            ),
+        )
+
 
 @dataclass(slots=True, kw_only=True)
 class Regrid:
@@ -20800,6 +20891,87 @@ class PolylineSetPatch(Patch):
             "required": True,
         }
     )
+
+    @classmethod
+    def from_polylines(
+        cls,
+        crs: "AbstractLocal3dCrs",
+        epc_external_part_reference: "obj_EpcExternalPartReference",
+        polylines: list[npt.NDArray[np.float64]],
+        closed: bool | list[bool] = False,
+        patch_index: int = 0,
+        *,
+        points_path_in_hdf_file: str,
+        node_counts_path_in_hdf_file: str,
+        closed_path_in_hdf_file: str,
+    ) -> "tuple[Self, dict[str, npt.NDArray[Any]]]":
+        """Build a ``PolylineSetPatch`` from a list of polyline coordinate
+        arrays.
+
+        Computes the per-polyline node counts and closed flags, delegates the
+        array-class selection (``Constant`` vs ``Hdf5``) to
+        ``AbstractIntegerArray.from_numpy`` and ``AbstractBooleanArray.from_numpy``,
+        and delegates the geometry to ``PointGeometry.from_polyline_points``.
+
+        Returns the patch AND a dict of ``hdf5_path -> numpy_array`` containing
+        only the arrays that actually need HDF storage (the points array always;
+        node-counts and closed only when not uniform).
+        """
+        if not polylines:
+            raise ValueError("polylines must contain at least one polyline")
+        for i, p in enumerate(polylines):
+            if p.ndim != 2 or p.shape[1] != 3:
+                raise ValueError(
+                    f"polylines[{i}] must have shape (N, 3); got {p.shape}"
+                )
+
+        n_polylines = len(polylines)
+        node_counts_arr = np.array([int(p.shape[0]) for p in polylines], dtype=np.int64)
+
+        if isinstance(closed, bool):
+            closed_arr = np.full(n_polylines, closed, dtype=np.bool_)
+        else:
+            if len(closed) != n_polylines:
+                raise ValueError(
+                    f"closed must have length {n_polylines}; got {len(closed)}"
+                )
+            closed_arr = np.array(closed, dtype=np.bool_)
+
+        data_arrays: dict[str, npt.NDArray[Any]] = {}
+
+        node_count_array = AbstractIntegerArray.from_numpy(
+            values=node_counts_arr,
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=node_counts_path_in_hdf_file,
+        )
+        if isinstance(node_count_array, IntegerHdf5Array):
+            data_arrays[node_counts_path_in_hdf_file] = node_counts_arr
+
+        closed_array = AbstractBooleanArray.from_numpy(
+            values=closed_arr,
+            epc_external_part_reference=epc_external_part_reference,
+            path_in_hdf_file=closed_path_in_hdf_file,
+        )
+        if isinstance(closed_array, BooleanHdf5Array):
+            data_arrays[closed_path_in_hdf_file] = closed_arr
+
+        data_arrays[points_path_in_hdf_file] = np.concatenate(polylines, axis=0).astype(
+            np.float64
+        )
+
+        geometry = PointGeometry.from_polyline_points(
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            points_path_in_hdf_file=points_path_in_hdf_file,
+        )
+
+        patch = cls(
+            patch_index=patch_index,
+            closed_polylines=closed_array,
+            node_count_per_polyline=node_count_array,
+            geometry=geometry,
+        )
+        return patch, data_arrays
 
     def decode(
         self,
@@ -22673,6 +22845,106 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
             "min_occurs": 1,
         },
     )
+
+    @classmethod
+    def from_polylines(
+        cls,
+        citation: Citation,
+        crs: AbstractLocal3dCrs,
+        epc_external_part_reference: obj_EpcExternalPartReference,
+        polylines: list[npt.NDArray[np.float64]],
+        closed: bool | list[bool] = False,
+        line_role: LineRole | str | None = None,
+        patch_index: int = 0,
+        uuid: str | uuid_lib.UUID | None = None,
+        represented_interpretation: AbstractFeatureInterpretation | None = None,
+        extra_metadata: list[NameValuePair] | None = None,
+        custom_data: CustomData | None = None,
+        object_version: str | None = None,
+        aliases: list[ObjectAlias] | None = None,
+    ) -> "tuple[Self, dict[str, npt.NDArray[Any]]]":
+        """Build a fully-wired ``obj_PolylineSetRepresentation`` from a list
+        of polyline coordinate arrays.
+
+        Delegates the patch construction (geometry + node-counts + closed
+        flags) to ``PolylineSetPatch.from_polylines``, which in turn
+        delegates to ``PointGeometry.from_polyline_points``,
+        ``AbstractIntegerArray.from_numpy``, and
+        ``AbstractBooleanArray.from_numpy``.
+
+        Parameters
+        ----------
+        citation
+            Citation metadata for the polyline-set.
+        crs
+            A linked
+            [`AbstractLocal3dCrs`][resqml_objects.v201.generated.AbstractLocal3dCrs]
+            (e.g. ``obj_LocalDepth3dCrs``).
+        epc_external_part_reference
+            A linked
+            [`obj_EpcExternalPartReference`][resqml_objects.v201.generated.obj_EpcExternalPartReference]
+            — owns the HDF5 file where geometry is stored.
+        polylines
+            List of ``(N_i, 3)`` ``float64`` arrays, one per polyline, with
+            ``(X, Y, Z)`` coordinates per row.
+        closed
+            ``True``/``False`` for all polylines, OR a list of bools — one per
+            polyline. Default ``False`` (open, typical for fault sticks).
+        line_role
+            Optional ``LineRole`` enum or its string value.
+        patch_index
+            Index of the single emitted ``PolylineSetPatch``. Default ``0``.
+        uuid
+            Optional explicit UUID for the polyline-set; auto-generated if
+            absent.
+
+        Returns
+        -------
+        (obj_PolylineSetRepresentation, data_arrays)
+            ``data_arrays`` is a dict of ``hdf5_path -> numpy array`` ready to
+            hand to ``client.upload_model(..., data_arrays=...)``.
+
+        Notes
+        -----
+        HDF5 paths default to ``/RESQML/<uuid>/{points, node_counts, closed}``.
+        Callers needing explicit path control (e.g. for overwriting an
+        existing RDDMS object with non-default paths) should drop down to
+        ``PolylineSetPatch.from_polylines`` directly, which accepts the
+        three path arguments explicitly.
+        """
+        uuid_str = str(uuid if uuid is not None else uuid_lib.uuid4())
+
+        patch, data_arrays = PolylineSetPatch.from_polylines(
+            crs=crs,
+            epc_external_part_reference=epc_external_part_reference,
+            polylines=polylines,
+            closed=closed,
+            patch_index=patch_index,
+            points_path_in_hdf_file=f"/RESQML/{uuid_str}/points",
+            node_counts_path_in_hdf_file=f"/RESQML/{uuid_str}/node_counts",
+            closed_path_in_hdf_file=f"/RESQML/{uuid_str}/closed",
+        )
+
+        resolved_role: LineRole | None = (
+            LineRole(line_role) if line_role is not None else None
+        )
+
+        pls = cls(
+            citation=citation,
+            aliases=aliases or [],
+            custom_data=custom_data,
+            uuid=uuid_str,
+            object_version=object_version,
+            line_role=resolved_role,
+            line_patch=[patch],
+            represented_interpretation=(
+                None
+                if represented_interpretation is None
+                else DataObjectReference.from_object(represented_interpretation)
+            ),
+            extra_metadata=extra_metadata or [],
+        )
+        return pls, data_arrays
 
     def get_geojson(
         self,
