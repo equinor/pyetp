@@ -2,7 +2,7 @@ import pathlib
 
 import rich
 
-from using_the_rddms_client import dataspaces, gri_resources, gri_lo
+from using_the_rddms_client import dataspaces, gri_lo, gri_resources
 
 p = pathlib.Path("examples") / "tutorials" / "using_the_rddms_client"
 width = 200

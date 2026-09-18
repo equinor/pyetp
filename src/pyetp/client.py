@@ -118,7 +118,7 @@ class ETPClient:
             self.supported_compression = [GzipCompression]
         else:
             self.supported_compression = []
-        self.negotiated_compression: T.Type[CompressionAlgorithm] | None = None
+        self.negotiated_compression: type[CompressionAlgorithm] | None = None
         self.supported_formats = ["xml"]
 
         self.endpoint_capabilities = {
@@ -128,10 +128,8 @@ class ETPClient:
         }
 
         self._recv_events: dict[int, asyncio.Event] = {}
-        self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(
-            lambda: list()
-        )
-        self._recv_headers: dict[int, list[MessageHeader]] = defaultdict(lambda: list())
+        self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(list)
+        self._recv_headers: dict[int, list[MessageHeader]] = defaultdict(list)
 
         if etp_timeout is not None and etp_timeout < 10:
             logger.warning(
@@ -440,8 +438,7 @@ class ETPClient:
             assert isinstance(dv.item, int)
             server_max_size = dv.item
 
-        if server_max_size < self.max_size:
-            self.max_size = server_max_size
+        self.max_size = min(self.max_size, server_max_size)
 
         if len(os.endpoint_capabilities) > 0:
             logger.info(
@@ -453,7 +450,7 @@ class ETPClient:
 
     async def __aexit__(
         self,
-        exc_type: T.Type[BaseException] | None,
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
@@ -702,7 +699,7 @@ class etp_connect:
 
     async def __aexit__(
         self,
-        exc_type: T.Type[BaseException] | None,
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:

@@ -1,13 +1,11 @@
 import datetime
 
 import numpy as np
-
 import resqml_objects.v201 as ro
-
 
 originator = "<name/username/email>"
 
-creation = datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)
+creation = datetime.datetime(2026, 1, 2, 3, 4, 5, tzinfo=datetime.UTC)
 
 epc_uuid = "d53c9c04-e83a-4ad7-87fc-567a0dd5e660"
 crs_uuid = "dbe0e6ba-1ea6-4dd7-b541-9c4c14c16f62"

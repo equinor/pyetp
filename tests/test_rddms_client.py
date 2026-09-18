@@ -450,7 +450,7 @@ async def test_list_array_metadata() -> None:
         )
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
-        ret_crs, ret_epc, ret_gri_1, ret_gri_2 = await rddms_client.download_models(
+        ret_crs, ret_epc, _ret_gri_1, _ret_gri_2 = await rddms_client.download_models(
             ml_uris=[crs_uri, epc_uri, gri_1_uri, gri_2_uri],
             download_arrays=False,
         )
@@ -653,7 +653,7 @@ async def test_partial_deletion() -> None:
         resource_uris = [r.uri for r in resources]
 
         # Verify that all source objects (including the grid) has been deleted.
-        assert all([su not in resource_uris for su in source_uris])
+        assert all(su not in resource_uris for su in source_uris)
 
         gri_2_lo = await rddms_client.list_linked_objects(
             start_uri=gri_2_uri,
@@ -748,7 +748,7 @@ async def test_debouncing() -> None:
             task_2.cancel()
             # Check that we get a `EMAX_TRANSACTIONS_EXCEEDED` error code.
             assert e.code == 15
-            raise e
+            raise
 
     # Test a transaction failure when the debouncing time is too short.
     task_1 = asyncio.create_task(task(debounce=1.0, sleep_time=10))
@@ -922,8 +922,8 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
         k: v.astype(original_dtypes[k]) for k, v in ret_data_arrays.items()
     }
 
-    for k in casted_ret_data_arrays:
-        np.testing.assert_equal(casted_ret_data_arrays[k], casted_data_arrays[k])
+    for k, crda in casted_ret_data_arrays.items():
+        np.testing.assert_equal(crda, casted_data_arrays[k])
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         # Clean-up code. Remove all objects, arrays and the dataspace.

@@ -1,12 +1,10 @@
 import asyncio
 
 import numpy as np
-
-from rddms_io import rddms_connect
 import resqml_objects.v201 as ro
-
-from rddms_io.data_types import LinkedObjects
 from energistics.etp.v12.datatypes.object import Dataspace, Resource
+from rddms_io import rddms_connect
+from rddms_io.data_types import LinkedObjects
 
 z = np.random.random((101, 103))
 origin = np.array([10.0, 11.0])

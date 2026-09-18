@@ -27,6 +27,6 @@ class Ping(energistics.base.ETPBaseProtocolModel):
         alias="currentDateTime",
         default_factory=lambda: int(
             # Return the current (UTC) time in microseconds
-            datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6
+            datetime.datetime.now(datetime.UTC).timestamp() * 1e6
         ),
     )

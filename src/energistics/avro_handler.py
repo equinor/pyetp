@@ -54,13 +54,13 @@ PROTOCOLS = [
 
 PROTOCOLS_MAP: dict[
     tuple[energistics.base.Protocol, int],
-    typing.Type[energistics.base.ETPBaseProtocolModel],
+    type[energistics.base.ETPBaseProtocolModel],
 ] = {(p._protocol, p._message_type): p for p in PROTOCOLS}
 
 
 def get_schema_class(
     protocol: energistics.base.Protocol, message_type: int
-) -> typing.Type[energistics.base.ETPBaseProtocolModel]:
+) -> type[energistics.base.ETPBaseProtocolModel]:
 
     if message_type == 1000:
         return energistics.etp.v12.protocol.core.ProtocolException

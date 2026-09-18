@@ -27,7 +27,7 @@ def test_get_dataspaces() -> None:
 
 
 def test_get_dataspaces_response() -> None:
-    now_stamp = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
+    now_stamp = int(datetime.datetime.now(datetime.UTC).timestamp() * 1e6)
     path = "foo/bar"
     uri = f"eml:///dataspace('{path}')"
 
@@ -51,7 +51,7 @@ def test_get_dataspaces_response() -> None:
 
 
 def test_put_dataspaces() -> None:
-    now_stamp = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1e6)
+    now_stamp = int(datetime.datetime.now(datetime.UTC).timestamp() * 1e6)
     path = "foo/bar"
     uri = f"eml:///dataspace('{path}')"
 
@@ -75,7 +75,7 @@ def test_put_dataspaces() -> None:
 
 
 def test_put_dataspaces_response() -> None:
-    pdr = PutDataspacesResponse(success=dict(foo="", bar=""))
+    pdr = PutDataspacesResponse(success={"foo": "", "bar": ""})
 
     assert pdr._protocol == energistics.base.Protocol.DATASPACE
     assert pdr._message_type == 6
@@ -110,7 +110,7 @@ def test_delete_dataspaces() -> None:
 
 
 def test_delete_dataspaces_response() -> None:
-    ddr = DeleteDataspacesResponse(success=dict(foo="", bar=""))
+    ddr = DeleteDataspacesResponse(success={"foo": "", "bar": ""})
 
     assert ddr._protocol == energistics.base.Protocol.DATASPACE
     assert ddr._message_type == 5

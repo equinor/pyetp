@@ -1,8 +1,6 @@
 import numpy as np
-
-from rddms_io import RDDMSClientSync
 import resqml_objects.v201 as ro
-
+from rddms_io import RDDMSClientSync
 
 z = np.random.random((101, 103))
 origin = np.array([10.0, 11.0])

@@ -2,13 +2,11 @@ import pathlib
 
 import rich
 from lxml import etree
-
 from resqml_objects.serializers import (
     serialize_resqml_v201_object,
 )
 
-from set_up_regular_surface import epc, crs, gri
-
+from set_up_regular_surface import crs, epc, gri
 
 p = pathlib.Path("examples") / "tutorials" / "set_up_regular_surface"
 width = 120

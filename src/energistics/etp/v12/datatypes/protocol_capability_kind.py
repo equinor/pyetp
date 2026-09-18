@@ -1,5 +1,4 @@
 import enum
-import typing
 
 import energistics.base
 
@@ -42,7 +41,7 @@ class ProtocolCapabilityKind(enum.StrEnum):
     SUPPORTS_SECONDARY_INDEX_FILTERING = "SupportsSecondaryIndexFiltering"
     TRANSACTION_TIMOUT_PERIOD = "TransactionTimeoutPeriod"
 
-    def get_valid_type(self) -> typing.Type[bool | int]:
+    def get_valid_type(self) -> type[bool | int]:
         if self == ProtocolCapabilityKind.SUPPORTS_SECONDARY_INDEX_FILTERING:
             return bool
         return int

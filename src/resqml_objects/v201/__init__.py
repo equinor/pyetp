@@ -926,6 +926,7 @@ from .generated import (
 )
 
 __all__ = [
+    "URL",
     "APIGammaRayMeasure",
     "APIGammaRayUom",
     "APIGravityMeasure",
@@ -1661,7 +1662,6 @@ __all__ = [
     "TruncatedIjkGridRepresentation",
     "TruncatedUnstructuredColumnLayerGridRepresentation",
     "TruncationCellPatch",
-    "URL",
     "URL_PropertyType",
     "UniformSubnodePatch",
     "UnstructuredColumnEdges",

@@ -23,7 +23,7 @@ class DeleteDataspaces(energistics.base.ETPBaseProtocolModel):
 
     uris: typing.Mapping[str, str]
 
-    def model_post_init(self, __context: typing.Any) -> None:
+    def model_post_init(self, context: typing.Any, /) -> None:
         errors = []
         for k, uri in self.uris.items():
             m = re.match(energistics.uris.DATASPACE_URI_PATTERN, uri)

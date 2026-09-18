@@ -75,14 +75,14 @@ If not specified the `creation`-field in the
 set to a random `#!python str(uuid.uuid4())`-value.
 ```python
 --8<--
-examples/tutorials/set_up_regular_surface/set_up_regular_surface.py::14
+examples/tutorials/set_up_regular_surface/set_up_regular_surface.py::13
 --8<--
 ```
 The first object we set up is the
 [`obj_EpcExternalPartReference`][resqml_objects.v201.generated.obj_EpcExternalPartReference]-object.
 ```python
 --8<--
-examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:16:23
+examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:14:21
 --8<--
 ```
 
@@ -116,7 +116,7 @@ global coordinate system, we choose our first axis to describe _eastings_ and
 our second axis _northings_, and let the $z$-axis point downwards.
 ```python
 --8<--
-examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:25:34
+examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:23:32
 --8<--
 ```
 In this example we have chosen a nondescript `"Mean sea level"` for the
@@ -211,7 +211,7 @@ angle_ or a pair of _orthonormal vectors_.
 In this example we set up a random height map `z` and coordinates defined by
 ```python
 --8<--
-examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:36:40
+examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:34:38
 --8<--
 ```
 This describes a regular surface with $101 \times 103$ elements, that has its
@@ -264,7 +264,7 @@ to set up the RESQML-object.
 This method is opinionated in choosing a specific set of RESQML array types.
 ```python
 --8<--
-examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:42:56
+examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:40:54
 --8<--
 ```
 
@@ -299,7 +299,7 @@ from the representation of the `obj_Grid2dRepresentation` described above, and
 a given local coordinate system, viz.,
 ```python
 --8<--
-examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:58:58
+examples/tutorials/set_up_regular_surface/set_up_regular_surface.py:56:56
 --8<--
 ```
 This method is limited to the specific set of array types shown in the

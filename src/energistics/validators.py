@@ -57,7 +57,7 @@ def get_masked_array_validator(
             )
 
         # Find nulled out values (assuming Python 'None').
-        mask = obj_values == None  # noqa: E711
+        mask = obj_values == None
         # Set these values to zero to allow coercion into the right dtype.
         obj_values[mask] = 0
 

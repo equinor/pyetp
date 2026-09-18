@@ -204,7 +204,7 @@ def test_supported_protocol() -> None:
 
 
 def test_dataspace() -> None:
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     now_stamp = int(now.timestamp() * 1e6)
 
     path = "foo/bar"
@@ -221,9 +221,7 @@ def test_dataspace() -> None:
     assert ret_ds == ds
     assert isinstance(ret_ds, Dataspace)
     assert (
-        datetime.datetime.fromtimestamp(
-            ret_ds.store_last_write / 1e6, tz=datetime.timezone.utc
-        )
+        datetime.datetime.fromtimestamp(ret_ds.store_last_write / 1e6, tz=datetime.UTC)
         == now
     )
 

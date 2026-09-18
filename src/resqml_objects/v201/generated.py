@@ -14,7 +14,7 @@ import uuid as uuid_lib
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Annotated, Any, Self, Type
+from typing import Annotated, Any, Self
 
 import geojson  # type: ignore[import-untyped]
 import numpy as np
@@ -765,7 +765,7 @@ class Citation:
     )
     creation: XmlDateTime | datetime.datetime = field(
         default_factory=lambda: XmlDateTime.from_datetime(
-            datetime.datetime.now(datetime.timezone.utc)
+            datetime.datetime.now(datetime.UTC)
         ),
         metadata={
             "name": "Creation",
@@ -949,7 +949,7 @@ class DataObjectReference:
 
     @staticmethod
     def get_content_type_string(
-        obj: AbstractCitedDataObject | Type[AbstractCitedDataObject],
+        obj: AbstractCitedDataObject | type[AbstractCitedDataObject],
     ) -> str:
         """
         Static method constructing a RESQML v2.0.1 or EML v2.0 content type
@@ -986,9 +986,7 @@ class DataObjectReference:
         if not isinstance(obj, type):
             obj = type(obj)
 
-        namespace = getattr(obj.Meta, "namespace", None) or getattr(
-            obj.Meta, "target_namespace"
-        )
+        namespace = getattr(obj.Meta, "namespace", None) or obj.Meta.target_namespace
 
         if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
             return (
@@ -6499,9 +6497,7 @@ class AbstractPoint3dArray:
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    def to_numpy(
-        self, arrays: dict[str, npt.NDArray[Any]]
-    ) -> "npt.NDArray[np.float64]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.float64]:
         """Decode this 3D-point array to an ``(N, 3)`` float64 array.
 
         Subclasses provide the actual load; this base then enforces the
@@ -6517,7 +6513,7 @@ class AbstractPoint3dArray:
 
     def _load_numpy(
         self, arrays: dict[str, npt.NDArray[Any]]
-    ) -> "npt.NDArray[np.float64]":
+    ) -> npt.NDArray[np.float64]:
         raise NotImplementedError(
             f"3D-point array type {type(self).__name__} is not supported "
             f"(only Point3dHdf5Array)."
@@ -10286,8 +10282,8 @@ class AbstractObject_1:
 
     def __post_init__(self) -> None:
         if not self.schema_version:
-            namespace = getattr(self.Meta, "namespace", None) or getattr(
-                self.Meta, "target_namespace"
+            namespace = (
+                getattr(self.Meta, "namespace", None) or self.Meta.target_namespace
             )
 
             if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
@@ -10303,9 +10299,7 @@ class AbstractObject_1:
 
     @classmethod
     def get_domain_version(cls) -> str:
-        namespace = getattr(cls.Meta, "namespace", None) or getattr(
-            cls.Meta, "target_namespace"
-        )
+        namespace = getattr(cls.Meta, "namespace", None) or cls.Meta.target_namespace
 
         if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
             return "resqml20"
@@ -13605,7 +13599,7 @@ class AbstractBooleanArray(AbstractValueArray):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.bool_]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.bool_]:
         """Decode this boolean array to a flat ``bool`` numpy array.
 
         Subclasses override.
@@ -13689,7 +13683,7 @@ class AbstractIntegerArray(AbstractValueArray):
     class Meta:
         target_namespace = "http://www.energistics.org/energyml/data/resqmlv2"
 
-    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.int64]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.int64]:
         """Decode this integer array to a flat ``int64`` numpy array.
 
         Subclasses override.
@@ -15819,7 +15813,7 @@ class BooleanConstantArray(AbstractBooleanArray):
     )
 
     @override
-    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.bool_]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.bool_]:
         return np.full(int(self.count), bool(self.value), dtype=np.bool_)
 
 
@@ -15847,7 +15841,7 @@ class BooleanHdf5Array(AbstractBooleanArray):
     )
 
     @override
-    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.bool_]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.bool_]:
         path = self.values.path_in_hdf_file
         if path not in arrays:
             raise KeyError(
@@ -16493,7 +16487,7 @@ class IntegerConstantArray(AbstractIntegerArray):
     )
 
     @override
-    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.int64]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.int64]:
         return np.full(int(self.count), int(self.value), dtype=np.int64)
 
 
@@ -16532,7 +16526,7 @@ class IntegerHdf5Array(AbstractIntegerArray):
     )
 
     @override
-    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> "npt.NDArray[np.int64]":
+    def to_numpy(self, arrays: dict[str, npt.NDArray[Any]]) -> npt.NDArray[np.int64]:
         path = self.values.path_in_hdf_file
         if path not in arrays:
             raise KeyError(
@@ -17134,7 +17128,7 @@ class Point3dHdf5Array(AbstractPoint3dArray):
     @override
     def _load_numpy(
         self, arrays: dict[str, npt.NDArray[Any]]
-    ) -> "npt.NDArray[np.float64]":
+    ) -> npt.NDArray[np.float64]:
         path = self.coordinates.path_in_hdf_file
         if path not in arrays:
             raise KeyError(
@@ -17300,10 +17294,10 @@ class Point3dZValueArray(AbstractPoint3dArray):
         epc_external_part_reference: obj_EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
-        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        origin: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        spacing: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
     ) -> Self:
         supporting_geometry = Point3dLatticeArray(
             origin=Point3d(
@@ -19020,10 +19014,10 @@ class PointGeometry(AbstractGeometry):
         epc_external_part_reference: obj_EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
-        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        origin: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        spacing: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
     ) -> Self:
         local_crs = DataObjectReference.from_object(crs)
 
@@ -20414,10 +20408,10 @@ class Grid2dPatch(Patch):
         epc_external_part_reference: obj_EpcExternalPartReference,
         path_in_hdf_file: str,
         shape: tuple[int, int],
-        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        origin: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        spacing: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
         patch_index: int = 0,
     ) -> Self:
         geometry = PointGeometry.from_regular_surface(
@@ -20804,7 +20798,7 @@ class PolylineSetPatch(Patch):
     def decode(
         self,
         arrays: dict[str, npt.NDArray[Any]],
-    ) -> "tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.bool_]]":
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.bool_]]:
         """Decode this patch's HDF5 geometry into ``(points, node_counts, closed)``.
 
         - ``points``: ``(N, 3)`` float64 — concatenated XYZ for every polyline.
@@ -22677,7 +22671,7 @@ class obj_PolylineSetRepresentation(AbstractRepresentation):
     def get_geojson(
         self,
         arrays: dict[str, npt.NDArray[Any]],
-        crs: "AbstractLocal3dCrs | None" = None,
+        crs: AbstractLocal3dCrs | None = None,
         *,
         extra_properties: dict[str, Any] | None = None,
         name: str | None = None,
@@ -24761,8 +24755,8 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         crs: AbstractLocal3dCrs,
         epc_external_part_reference: obj_EpcExternalPartReference,
         shape: tuple[int, int],
-        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        origin: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        spacing: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
         angle: float,
         patch_index: int = 0,
         path_in_hdf_file: str = "",
@@ -24819,10 +24813,10 @@ class obj_Grid2dRepresentation(AbstractSurfaceRepresentation):
         crs: AbstractLocal3dCrs,
         epc_external_part_reference: obj_EpcExternalPartReference,
         shape: tuple[int, int],
-        origin: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        spacing: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_1: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
-        unit_vec_2: Annotated[npt.NDArray[np.float64], dict(shape=(2,))],
+        origin: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        spacing: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_1: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
+        unit_vec_2: Annotated[npt.NDArray[np.float64], {"shape": (2,)}],
         patch_index: int = 0,
         path_in_hdf_file: str = "",
         uuid: str | uuid_lib.UUID | None = None,

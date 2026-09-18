@@ -36,7 +36,7 @@ def test_default_citation() -> None:
 
     _, _ = compare_serialization_parsing_roundtrip(cit)
 
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(tz=datetime.UTC)
     cit = ro.Citation(title="foo", originator="pyetp-tester", creation=now)
 
     assert isinstance(cit.creation, XmlDateTime)
@@ -55,8 +55,8 @@ def test_default_hdf5_epc_external_part_reference() -> None:
 
     assert dataclasses.asdict(epc) == dataclasses.asdict(obj_epc)
 
-    ret_epc, epc_b_ = compare_serialization_parsing_roundtrip(epc)
-    ret_obj_epc, obj_epc_b = compare_serialization_parsing_roundtrip(obj_epc)
+    _ret_epc, _epc_b = compare_serialization_parsing_roundtrip(epc)
+    _ret_obj_epc, obj_epc_b = compare_serialization_parsing_roundtrip(obj_epc)
 
     xml_obj = etree.fromstring(obj_epc_b)
     xsi_type_key = "{http://www.w3.org/2001/XMLSchema-instance}type"
@@ -90,7 +90,7 @@ def test_default_hdf5_epc_external_part_reference() -> None:
 
 
 def test_timestamp() -> None:
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(tz=datetime.UTC)
     timestamp = ro.Timestamp(date_time=now)
 
     assert isinstance(timestamp.date_time, XmlDateTime)
@@ -101,7 +101,7 @@ def test_timestamp() -> None:
 
 
 def test_datetime() -> None:
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(tz=datetime.UTC)
     dt = ro.DateTime(value=now)
 
     assert isinstance(dt.value, XmlDateTime)
@@ -121,7 +121,7 @@ def test_local_depth_3d_crs() -> None:
 
     assert crs.schema_version == "2.0.1"
 
-    ret_crs, crs_b = compare_serialization_parsing_roundtrip(crs)
+    ret_crs, _crs_b = compare_serialization_parsing_roundtrip(crs)
 
     assert crs == ret_crs
 

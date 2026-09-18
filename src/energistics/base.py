@@ -81,7 +81,7 @@ def get_avro_schema_from_class(cls_full_name: str) -> AvroSchemaType:
         # We store the avro schemas in the module, not the enums themselves.
         return typing.cast(
             AvroSchemaType,
-            getattr(importlib.import_module(path), "_avro_schema"),
+            importlib.import_module(path)._avro_schema,
         )
     return typing.cast(AvroSchemaType, cls._avro_schema)
 
@@ -89,9 +89,12 @@ def get_avro_schema_from_class(cls_full_name: str) -> AvroSchemaType:
 def serialize_avro_schema(
     prev_serialized: list[str], schema: AvroSchemaValues | AvroSchemaType
 ) -> tuple[AvroSchemaValues | AvroSchemaType, list[str]]:
-    if isinstance(schema, dict):
-        if "fullName" in schema and schema["fullName"] in prev_serialized:
-            return schema["fullName"], prev_serialized
+    if (
+        isinstance(schema, dict)
+        and "fullName" in schema
+        and schema["fullName"] in prev_serialized
+    ):
+        return schema["fullName"], prev_serialized
 
     if isinstance(schema, bool | int | float | None):
         return schema, prev_serialized
@@ -125,7 +128,7 @@ def serialize_avro_schema(
             new_schema[k] = v
 
         elif isinstance(v, list):
-            new_schema[k] = list()
+            new_schema[k] = []
             for i in range(len(v)):
                 ret_schema, prev_serialized = serialize_avro_schema(
                     prev_serialized,

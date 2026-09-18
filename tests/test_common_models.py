@@ -31,7 +31,7 @@ def test_regular_surface_depth_model() -> None:
     vertical_epsg_code = 1234
     projected_epsg_code = 23456
 
-    ml_objects, data_arrays = RegularSurfaceModels.get_depth_model(
+    ml_objects, _data_arrays = RegularSurfaceModels.get_depth_model(
         originator=originator,
         title=title,
         origin=origin,

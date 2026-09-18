@@ -9,11 +9,11 @@ from resqml_objects.surface_helpers import rotate_2d_vector
 
 Vec2D: typing.TypeAlias = typing.Annotated[
     npt.NDArray[np.float64],
-    dict(shape=(2,)),
+    {"shape": (2,)},
 ]
 SurfaceArrayType: typing.TypeAlias = typing.Annotated[
     npt.NDArray[np.float64],
-    dict(shape=(None, None)),
+    {"shape": (None, None)},
 ]
 
 

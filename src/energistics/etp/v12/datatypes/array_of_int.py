@@ -9,15 +9,13 @@ from energistics.serializers import get_array_serializer
 
 
 def validate_array(values: typing.Any) -> typing.Any:
-    if isinstance(values, np.ndarray):
-        if (
-            not issubclass(values.dtype.type, np.signedinteger)
-            or values.dtype.itemsize > 4
-        ):
-            raise ValueError(
-                f"Got array with dtype '{values.dtype}', expected a dtype of "
-                f"'np.int8', 'np.int16' or 'np.int32'"
-            )
+    if isinstance(values, np.ndarray) and (
+        not issubclass(values.dtype.type, np.signedinteger) or values.dtype.itemsize > 4
+    ):
+        raise ValueError(
+            f"Got array with dtype '{values.dtype}', expected a dtype of "
+            f"'np.int8', 'np.int16' or 'np.int32'"
+        )
 
     varr = np.array(values, dtype=np.int32)
 

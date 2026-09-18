@@ -35,7 +35,7 @@ def serialize_item(item: ItemType) -> typing.Any:
     return item
 
 
-cls_list: list[typing.Type[ETPExtendedArrayType]] = [
+cls_list: list[type[ETPExtendedArrayType]] = [
     ArrayOfBoolean,
     ArrayOfNullableBoolean,
     ArrayOfInt,
@@ -50,7 +50,7 @@ cls_list: list[typing.Type[ETPExtendedArrayType]] = [
 ]
 
 
-validator_map: dict[str, typing.Type[ETPExtendedArrayType]] = {
+validator_map: dict[str, type[ETPExtendedArrayType]] = {
     c.full_name: c for c in cls_list
 }
 
