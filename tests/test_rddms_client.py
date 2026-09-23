@@ -766,10 +766,9 @@ async def test_debouncing() -> None:
     task_2.cancel()
 
     # Test working debouncing.
-    task_1 = asyncio.create_task(task(debounce=True, sleep_time=1.0))
-    task_2 = asyncio.create_task(task(debounce=True, sleep_time=1.0))
-
-    await asyncio.gather(task_1, task_2)
+    async with asyncio.TaskGroup() as tg:
+        task_1 = tg.create_task(task(debounce=True, sleep_time=1.0))
+        task_2 = tg.create_task(task(debounce=True, sleep_time=1.0))
 
     # Check that both tasks completed successfully.
     assert task_1.done() and task_2.done()
@@ -816,11 +815,10 @@ async def test_debouncing_on_upload() -> None:
                 debounce=True,
             )
 
-    task_1 = asyncio.create_task(task(crs=crs_1, epc=epc_1, gri=gri_1, Z=Z_1))
-    task_2 = asyncio.create_task(task(crs=crs_2, epc=epc_2, gri=gri_2, Z=Z_2))
-    task_3 = asyncio.create_task(task(crs=crs_3, epc=epc_3, gri=gri_3, Z=Z_3))
-
-    await asyncio.gather(task_1, task_2, task_3)
+    async with asyncio.TaskGroup() as tg:
+        task_1 = tg.create_task(task(crs=crs_1, epc=epc_1, gri=gri_1, Z=Z_1))
+        task_2 = tg.create_task(task(crs=crs_2, epc=epc_2, gri=gri_2, Z=Z_2))
+        task_3 = tg.create_task(task(crs=crs_3, epc=epc_3, gri=gri_3, Z=Z_3))
 
     assert task_1.done() and task_2.done() and task_3.done()
 
