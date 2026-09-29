@@ -923,10 +923,6 @@ class RDDMSClient:
 
         # Check if we can upload the entire array in go, or if we need to
         # upload it in smaller blocks.
-
-        # TODO: Check if we should use `await` instead of `asyncio.gather`.
-        # This is to ensure that the websockets heartbeat gets to run once in a
-        # while.
         if data.nbytes > self.etp_client.max_array_size:
             tasks = []
 
@@ -936,26 +932,23 @@ class RDDMSClient:
                 data.shape, data.dtype, self.etp_client.max_array_size
             )
 
-            for starts, counts in zip(block_starts, block_counts):
-                # Create slice-objects for each block.
-                slices = tuple(
-                    map(
-                        lambda s, c: slice(s, s + c),
-                        np.array(starts).astype(int),
-                        np.array(counts).astype(int),
+            async with asyncio.TaskGroup() as tg:
+                for starts, counts in zip(block_starts, block_counts):
+                    # Create slice-objects for each block.
+                    slices = tuple(
+                        map(
+                            lambda s, c: slice(s, s + c),
+                            np.array(starts).astype(int),
+                            np.array(counts).astype(int),
+                        )
                     )
-                )
 
-                # Slice the array, and convert to the relevant ETP-array type.
-                # Note in the particular the extra `.data`-after the call. The
-                # data should not be of type `DataArray`, but `AnyArray`, so we
-                # need to fetch it from the `DataArray`.
-                etp_subarray_data = DataArray.from_numpy_array(data[slices]).data
-
-                # Create an asynchronous task to upload a block to the
-                # ETP-server.
-                task = self.etp_client.send_and_recv(
-                    PutDataSubarrays(
+                    # Slice the array, and convert to the relevant ETP-array type.
+                    # Note in particular the extra `.data`-after the call. The data
+                    # should not be of type `DataArray`, but `AnyArray`, so we need
+                    # to fetch it from the `DataArray`.
+                    etp_subarray_data = DataArray.from_numpy_array(data[slices]).data
+                    pdsa = PutDataSubarrays(
                         data_subarrays={
                             dai.path_in_resource: PutDataSubarraysType(
                                 uid=dai,
@@ -964,12 +957,15 @@ class RDDMSClient:
                                 counts=counts,
                             ),
                         },
-                    ),
-                )
-                tasks.append(task)
+                    )
 
-            # Upload all blocks.
-            task_responses = await asyncio.gather(*tasks)
+                    # Create an asynchronous task to upload a block to the
+                    # ETP-server.
+                    task = self.etp_client.send_and_recv(pdsa)
+                    tasks.append(tg.create_task(task))
+
+            # Collect all results from all blocks
+            task_responses = [t.result() for t in tasks]
 
             # Flatten list of responses.
             responses = [
