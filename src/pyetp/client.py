@@ -1,5 +1,8 @@
 import asyncio
+import concurrent.futures
 import contextlib
+import dataclasses
+import heapq
 import logging
 import typing as T
 import urllib.parse
@@ -64,6 +67,12 @@ class ETPMessageTooLarge(Exception):
         super().__init__(message)
 
 
+@dataclasses.dataclass(order=True)
+class PrioritizedEvents:
+    message_id: int
+    event: asyncio.Event = dataclasses.field(compare=False)
+
+
 class ETPClient:
     def __init__(
         self,
@@ -126,6 +135,9 @@ class ETPClient:
                 item=self.max_size
             ),
         }
+
+        self._send_message_id_heap: list[PrioritizedEvents] = []
+        self._send_executor = concurrent.futures.ProcessPoolExecutor()
 
         self._recv_events: dict[int, asyncio.Event] = {}
         self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(list)
@@ -203,10 +215,87 @@ class ETPClient:
 
         message_id = self.get_message_id()
 
+        # Get message ids for multi-part bodies as well. This is necessary as
+        # the `self.get_message_id`-function is not thread-safe.
+        mpb_message_ids = []
+        if len(multi_part_bodies) > 0:
+            mpb_message_ids = [self.get_message_id() for _ in multi_part_bodies]
+
+        self._recv_events[message_id] = asyncio.Event()
+        send_event = asyncio.Event()
+        # We use a min-heap to sort the send-events based on the message id.
+        # This ensures that we can send messages with monotonically increasing
+        # ids.
+        # The number of elements should be quite low, so we are fine to do the
+        # sorting in the current event loop.
+        heapq.heappush(
+            self._send_message_id_heap,
+            PrioritizedEvents(
+                message_id=message_id,
+                event=send_event,
+            ),
+        )
+
+        # Encode message, or messages, in a separate process to avoid blocking
+        # the event loop.
+        loop = asyncio.get_running_loop()
+        message, mpb_messages = await loop.run_in_executor(
+            self._send_executor,
+            self._set_up_send_message,
+            message_id,
+            body,
+            mpb_message_ids,
+            multi_part_bodies,
+            self.negotiated_compression.compress
+            if self.negotiated_compression is not None
+            else None,
+            self.max_size,
+        )
+
+        while True:
+            # Check if the current message id is the next one to be sent. The
+            # server expects the message ids to be monotonically increasing.
+            if message_id == self._send_message_id_heap[0].message_id:
+                # Remove current message id from the heap.
+                pe = heapq.heappop(self._send_message_id_heap)
+                assert pe.message_id == message_id
+                break
+
+            # Wait until `message_id` is the next to be sent.
+            await send_event.wait()
+
+        # Send message, or messages.
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(self.ws.send(message))
+            for mpb_message in mpb_messages:
+                tg.create_task(self.ws.send(mpb_message))
+
+        # Set next event in heap.
+        if len(self._send_message_id_heap) > 0:
+            self._send_message_id_heap[0].event.set()
+
+        if len(multi_part_bodies) == 0:
+            logger.debug(f"Sent message of type {body.__class__.__name__}")
+        else:
+            logger.debug(
+                f"Sent message of type {body.__class__.__name__} with "
+                f"{len(multi_part_bodies)} additional multi-part bodies"
+            )
+
+        return message_id
+
+    @staticmethod
+    def _set_up_send_message(
+        message_id: int,
+        body: ETPBaseProtocolModel,
+        mpb_message_ids: list[int],
+        multi_part_bodies: T.Sequence[ETPBaseProtocolModel],
+        compression_func: T.Callable[[bytes], bytes] | None,
+        max_size: int,
+    ) -> tuple[bytes, list[bytes]]:
         compression_flag = (
             MessageHeaderFlags.COMPRESSED
-            if self.negotiated_compression is not None
-            and body._protocol != Protocol.CORE
+            if compression_func is not None and body._protocol != Protocol.CORE
             else MessageHeaderFlags.NOFLAG
         )
         fin_flag = (
@@ -222,56 +311,47 @@ class ETPClient:
         )
 
         message = encode_message(
-            header=header,
-            body=body,
-            compression_func=self.negotiated_compression.compress
-            if self.negotiated_compression is not None
-            else None,
+            header=header, body=body, compression_func=compression_func
         )
 
-        if len(message) > self.max_size:
+        if len(message) > max_size:
             raise ETPMessageTooLarge(
                 message=(
                     f"Message with header {header} is too large: {len(message) = } "
-                    f"> max_size = {self.max_size}"
+                    f"> max_size = {max_size}"
                 ),
                 message_size=len(message),
             )
 
-        self._recv_events[header.message_id] = asyncio.Event()
-
-        tasks = [self.ws.send(message)]
+        mpb_messages = []
         for i, mpb in enumerate(multi_part_bodies):
             fin_flag = MessageHeaderFlags.NOFLAG
             if i == len(multi_part_bodies) - 1:
                 fin_flag = MessageHeaderFlags.FIN
             mpb_header = MessageHeader.from_etp_protocol_body(
                 body=mpb,
-                message_id=self.get_message_id(),
+                message_id=mpb_message_ids[i],
                 message_flags=fin_flag | compression_flag,
                 correlation_id=header.message_id,
             )
-            message = encode_message(
+            mpb_message = encode_message(
                 header=mpb_header,
                 body=mpb,
-                compression_func=self.negotiated_compression.compress
-                if self.negotiated_compression is not None
-                else None,
+                compression_func=compression_func,
             )
 
-            if len(message) > self.max_size:
+            if len(mpb_message) > max_size:
                 raise ETPMessageTooLarge(
                     message=(
                         f"Message with header {mpb_header} is too large: "
-                        f"{len(message) = } > max_size = {self.max_size}"
+                        f"{len(mpb_message) = } > max_size = {max_size}"
                     ),
-                    message_size=len(message),
+                    message_size=len(mpb_message),
                 )
-            tasks.append(self.ws.send(message))
 
-        await asyncio.gather(*tasks)
+            mpb_messages.append(mpb_message)
 
-        return header.message_id
+        return message, mpb_messages
 
     async def recv(self, correlation_id: int) -> list[ETPBaseProtocolModel]:
         assert correlation_id in self._recv_events, (
@@ -471,6 +551,7 @@ class ETPClient:
             # Check if the receive task is done, and if not, stop it.
             if not self._recvtask.done():
                 self._recvtask.cancel("stopped")
+            self._send_executor.shutdown()
 
         try:
             # Raise any potential exceptions that might have occured in the
