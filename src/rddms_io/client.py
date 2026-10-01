@@ -385,7 +385,7 @@ class RDDMSClient:
                 raise ETPTransactionFailure(str(response.failure_reason))
 
             transaction_uuid = uuid.UUID(str(response.transaction_uuid.root))
-            logger.debug("Started transaction with uuid: {transaction_uuid}")
+            logger.debug(f"Started transaction with uuid: {transaction_uuid}")
             return transaction_uuid
 
         raise ETPTransactionFailure(
