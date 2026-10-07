@@ -777,6 +777,11 @@ class etp_connect:
                     subprotocols=self.subprotocols,
                     max_size=self.max_message_size,
                     additional_headers=self.get_additional_headers(),
+                    # Use default ping interval.
+                    ping_interval=20,
+                    # Increase the ping timeout to give more slack to the
+                    # server.
+                    ping_timeout=120,
                 )
             )
             etp_client = await self.stack.enter_async_context(
