@@ -137,7 +137,6 @@ class ETPClient:
         }
 
         self._send_message_id_heap: list[PrioritizedEvents] = []
-        self._send_executor = concurrent.futures.ProcessPoolExecutor()
 
         self._recv_events: dict[int, asyncio.Event] = {}
         self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(list)
@@ -150,6 +149,9 @@ class ETPClient:
                 "becomes unstable."
             )
         self.etp_timeout = etp_timeout
+
+        # Start the process pool before the receiver task.
+        self._executor_pool = concurrent.futures.ProcessPoolExecutor()
         self._recvtask = asyncio.create_task(self._receiver_loop())
 
     @staticmethod
@@ -223,6 +225,7 @@ class ETPClient:
 
         self._recv_events[message_id] = asyncio.Event()
         send_event = asyncio.Event()
+
         # We use a min-heap to sort the send-events based on the message id.
         # This ensures that we can send messages with monotonically increasing
         # ids.
@@ -240,7 +243,7 @@ class ETPClient:
         # the event loop.
         loop = asyncio.get_running_loop()
         message, mpb_messages = await loop.run_in_executor(
-            self._send_executor,
+            self._executor_pool,
             self._set_up_send_message,
             message_id,
             body,
@@ -551,7 +554,9 @@ class ETPClient:
             # Check if the receive task is done, and if not, stop it.
             if not self._recvtask.done():
                 self._recvtask.cancel("stopped")
-            self._send_executor.shutdown()
+            # The default is to wait for the executor to shutdown, but we make
+            # it explicit.
+            self._executor_pool.shutdown(wait=True)
 
         try:
             # Raise any potential exceptions that might have occured in the
