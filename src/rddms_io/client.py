@@ -1150,27 +1150,25 @@ class RDDMSClient:
             def data_subarrays_key(pir: str, i: int) -> str:
                 return pir + f" ({i})"
 
-            # TODO: Consider using `await` instead of `asyncio.gather` to give
-            # the websockets connection time to run the heartbeat
-            # communication.
             tasks = []
-            for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
-                task = self.etp_client.send_and_recv(
-                    GetDataSubarrays(
-                        data_subarrays={
-                            data_subarrays_key(
-                                dai.path_in_resource, i
-                            ): GetDataSubarraysType(
-                                uid=dai,
-                                starts=starts,
-                                counts=counts,
-                            ),
-                        },
-                    ),
-                )
-                tasks.append(task)
+            async with asyncio.TaskGroup() as tg:
+                for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
+                    task = self.etp_client.send_and_recv(
+                        GetDataSubarrays(
+                            data_subarrays={
+                                data_subarrays_key(
+                                    dai.path_in_resource, i
+                                ): GetDataSubarraysType(
+                                    uid=dai,
+                                    starts=starts,
+                                    counts=counts,
+                                ),
+                            },
+                        ),
+                    )
+                    tasks.append(tg.create_task(task))
 
-            task_responses = await asyncio.gather(*tasks)
+            task_responses = [t.result() for t in tasks]
             responses = [
                 response
                 for task_response in task_responses
