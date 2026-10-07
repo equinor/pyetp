@@ -421,41 +421,50 @@ class ETPClient:
         # smoother clean-up in case the main-task errors resulting in a closed
         # websockets connection down the line.
         # async for message in self.ws:
-        while True:
-            try:
-                message = await self.ws.recv(decode=False)
-            except websockets.ConnectionClosedOK:
-                return
-            header, body = decode_message(
-                message,
-                decompression_func=self.negotiated_compression.decompress
-                if self.negotiated_compression is not None
-                else None,
-            )
+        async with asyncio.TaskGroup() as tg:
+            while True:
+                try:
+                    message = await self.ws.recv(decode=False)
+                except websockets.ConnectionClosedOK:
+                    return
 
-            logger.debug(
-                f"Receiver task got message type {body.__class__.__name__} with "
-                f"header {header}"
-            )
-            self._recv_headers[header.correlation_id].append(header)
-            self._recv_buffer[header.correlation_id].append(body)
-
-            if header.is_final_message():
-                # Sort the returned messages based on the message ids in the
-                # headers.
-                body_list = self._recv_buffer.pop(header.correlation_id)
-                header_list = self._recv_headers.pop(header.correlation_id)
-                body_list = [
-                    b
-                    for _, b in sorted(
-                        zip(header_list, body_list), key=lambda p: p[0].message_id
-                    )
-                ]
-                self._recv_buffer[header.correlation_id] = body_list
-
-                self._recv_events[header.correlation_id].set()
+                tg.create_task(self._handle_message(message))
 
         logger.info("Websockets connection closed and receiver task stopped")
+
+    async def _handle_message(self, message: bytes) -> None:
+        loop = asyncio.get_running_loop()
+        header, body = await loop.run_in_executor(
+            self._executor_pool,
+            decode_message,
+            message,
+            self.negotiated_compression.decompress
+            if self.negotiated_compression is not None
+            else None,
+        )
+
+        logger.debug(
+            f"Receiver task got message type {body.__class__.__name__} with "
+            f"header {header}"
+        )
+        self._recv_headers[header.correlation_id].append(header)
+        self._recv_buffer[header.correlation_id].append(body)
+
+        if header.is_final_message():
+            # Sort the returned messages based on the message ids in the
+            # headers.
+            body_list = self._recv_buffer.pop(header.correlation_id)
+            header_list = self._recv_headers.pop(header.correlation_id)
+            body_list = [
+                b
+                for _, b in sorted(
+                    zip(header_list, body_list), key=lambda p: p[0].message_id
+                )
+            ]
+            # Add the sorted, received message bodies to the buffer.
+            self._recv_buffer[header.correlation_id] = body_list
+            # Signal that all messages have been received.
+            self._recv_events[header.correlation_id].set()
 
     async def __aenter__(self) -> T.Self:
         rs = RequestSession(
