@@ -407,9 +407,7 @@ class RDDMSClient:
             typically be the uuid from the
             `RDDMSClient.start_transaction`-method.
         """
-        # TODO: Remove `#type: ignore` if this issue gets resolved:
-        # https://github.com/pydantic/pydantic/issues/12978
-        transaction_uuid = Uuid(transaction_uuid)  # type: ignore
+        transaction_uuid = Uuid(transaction_uuid)
         responses = await self.etp_client.send_and_recv(
             CommitTransaction(transaction_uuid=transaction_uuid),
         )
@@ -438,9 +436,7 @@ class RDDMSClient:
             typically be the uuid from the
             `RDDMSClient.start_transaction`-method.
         """
-        # TODO: Remove `#type: ignore` if this issue gets resolved:
-        # https://github.com/pydantic/pydantic/issues/12978
-        transaction_uuid = Uuid(transaction_uuid)  # type: ignore
+        transaction_uuid = Uuid(transaction_uuid)
         responses = await self.etp_client.send_and_recv(
             RollbackTransaction(transaction_uuid=transaction_uuid)
         )
