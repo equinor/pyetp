@@ -269,7 +269,9 @@ class ETPClient:
                 )
             tasks.append(self.ws.send(message))
 
-        await asyncio.gather(*tasks)
+        async with asyncio.TaskGroup() as tg:
+            for task in tasks:
+                tg.create_task(task)
 
         return header.message_id
 
