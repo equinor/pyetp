@@ -33,9 +33,7 @@ def _avro_roundtrip(
             # Handle the case when we get bytes in return.
             # Explicitly verify that `cls` is `Uuid`.
             assert issubclass(cls, Uuid)
-            # TODO: Remove `#type: ignore` if this issue gets resolved:
-            # https://github.com/pydantic/pydantic/issues/12978
-            ret_obj = cls(record)  # type: ignore
+            ret_obj = cls(record)
 
     return ret_obj
 

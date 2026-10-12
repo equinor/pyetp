@@ -188,6 +188,10 @@ delete the dataspace.
 examples/tutorials/using_the_sync_rddms_client/using_the_sync_rddms_client.py:102:104
 --8<--
 ```
+Here as well, an alternative solution is to use the method
+[`RDDMSClientSync.delete_dataspace_content`][rddms_io.sync_client.RDDMSClientSync.delete_dataspace_content]
+to delete all objects under a dataspace before calling
+`RDDMSClientSync.delete_dataspace`.
 
 ### Full script
 Finally, we list the full script used throughout this tutorial.

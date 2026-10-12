@@ -488,6 +488,42 @@ class RDDMSClientSync:
 
         return run_coroutine_sync(delete_model())
 
+    def delete_dataspace_content(
+        self,
+        dataspace_uri: DataspaceURI | str,
+        debounce: bool | float = False,
+    ) -> None:
+        """
+        Method deleting all objects under a dataspace. This is meant to empty
+        out a dataspace before optionally calling
+        `RDDMSClientSync.delete_dataspace`. The method is equivalent to listing
+        all objects under a dataspace by calling
+        `RDDMSClientSync.list_objects_under_dataspace` and then passing in all
+        uris to `RDDMSClientSync.delete_model`.
+
+        Parameters
+        ----------
+        dataspace_uri
+            The ETP dataspace uri, or path, for the dataspace to empty. If it
+            is a dataspace path (on the form `'foo/bar'`) it will be converted
+            to the dataspace uri `"eml:///dataspace('foo/bar')"`.
+        debounce
+            Parameter to decide if `RDDMSClientSync.delete_dataspace_content`
+            should retry starting a transaction if it initially fails. See
+            `RDDMSClient.start_transaction` for a more in-depth explanation of
+            the parameter. Default is `False`, i.e., no debouncing will occur
+            and the method will fail if it is unable to start a transaction.
+        """
+
+        async def delete_dataspace_content() -> None:
+            async with rddms_connect(**self.connection_args) as rddms_client:
+                return await rddms_client.delete_dataspace_content(
+                    dataspace_uri=dataspace_uri,
+                    debounce=debounce,
+                )
+
+        return run_coroutine_sync(delete_dataspace_content())
+
     def upload_model(
         self,
         dataspace_uri: str | DataspaceURI,

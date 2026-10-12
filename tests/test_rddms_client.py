@@ -927,11 +927,11 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         # Clean-up code. Remove all objects, arrays and the dataspace.
-        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
-        uris = [r.uri for r in resources]
+        await rddms_client.delete_dataspace_content(dataspace_uri)
 
-        # Delete all data objects.
-        await rddms_client.delete_model(uris)
+        # Verify that all objects have been deleted
+        resources = await rddms_client.list_objects_under_dataspace(dataspace_uri)
+        assert len(resources) == 0
 
         # Delete the dataspace.
         await rddms_client.delete_dataspace(dataspace_uri)

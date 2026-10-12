@@ -399,6 +399,11 @@ then delete the dataspace.
 examples/tutorials/using_the_rddms_client/using_the_rddms_client.py:122:126
 --8<--
 ```
+Alternatively, use the method
+[`RDDMSClient.delete_dataspace_content`][rddms_io.client.RDDMSClient.delete_dataspace_content]
+to delete all objects under a dataspace (this combines the
+`RDDMSClient.list_objects_under_dataspace` and `RDDMSClient.delete_model`
+calls) before calling `RDDMSClient.delete_dataspace`.
 
 ???+ Tip
 

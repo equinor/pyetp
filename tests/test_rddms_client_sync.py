@@ -189,5 +189,10 @@ async def test_upload_and_download_surface_async() -> None:
 
     np.testing.assert_equal(ret_models[2].arrays[key], data_arrays[key])
 
-    rddms_client.delete_model(ml_uris=uris)
+    # Empty dataspace.
+    rddms_client.delete_dataspace_content(dataspace_path)
+    # Verify that all objects are deleted.
+    resources = rddms_client.list_objects_under_dataspace(dataspace_path)
+    assert len(resources) == 0
+
     rddms_client.delete_dataspace(dataspace_path)
