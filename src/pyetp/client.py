@@ -574,10 +574,11 @@ class ETPClient:
         try:
             await self.send(CloseSession(reason="Client exiting"))
             close_session_sent = True
-        except websockets.ConnectionClosed:
+        except websockets.ConnectionClosed as e:
             logger.error(
                 "Websockets connection is closed, unable to send a CloseSession-message"
-                " to the server"
+                " to the server",
+                exc_info=e,
             )
         finally:
             # Check if the receive task is done, and if not, stop it.
@@ -594,8 +595,13 @@ class ETPClient:
         except websockets.ConnectionClosed as e:
             # The receive task errored on a closed websockets connection.
             logger.error(
-                "The receiver task errored on a closed websockets connection. The "
-                f"message was: {e.__class__.__name__}: {e}"
+                "The receiver task errored on a closed websockets connection.",
+                exc_info=e,
+            )
+        except ExceptionGroup as eg:
+            logger.error(
+                "There were multiple errors in the receiver task",
+                exc_info=eg,
             )
 
         # Wait for the executor to shut down.
