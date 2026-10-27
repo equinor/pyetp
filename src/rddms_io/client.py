@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import datetime
 import logging
 import sys
@@ -1138,17 +1139,11 @@ class RDDMSClient:
                     f"{metadata.logical_array_type = }, with {logical_dtype = }"
                 )
 
-            # Create a buffer for the data.
-            data = np.zeros(metadata.dimensions, dtype=transport_dtype)
-
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
             block_starts, block_counts = get_array_block_sizes(
-                data.shape, data.dtype, self.etp_client.max_array_size
+                metadata.dimensions, transport_dtype, self.etp_client.max_array_size
             )
-
-            def data_subarrays_key(pir: str, i: int) -> str:
-                return pir + f" ({i})"
 
             tasks = []
             async with asyncio.TaskGroup() as tg:
@@ -1156,7 +1151,7 @@ class RDDMSClient:
                     task = self.etp_client.send_and_recv(
                         GetDataSubarrays(
                             data_subarrays={
-                                data_subarrays_key(
+                                self.data_subarrays_key(
                                     dai.path_in_resource, i
                                 ): GetDataSubarraysType(
                                     uid=dai,
@@ -1175,35 +1170,24 @@ class RDDMSClient:
                 for response in task_response
             ]
 
-            data_blocks = []
-            for i, response in enumerate(responses):
-                assert isinstance(response, GetDataSubarraysResponse)
-                assert (
-                    len(response.data_subarrays) == 1
-                    and data_subarrays_key(dai.path_in_resource, i)
-                    in response.data_subarrays
+            loop = asyncio.get_running_loop()
+            # Here we use a `ThreadPoolExecutor` instead of
+            # `ProcessPoolExecutor` even though the function that is called is
+            # CPU bound. The purpose is to not block the async-thread. Using
+            # threads instead of processes avoids pickling the input data and
+            # the output results from the function. The data arrays can be very
+            # large, and therefore the prohibiting factor is the memory.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                return await loop.run_in_executor(
+                    executor,
+                    self._assemble_subarray_from_blocks,
+                    responses,
+                    dai,
+                    metadata.dimensions,
+                    transport_dtype,
+                    block_starts,
+                    block_counts,
                 )
-
-                data_block = response.data_subarrays[
-                    data_subarrays_key(dai.path_in_resource, i)
-                ].to_numpy_array()
-                data_blocks.append(data_block)
-
-            for data_block, starts, counts in zip(
-                data_blocks, block_starts, block_counts
-            ):
-                # Create slice-objects for each block.
-                slices = tuple(
-                    map(
-                        lambda s, c: slice(s, s + c),
-                        np.array(starts).astype(int),
-                        np.array(counts).astype(int),
-                    )
-                )
-                data[slices] = data_block
-
-            # Return after fetching all sub arrays.
-            return data
 
         # Download the full array in one go.
         responses = await self.etp_client.send_and_recv(
@@ -1220,6 +1204,51 @@ class RDDMSClient:
         )
 
         return response.data_arrays[dai.path_in_resource].to_numpy_array()
+
+    @staticmethod
+    def data_subarrays_key(pir: str, i: int) -> str:
+        return pir + f" ({i})"
+
+    @staticmethod
+    def _assemble_subarray_from_blocks(
+        responses: list[ETPBaseProtocolModel],
+        dai: DataArrayIdentifier,
+        shape: Sequence[int],
+        dtype: npt.DTypeLike,
+        block_starts: list[list[int]],
+        block_counts: list[list[int]],
+    ) -> npt.NDArray[ETPNumpyArrayType]:
+        for response in responses:
+            assert isinstance(response, GetDataSubarraysResponse)
+
+        data_blocks = []
+        for i, response in enumerate(responses):
+            assert isinstance(response, GetDataSubarraysResponse)
+            assert (
+                len(response.data_subarrays) == 1
+                and RDDMSClient.data_subarrays_key(dai.path_in_resource, i)
+                in response.data_subarrays
+            )
+
+            data_block = response.data_subarrays[
+                RDDMSClient.data_subarrays_key(dai.path_in_resource, i)
+            ].to_numpy_array()
+            data_blocks.append(data_block)
+
+        # Create a buffer for the data.
+        data = np.zeros(shape, dtype=dtype)
+        for data_block, starts, counts in zip(data_blocks, block_starts, block_counts):
+            # Create slice-objects for each block.
+            slices = tuple(
+                map(
+                    lambda s, c: slice(s, s + c),
+                    np.array(starts).astype(int),
+                    np.array(counts).astype(int),
+                )
+            )
+            data[slices] = data_block
+
+        return data
 
     async def upload_model(
         self,
