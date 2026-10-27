@@ -4,6 +4,7 @@ import contextlib
 import dataclasses
 import heapq
 import logging
+import os
 import typing as T
 import urllib.parse
 import uuid
@@ -148,8 +149,10 @@ class ETPClient:
             )
         self.etp_timeout = etp_timeout
 
-        # Start the process pool before the receiver task.
-        self._executor_pool = concurrent.futures.ProcessPoolExecutor()
+        # Start the thread pool before the receiver task.
+        self._executor_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.process_cpu_count(),
+        )
         self._recvtask = asyncio.create_task(self._receiver_loop())
 
     @staticmethod
