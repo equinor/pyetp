@@ -1394,43 +1394,44 @@ class RDDMSClient:
         ml_uris = []
         ml_hds = []
         tasks = []
-        for obj in ml_objects:
-            # Find all `Hdf5Dataset`-objects in the object.
-            ml_hds.extend(find_hdf5_datasets(obj))
+        async with asyncio.TaskGroup() as tg:
+            for obj in ml_objects:
+                # Find all `Hdf5Dataset`-objects in the object.
+                ml_hds.extend(find_hdf5_datasets(obj))
 
-            uri = obj.get_etp_data_object_uri(dataspace_uri)
-            ml_uris.append(uri)
-            obj_xml = serialize_resqml_v201_object(obj)
+                uri = obj.get_etp_data_object_uri(dataspace_uri)
+                ml_uris.append(uri)
+                obj_xml = serialize_resqml_v201_object(obj)
 
-            # Note that all objects passed in to this method is
-            # expected to contain a `citation`-field.
-            last_changed = obj.citation.last_update or obj.citation.creation
-            if not isinstance(last_changed, datetime.datetime):
-                last_changed = last_changed.to_datetime()
+                # Note that all objects passed in to this method is
+                # expected to contain a `citation`-field.
+                last_changed = obj.citation.last_update or obj.citation.creation
+                if not isinstance(last_changed, datetime.datetime):
+                    last_changed = last_changed.to_datetime()
 
-            dob = DataObject(
-                format="xml",
-                data=obj_xml,
-                resource=Resource(
-                    uri=uri,
-                    name=obj.citation.title,
-                    last_changed=int(last_changed.timestamp() * 1e6),
-                    store_created=now,
-                    store_last_write=now,
-                    # This is only used by WITSML channel data objects.
-                    active_status="Inactive",
-                    # Not used in the Store-protocol.
-                    source_count=None,
-                    target_count=None,
-                ),
-            )
-            pdo = PutDataObjects(
-                data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
-            )
+                dob = DataObject(
+                    format="xml",
+                    data=obj_xml,
+                    resource=Resource(
+                        uri=uri,
+                        name=obj.citation.title,
+                        last_changed=int(last_changed.timestamp() * 1e6),
+                        store_created=now,
+                        store_last_write=now,
+                        # This is only used by WITSML channel data objects.
+                        active_status="Inactive",
+                        # Not used in the Store-protocol.
+                        source_count=None,
+                        target_count=None,
+                    ),
+                )
+                pdo = PutDataObjects(
+                    data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
+                )
 
-            tasks.append(self._send_put_data_objects(pdo))
+                tasks.append(tg.create_task(self._send_put_data_objects(pdo)))
 
-        task_responses = await asyncio.gather(*tasks)
+        task_responses = [t.result() for t in tasks]
         responses = [
             response for task_response in task_responses for response in task_response
         ]
