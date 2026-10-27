@@ -62,9 +62,7 @@ class ReceiveWorkerExited(Exception):
 
 
 class ETPMessageTooLarge(Exception):
-    def __init__(self, message: str, message_size: int):
-        self.message_size = message_size
-        super().__init__(message)
+    pass
 
 
 @dataclasses.dataclass(order=True)
@@ -319,11 +317,8 @@ class ETPClient:
 
         if len(message) > max_size:
             raise ETPMessageTooLarge(
-                message=(
-                    f"Message with header {header} is too large: {len(message) = } "
-                    f"> max_size = {max_size}"
-                ),
-                message_size=len(message),
+                f"Message with header {header} is too large: {len(message) = } "
+                f"> max_size = {max_size}"
             )
 
         mpb_messages = []
@@ -345,11 +340,8 @@ class ETPClient:
 
             if len(mpb_message) > max_size:
                 raise ETPMessageTooLarge(
-                    message=(
-                        f"Message with header {mpb_header} is too large: "
-                        f"{len(mpb_message) = } > max_size = {max_size}"
-                    ),
-                    message_size=len(mpb_message),
+                    f"Message with header {mpb_header} is too large: "
+                    f"{len(mpb_message) = } > max_size = {max_size}"
                 )
 
             mpb_messages.append(mpb_message)
