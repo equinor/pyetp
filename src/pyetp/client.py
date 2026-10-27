@@ -583,9 +583,6 @@ class ETPClient:
             # Check if the receive task is done, and if not, stop it.
             if not self._recvtask.done():
                 self._recvtask.cancel("stopped")
-            # The default is to wait for the executor to shutdown, but we make
-            # it explicit.
-            self._executor_pool.shutdown(wait=True)
 
         try:
             # Raise any potential exceptions that might have occured in the
@@ -600,6 +597,9 @@ class ETPClient:
                 "The receiver task errored on a closed websockets connection. The "
                 f"message was: {e.__class__.__name__}: {e}"
             )
+
+        # Wait for the executor to shut down.
+        self._executor_pool.shutdown(wait=True)
 
         if len(self._recv_buffer) > 0:
             logger.error(
