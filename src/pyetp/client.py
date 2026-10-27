@@ -420,6 +420,9 @@ class ETPClient:
     async def _receiver_loop(self) -> None:
         logger.debug("Starting receiver loop")
 
+        current_event = asyncio.Event()
+        current_event.set()
+        next_event = asyncio.Event()
         # Using `async for` makes the receiver task exit without errors on a
         # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
         # smoother clean-up in case the main-task errors resulting in a closed
@@ -432,11 +435,15 @@ class ETPClient:
                 except websockets.ConnectionClosedOK:
                     return
 
-                tg.create_task(self._handle_message(message))
+                tg.create_task(self._handle_message(message, current_event, next_event))
+                current_event = next_event
+                next_event = asyncio.Event()
 
         logger.info("Websockets connection closed and receiver task stopped")
 
-    async def _handle_message(self, message: bytes) -> None:
+    async def _handle_message(
+        self, message: bytes, current_event: asyncio.Event, next_event: asyncio.Event
+    ) -> None:
         loop = asyncio.get_running_loop()
         header, body = await loop.run_in_executor(
             self._executor_pool,
@@ -454,6 +461,12 @@ class ETPClient:
         self._recv_headers[header.correlation_id].append(header)
         self._recv_buffer[header.correlation_id].append(body)
 
+        # Wait until we are next in line to ensure that multi-part messages are
+        # processed in order. The messages are guaranteed to be delivered in
+        # order from the websockets endpoint, but not after we have done the
+        # deconding in a separate thread.
+        await current_event.wait()
+
         if header.is_final_message():
             # Sort the returned messages based on the message ids in the
             # headers.
@@ -469,6 +482,9 @@ class ETPClient:
             self._recv_buffer[header.correlation_id] = body_list
             # Signal that all messages have been received.
             self._recv_events[header.correlation_id].set()
+
+        # Signal the next worker that it can process its message.
+        next_event.set()
 
     async def __aenter__(self) -> T.Self:
         rs = RequestSession(
