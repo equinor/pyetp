@@ -67,7 +67,7 @@ class ETPMessageTooLarge(Exception):
 
 
 @dataclasses.dataclass(order=True)
-class PrioritizedEvents:
+class PrioritizedEvent:
     message_id: int
     event: asyncio.Event = dataclasses.field(compare=False)
 
@@ -135,7 +135,8 @@ class ETPClient:
             ),
         }
 
-        self._send_message_id_heap: list[PrioritizedEvents] = []
+        self._send_message_id_heap: list[PrioritizedEvent] = []
+        self._send_message_lock = asyncio.Lock()
 
         self._recv_events: dict[int, asyncio.Event] = {}
         self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(list)
@@ -227,34 +228,42 @@ class ETPClient:
         self._recv_events[message_id] = asyncio.Event()
         send_event = asyncio.Event()
 
+        pe = PrioritizedEvent(
+            message_id=message_id,
+            event=send_event,
+        )
+
         # We use a min-heap to sort the send-events based on the message id.
         # This ensures that we can send messages with monotonically increasing
-        # ids.
-        # The number of elements should be quite low, so we are fine to do the
-        # sorting in the current event loop.
-        heapq.heappush(
-            self._send_message_id_heap,
-            PrioritizedEvents(
-                message_id=message_id,
-                event=send_event,
-            ),
-        )
+        # ids.  The number of elements should be quite low, so we are fine to
+        # do the sorting in the current event loop.
+        heapq.heappush(self._send_message_id_heap, pe)
 
         # Encode message, or messages, in a separate process to avoid blocking
         # the event loop.
         loop = asyncio.get_running_loop()
-        message, mpb_messages = await loop.run_in_executor(
-            self._executor_pool,
-            self._set_up_send_message,
-            message_id,
-            body,
-            mpb_message_ids,
-            multi_part_bodies,
-            self.negotiated_compression.compress
-            if self.negotiated_compression is not None
-            else None,
-            self.max_size,
-        )
+        try:
+            message, mpb_messages = await loop.run_in_executor(
+                self._executor_pool,
+                self._set_up_send_message,
+                message_id,
+                body,
+                mpb_message_ids,
+                multi_part_bodies,
+                self.negotiated_compression.compress
+                if self.negotiated_compression is not None
+                else None,
+                self.max_size,
+            )
+        except ETPMessageTooLarge as e:
+            logger.debug(f"Got ETPMessageTooLarge exception: {e}")
+            self._send_message_id_heap.remove(pe)
+            assert pe not in self._send_message_id_heap
+            # Sort the heap after removing an element "manually" (i.e., not
+            # using heappop).
+            heapq.heapify(self._send_message_id_heap)
+            del self._recv_events[message_id]
+            raise
 
         while True:
             # Check if the current message id is the next one to be sent. The
@@ -268,11 +277,11 @@ class ETPClient:
             # Wait until `message_id` is the next to be sent.
             await send_event.wait()
 
-        # Send message, or messages.
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(self.ws.send(message))
+        # Send message, or messages, in order by acquiring a lock.
+        async with self._send_message_lock:
+            await self.ws.send(message)
             for mpb_message in mpb_messages:
-                tg.create_task(self.ws.send(mpb_message))
+                await self.ws.send(mpb_message)
 
         # Set next event in heap.
         if len(self._send_message_id_heap) > 0:
