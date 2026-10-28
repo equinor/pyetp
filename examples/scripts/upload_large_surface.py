@@ -18,13 +18,15 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("rddms_io.client")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 logger = logging.getLogger("pyetp.client")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARNING)
 
 logger = logging.getLogger("websockets.client")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
+
+logging.getLogger("asyncio").setLevel(logging.DEBUG)
 
 etp_url = "ws://localhost:9100"
 dataspace_path = "foo/bar"
