@@ -150,9 +150,16 @@ class ETPClient:
             )
         self.etp_timeout = etp_timeout
 
+        try:
+            # The `os.process_cpu_count`-function is available from Python
+            # 3.13.
+            max_workers = os.process_cpu_count()  # type: ignore[attr-defined]
+        except AttributeError:
+            max_workers = len(os.sched_getaffinity(0))
+
         # Start the thread pool before the receiver task.
         self._executor_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=os.process_cpu_count(),
+            max_workers=max_workers,
         )
         self._recvtask = asyncio.create_task(self._receiver_loop())
 
