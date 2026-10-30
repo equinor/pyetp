@@ -134,6 +134,9 @@ class RDDMSClient:
 
     def __init__(self, etp_client: ETPClient) -> None:
         self.etp_client = etp_client
+        self.task_limiter_upload_array = asyncio.Semaphore(10)
+        self.task_limiter_download_array = asyncio.Semaphore(10)
+        self.task_limiter_upload_model = asyncio.Semaphore(10)
 
     async def close(self) -> None:
         """
@@ -962,8 +965,9 @@ class RDDMSClient:
 
                     # Create an asynchronous task to upload a block to the
                     # ETP-server.
-                    task = self.etp_client.send_and_recv(pdsa)
-                    tasks.append(tg.create_task(task))
+                    async with self.task_limiter_upload_array:
+                        task = self.etp_client.send_and_recv(pdsa)
+                        tasks.append(tg.create_task(task))
 
             # Collect all results from all blocks
             task_responses = [t.result() for t in tasks]
@@ -1161,7 +1165,8 @@ class RDDMSClient:
                             },
                         ),
                     )
-                    tasks.append(tg.create_task(task))
+                    async with self.task_limiter_download_array:
+                        tasks.append(tg.create_task(task))
 
             task_responses = [t.result() for t in tasks]
             responses = [
@@ -1429,7 +1434,8 @@ class RDDMSClient:
                     data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
                 )
 
-                tasks.append(tg.create_task(self._send_put_data_objects(pdo)))
+                async with self.task_limiter_upload_model:
+                    tasks.append(tg.create_task(self._send_put_data_objects(pdo)))
 
         task_responses = [t.result() for t in tasks]
         responses = [
