@@ -1,6 +1,11 @@
 import asyncio
+import concurrent.futures
 import contextlib
+import dataclasses
+import heapq
 import logging
+import os
+import sys
 import typing as T
 import urllib.parse
 import uuid
@@ -59,9 +64,13 @@ class ReceiveWorkerExited(Exception):
 
 
 class ETPMessageTooLarge(Exception):
-    def __init__(self, message: str, message_size: int):
-        self.message_size = message_size
-        super().__init__(message)
+    pass
+
+
+@dataclasses.dataclass(order=True)
+class PrioritizedEvent:
+    message_id: int
+    event: asyncio.Event = dataclasses.field(compare=False)
 
 
 class ETPClient:
@@ -127,6 +136,9 @@ class ETPClient:
             ),
         }
 
+        self._send_message_id_heap: list[PrioritizedEvent] = []
+        self._send_message_lock = asyncio.Lock()
+
         self._recv_events: dict[int, asyncio.Event] = {}
         self._recv_buffer: dict[int, list[ETPBaseProtocolModel]] = defaultdict(list)
         self._recv_headers: dict[int, list[MessageHeader]] = defaultdict(list)
@@ -138,6 +150,36 @@ class ETPClient:
                 "becomes unstable."
             )
         self.etp_timeout = etp_timeout
+
+        try:
+            # The `os.process_cpu_count`-function is available from Python
+            # 3.13.
+            max_workers = os.process_cpu_count()  # type: ignore[attr-defined]
+        except AttributeError:
+            max_workers = len(os.sched_getaffinity(0))
+
+        try:
+            # This function is available from Python 3.13.
+            gil_enabled = sys._is_gil_enabled()  # type: ignore[attr-defined]
+        except AttributeError:
+            # If we use Python < 3.13, there is no free-threaded Python build,
+            # and the GIL will be enabled.
+            gil_enabled = True
+
+        self._executor_pool: (
+            concurrent.futures.ProcessPoolExecutor
+            | concurrent.futures.ThreadPoolExecutor
+        )
+        if gil_enabled:
+            self._executor_pool = concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_workers,
+            )
+        else:
+            # Start the thread pool before the receiver task.
+            self._executor_pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_workers,
+            )
+
         self._recvtask = asyncio.create_task(self._receiver_loop())
 
     @staticmethod
@@ -203,10 +245,96 @@ class ETPClient:
 
         message_id = self.get_message_id()
 
+        # Get message ids for multi-part bodies as well. This is necessary as
+        # the `self.get_message_id`-function is not thread-safe.
+        mpb_message_ids = []
+        if len(multi_part_bodies) > 0:
+            mpb_message_ids = [self.get_message_id() for _ in multi_part_bodies]
+
+        self._recv_events[message_id] = asyncio.Event()
+        send_event = asyncio.Event()
+
+        pe = PrioritizedEvent(
+            message_id=message_id,
+            event=send_event,
+        )
+
+        # We use a min-heap to sort the send-events based on the message id.
+        # This ensures that we can send messages with monotonically increasing
+        # ids.  The number of elements should be quite low, so we are fine to
+        # do the sorting in the current event loop.
+        heapq.heappush(self._send_message_id_heap, pe)
+
+        # Encode message, or messages, in a separate process to avoid blocking
+        # the event loop.
+        loop = asyncio.get_running_loop()
+        try:
+            message, mpb_messages = await loop.run_in_executor(
+                self._executor_pool,
+                self._set_up_send_message,
+                message_id,
+                body,
+                mpb_message_ids,
+                multi_part_bodies,
+                self.negotiated_compression.compress
+                if self.negotiated_compression is not None
+                else None,
+                self.max_size,
+            )
+        except ETPMessageTooLarge as e:
+            logger.debug(f"Got ETPMessageTooLarge exception: {e}")
+            self._send_message_id_heap.remove(pe)
+            assert pe not in self._send_message_id_heap
+            # Sort the heap after removing an element "manually" (i.e., not
+            # using heappop).
+            heapq.heapify(self._send_message_id_heap)
+            del self._recv_events[message_id]
+            raise
+
+        while True:
+            # Check if the current message id is the next one to be sent. The
+            # server expects the message ids to be monotonically increasing.
+            if message_id == self._send_message_id_heap[0].message_id:
+                # Remove current message id from the heap.
+                pe = heapq.heappop(self._send_message_id_heap)
+                assert pe.message_id == message_id
+                break
+
+            # Wait until `message_id` is the next to be sent.
+            await send_event.wait()
+
+        # Send message, or messages, in order by acquiring a lock.
+        async with self._send_message_lock:
+            await self.ws.send(message)
+            for mpb_message in mpb_messages:
+                await self.ws.send(mpb_message)
+
+        # Set next event in heap.
+        if len(self._send_message_id_heap) > 0:
+            self._send_message_id_heap[0].event.set()
+
+        if len(multi_part_bodies) == 0:
+            logger.debug(f"Sent message of type {body.__class__.__name__}")
+        else:
+            logger.debug(
+                f"Sent message of type {body.__class__.__name__} with "
+                f"{len(multi_part_bodies)} additional multi-part bodies"
+            )
+
+        return message_id
+
+    @staticmethod
+    def _set_up_send_message(
+        message_id: int,
+        body: ETPBaseProtocolModel,
+        mpb_message_ids: list[int],
+        multi_part_bodies: T.Sequence[ETPBaseProtocolModel],
+        compression_func: T.Callable[[bytes], bytes] | None,
+        max_size: int,
+    ) -> tuple[bytes, list[bytes]]:
         compression_flag = (
             MessageHeaderFlags.COMPRESSED
-            if self.negotiated_compression is not None
-            and body._protocol != Protocol.CORE
+            if compression_func is not None and body._protocol != Protocol.CORE
             else MessageHeaderFlags.NOFLAG
         )
         fin_flag = (
@@ -222,56 +350,41 @@ class ETPClient:
         )
 
         message = encode_message(
-            header=header,
-            body=body,
-            compression_func=self.negotiated_compression.compress
-            if self.negotiated_compression is not None
-            else None,
+            header=header, body=body, compression_func=compression_func
         )
 
-        if len(message) > self.max_size:
+        if len(message) > max_size:
             raise ETPMessageTooLarge(
-                message=(
-                    f"Message with header {header} is too large: {len(message) = } "
-                    f"> max_size = {self.max_size}"
-                ),
-                message_size=len(message),
+                f"Message with header {header} is too large: {len(message) = } "
+                f"> max_size = {max_size}"
             )
 
-        self._recv_events[header.message_id] = asyncio.Event()
-
-        tasks = [self.ws.send(message)]
+        mpb_messages = []
         for i, mpb in enumerate(multi_part_bodies):
             fin_flag = MessageHeaderFlags.NOFLAG
             if i == len(multi_part_bodies) - 1:
                 fin_flag = MessageHeaderFlags.FIN
             mpb_header = MessageHeader.from_etp_protocol_body(
                 body=mpb,
-                message_id=self.get_message_id(),
+                message_id=mpb_message_ids[i],
                 message_flags=fin_flag | compression_flag,
                 correlation_id=header.message_id,
             )
-            message = encode_message(
+            mpb_message = encode_message(
                 header=mpb_header,
                 body=mpb,
-                compression_func=self.negotiated_compression.compress
-                if self.negotiated_compression is not None
-                else None,
+                compression_func=compression_func,
             )
 
-            if len(message) > self.max_size:
+            if len(mpb_message) > max_size:
                 raise ETPMessageTooLarge(
-                    message=(
-                        f"Message with header {mpb_header} is too large: "
-                        f"{len(message) = } > max_size = {self.max_size}"
-                    ),
-                    message_size=len(message),
+                    f"Message with header {mpb_header} is too large: "
+                    f"{len(mpb_message) = } > max_size = {max_size}"
                 )
-            tasks.append(self.ws.send(message))
 
-        await asyncio.gather(*tasks)
+            mpb_messages.append(mpb_message)
 
-        return header.message_id
+        return message, mpb_messages
 
     async def recv(self, correlation_id: int) -> list[ETPBaseProtocolModel]:
         assert correlation_id in self._recv_events, (
@@ -333,46 +446,71 @@ class ETPClient:
     async def _receiver_loop(self) -> None:
         logger.debug("Starting receiver loop")
 
+        current_event = asyncio.Event()
+        current_event.set()
+        next_event = asyncio.Event()
         # Using `async for` makes the receiver task exit without errors on a
         # `websockets.exceptions.ConnectionClosedOK`-exception. This ensures a
         # smoother clean-up in case the main-task errors resulting in a closed
         # websockets connection down the line.
         # async for message in self.ws:
-        while True:
-            try:
-                message = await self.ws.recv(decode=False)
-            except websockets.ConnectionClosedOK:
-                return
-            header, body = decode_message(
-                message,
-                decompression_func=self.negotiated_compression.decompress
-                if self.negotiated_compression is not None
-                else None,
-            )
+        async with asyncio.TaskGroup() as tg:
+            while True:
+                try:
+                    message = await self.ws.recv(decode=False)
+                except websockets.ConnectionClosedOK:
+                    return
 
-            logger.debug(
-                f"Receiver task got message type {body.__class__.__name__} with "
-                f"header {header}"
-            )
-            self._recv_headers[header.correlation_id].append(header)
-            self._recv_buffer[header.correlation_id].append(body)
-
-            if header.is_final_message():
-                # Sort the returned messages based on the message ids in the
-                # headers.
-                body_list = self._recv_buffer.pop(header.correlation_id)
-                header_list = self._recv_headers.pop(header.correlation_id)
-                body_list = [
-                    b
-                    for _, b in sorted(
-                        zip(header_list, body_list), key=lambda p: p[0].message_id
-                    )
-                ]
-                self._recv_buffer[header.correlation_id] = body_list
-
-                self._recv_events[header.correlation_id].set()
+                tg.create_task(self._handle_message(message, current_event, next_event))
+                current_event = next_event
+                next_event = asyncio.Event()
 
         logger.info("Websockets connection closed and receiver task stopped")
+
+    async def _handle_message(
+        self, message: bytes, current_event: asyncio.Event, next_event: asyncio.Event
+    ) -> None:
+        loop = asyncio.get_running_loop()
+        header, body = await loop.run_in_executor(
+            self._executor_pool,
+            decode_message,
+            message,
+            self.negotiated_compression.decompress
+            if self.negotiated_compression is not None
+            else None,
+        )
+
+        logger.debug(
+            f"Receiver task got message type {body.__class__.__name__} with "
+            f"header {header}"
+        )
+        self._recv_headers[header.correlation_id].append(header)
+        self._recv_buffer[header.correlation_id].append(body)
+
+        # Wait until we are next in line to ensure that multi-part messages are
+        # processed in order. The messages are guaranteed to be delivered in
+        # order from the websockets endpoint, but not after we have done the
+        # deconding in a separate thread.
+        await current_event.wait()
+
+        if header.is_final_message():
+            # Sort the returned messages based on the message ids in the
+            # headers.
+            body_list = self._recv_buffer.pop(header.correlation_id)
+            header_list = self._recv_headers.pop(header.correlation_id)
+            body_list = [
+                b
+                for _, b in sorted(
+                    zip(header_list, body_list), key=lambda p: p[0].message_id
+                )
+            ]
+            # Add the sorted, received message bodies to the buffer.
+            self._recv_buffer[header.correlation_id] = body_list
+            # Signal that all messages have been received.
+            self._recv_events[header.correlation_id].set()
+
+        # Signal the next worker that it can process its message.
+        next_event.set()
 
     async def __aenter__(self) -> T.Self:
         rs = RequestSession(
@@ -462,10 +600,11 @@ class ETPClient:
         try:
             await self.send(CloseSession(reason="Client exiting"))
             close_session_sent = True
-        except websockets.ConnectionClosed:
+        except websockets.ConnectionClosed as e:
             logger.error(
                 "Websockets connection is closed, unable to send a CloseSession-message"
-                " to the server"
+                " to the server",
+                exc_info=e,
             )
         finally:
             # Check if the receive task is done, and if not, stop it.
@@ -482,9 +621,17 @@ class ETPClient:
         except websockets.ConnectionClosed as e:
             # The receive task errored on a closed websockets connection.
             logger.error(
-                "The receiver task errored on a closed websockets connection. The "
-                f"message was: {e.__class__.__name__}: {e}"
+                "The receiver task errored on a closed websockets connection.",
+                exc_info=e,
             )
+        except ExceptionGroup as eg:
+            logger.error(
+                "There were multiple errors in the receiver task",
+                exc_info=eg,
+            )
+
+        # Wait for the executor to shut down.
+        self._executor_pool.shutdown(wait=True)
 
         if len(self._recv_buffer) > 0:
             logger.error(
@@ -682,6 +829,11 @@ class etp_connect:
                     subprotocols=self.subprotocols,
                     max_size=self.max_message_size,
                     additional_headers=self.get_additional_headers(),
+                    # Use default ping interval.
+                    ping_interval=20,
+                    # Increase the ping timeout to give more slack to the
+                    # server.
+                    ping_timeout=120,
                 )
             )
             etp_client = await self.stack.enter_async_context(

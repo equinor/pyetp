@@ -1,9 +1,11 @@
+import collections.abc
+
 import numpy as np
 import numpy.typing as npt
 
 
 def get_array_block_sizes(
-    shape: tuple[int], dtype: npt.DTypeLike, max_array_size: int
+    shape: collections.abc.Sequence[int], dtype: npt.DTypeLike, max_array_size: int
 ) -> tuple[list[list[int]], list[list[int]]]:
     dtype = np.dtype(dtype)
     # Total size of array in bytes.
@@ -47,21 +49,21 @@ def get_array_block_sizes(
 
     # Create an array with starting indices for each block and a corresponding
     # array with the number of elements in each block.
-    starts = np.zeros((num_blocks, len(shape)), dtype=int)
-    counts = np.zeros_like(starts)
+    starts_arr = np.zeros((num_blocks, len(shape)), dtype=int)
+    counts_arr = np.zeros_like(starts_arr)
 
     # Sum up the number of element counts to get the starting index in each
     # block (starting at 0).
-    starts[1:, 0] = np.cumsum(axis_counts[:-1])
+    starts_arr[1:, 0] = np.cumsum(axis_counts[:-1])
 
     # The axis_counts already lists the number of elements in the first axis,
     # so we only add the length of each remaining axis as the counts for the
     # last axes.
-    counts[:, 0] = axis_counts
-    counts[:, 1:] = shape[1:]
+    counts_arr[:, 0] = axis_counts
+    counts_arr[:, 1:] = shape[1:]
 
     # Check that no block exceeds the maximum size.
-    count_size = np.prod(counts, axis=1) * dtype.itemsize
+    count_size = np.prod(counts_arr, axis=1) * dtype.itemsize
     assert np.all(count_size - max_array_size <= 0)
 
-    return starts.tolist(), counts.tolist()
+    return starts_arr.tolist(), counts_arr.tolist()
