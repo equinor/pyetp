@@ -5,6 +5,7 @@ import dataclasses
 import heapq
 import logging
 import os
+import sys
 import typing as T
 import urllib.parse
 import uuid
@@ -157,10 +158,28 @@ class ETPClient:
         except AttributeError:
             max_workers = len(os.sched_getaffinity(0))
 
-        # Start the thread pool before the receiver task.
-        self._executor_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers,
+        try:
+            # This function is available from Python 3.13.
+            gil_enabled = sys._is_gil_enabled()  # type: ignore[attr-defined]
+        except AttributeError:
+            # If we use Python < 3.13, there is no free-threaded Python build,
+            # and the GIL will be enabled.
+            gil_enabled = True
+
+        self._executor_pool: (
+            concurrent.futures.ProcessPoolExecutor
+            | concurrent.futures.ThreadPoolExecutor
         )
+        if gil_enabled:
+            self._executor_pool = concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_workers,
+            )
+        else:
+            # Start the thread pool before the receiver task.
+            self._executor_pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_workers,
+            )
+
         self._recvtask = asyncio.create_task(self._receiver_loop())
 
     @staticmethod
