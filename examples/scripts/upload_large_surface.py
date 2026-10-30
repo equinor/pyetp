@@ -106,12 +106,13 @@ async def upload_surface(
         )
 
 
-t0 = time.time()
-gri_uri, crs_uri, epc_uri = asyncio.run(
-    upload_surface(ml_objects, data_arrays), debug=True
-)
-t1 = time.time()
-print(f"Time to upload surface: {t1 - t0} sec")
+if __name__ == "__main__":
+    t0 = time.time()
+    gri_uri, crs_uri, epc_uri = asyncio.run(
+        upload_surface(ml_objects, data_arrays), debug=True
+    )
+    t1 = time.time()
+    print(f"Time to upload surface: {t1 - t0} sec")
 
 
 async def download_surface(ml_uris: list[str]) -> None:
@@ -119,17 +120,18 @@ async def download_surface(ml_uris: list[str]) -> None:
         return await rddms_client.download_models(ml_uris=ml_uris, download_arrays=True)
 
 
-t0 = time.time()
-gri_model, crs_model, epc_model = asyncio.run(
-    download_surface([gri_uri, crs_uri, epc_uri]), debug=True
-)
-t1 = time.time()
-print(f"Time to download surface: {t1 - t0} sec")
-assert gri_model.obj == surface.grid
-assert crs_model.obj == crs
-assert epc_model.obj == epc
+if __name__ == "__main__":
+    t0 = time.time()
+    gri_model, crs_model, epc_model = asyncio.run(
+        download_surface([gri_uri, crs_uri, epc_uri]), debug=True
+    )
+    t1 = time.time()
+    print(f"Time to download surface: {t1 - t0} sec")
+    assert gri_model.obj == surface.grid
+    assert crs_model.obj == crs
+    assert epc_model.obj == epc
 
-np.testing.assert_equal(gri_model.arrays[pir], surface.array)
+    np.testing.assert_equal(gri_model.arrays[pir], surface.array)
 
 
 async def clean_up() -> None:
@@ -148,7 +150,8 @@ async def clean_up() -> None:
         assert len(resources) == 0
 
 
-asyncio.run(clean_up())
+if __name__ == "__main__":
+    asyncio.run(clean_up())
 
 
 # client = RDDMSClientSync(uri=etp_url)
