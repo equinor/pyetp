@@ -151,17 +151,17 @@ class ETPClient:
             )
         self.etp_timeout = etp_timeout
 
-        try:
+        if sys.version_info >= (3, 13):
             # The `os.process_cpu_count`-function is available from Python
             # 3.13.
-            max_workers = os.process_cpu_count()  # type: ignore[attr-defined]
-        except AttributeError:
+            max_workers = os.process_cpu_count()
+        else:
             max_workers = len(os.sched_getaffinity(0))
 
-        try:
+        if sys.version_info >= (3, 13):
             # This function is available from Python 3.13.
-            gil_enabled = sys._is_gil_enabled()  # type: ignore[attr-defined]
-        except AttributeError:
+            gil_enabled = sys._is_gil_enabled()
+        else:
             # If we use Python < 3.13, there is no free-threaded Python build,
             # and the GIL will be enabled.
             gil_enabled = True
