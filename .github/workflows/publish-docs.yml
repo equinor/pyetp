@@ -23,7 +23,7 @@ jobs:
     name: Deploy
     needs: build
     if: needs.build.outputs.artifact_uploaded == 'true'
-    uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.34.0
+    uses: equinor/ops-actions/.github/workflows/github-pages.yml@v9.44.0
     permissions:
       id-token: write # Required to authenticate to GitHub Pages
       pages: write # Required to publish to GitHub Pages
