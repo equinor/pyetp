@@ -11,7 +11,7 @@ permissions: {}
 jobs:
   build:
     name: Build
-    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.34.0
+    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@v9.44.0
     permissions:
       contents: read # Required to checkout the repository
     with:
