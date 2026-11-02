@@ -4,8 +4,20 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    allow:
+      - dependency-type: "all"
+    groups:
+      all-deps:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+    allow:
+      - dependency-type: "all"
+    groups:
+      all-deps:
+        patterns:
+          - "*"
