@@ -166,6 +166,8 @@ class ETPClient:
             # and the GIL will be enabled.
             gil_enabled = True
 
+        # Limit the number of workers.
+        max_workers = max(1, min(4, max_workers // 2))
         self._executor_pool: (
             concurrent.futures.ProcessPoolExecutor
             | concurrent.futures.ThreadPoolExecutor
