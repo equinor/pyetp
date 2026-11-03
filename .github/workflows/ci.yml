@@ -10,6 +10,8 @@ on:
       - '.github/**'
   workflow_call:
 
+permissions: {}
+
 jobs:
   test:
     runs-on: ubuntu-latest
