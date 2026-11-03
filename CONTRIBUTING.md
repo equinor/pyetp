@@ -48,15 +48,23 @@ If you are proposing a feature:
 Ready to contribute? Here's how to set up ``pyetp`` for local development.
 
 1. Fork the ``pyetp`` repo on Github equinor to your personal user
-2. Clone your fork locally
-3. Start the development container. [Info](https://containers.dev/)
+2. Clone your fork locally and fetch the test data, which is stored with [Git LFS](https://git-lfs.com): `git lfs pull`
+3. Install the package and the development dependencies:
+```
+python -m pip install --upgrade pip
+pip install -e .
+pip install --group dev
+```
 4. Create a branch for local development:
 5. Make your changes locally.
 
-6. When you're done making changes, check that your changes pass flake8 and the tests
+6. When you're done making changes, start the local test server and check that your changes pass the tests, formatting, linting and typing (the same checks as in CI)
 ```
-poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=docs
-poetry run pytest --cov-report=term-missing --cov=pyetp tests/ | tee pytest-coverage.txt
+docker compose -f tests/compose.yml up --detach
+pytest --cov-report=term-missing --cov=pyetp tests/
+ruff format --check
+ruff check
+mypy src tests --strict
 ```
 
 7. Commit your changes and push your branch
