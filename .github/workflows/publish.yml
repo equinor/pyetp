@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: read
 
-    uses: equinor/pyetp/.github/workflows/ci.yml@main
+    uses: $/.github/workflows/ci.yml
 
   release-build:
     needs:
