@@ -4,6 +4,7 @@ import contextlib
 import dataclasses
 import heapq
 import logging
+import multiprocessing
 import os
 import sys
 import typing as T
@@ -167,19 +168,43 @@ class ETPClient:
             gil_enabled = True
 
         # Limit the number of workers.
-        max_workers = max(1, min(4, max_workers // 2))
-        self._executor_pool: (
+        if max_workers // 2 >= 4:
+            max_send_workers = 2
+            max_recv_workers = 2
+        else:
+            max_send_workers = 1
+            max_recv_workers = 1
+
+        self._send_executor_pool: (
             concurrent.futures.ProcessPoolExecutor
             | concurrent.futures.ThreadPoolExecutor
         )
+        self._recv_executor_pool: (
+            concurrent.futures.ProcessPoolExecutor
+            | concurrent.futures.ThreadPoolExecutor
+        )
+
+        # Start executor pools before the receiver task.
         if gil_enabled:
-            self._executor_pool = concurrent.futures.ProcessPoolExecutor(
-                max_workers=max_workers,
+            # Use the 'spawn'-method for starting processes. The default (in
+            # Python version prior to 3.14) is 'fork' which can lead to
+            # deadlocks in multi-threaded programs.
+            ctx = multiprocessing.get_context("spawn")
+
+            self._send_executor_pool = concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_send_workers,
+                mp_context=ctx,
+            )
+            self._recv_executor_pool = concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_recv_workers,
+                mp_context=ctx,
             )
         else:
-            # Start the thread pool before the receiver task.
-            self._executor_pool = concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_workers,
+            self._send_executor_pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_send_workers,
+            )
+            self._recv_executor_pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_recv_workers,
             )
 
         self._recvtask = asyncio.create_task(self._receiver_loop())
@@ -272,7 +297,7 @@ class ETPClient:
         loop = asyncio.get_running_loop()
         try:
             message, mpb_messages = await loop.run_in_executor(
-                self._executor_pool,
+                self._send_executor_pool,
                 self._set_up_send_message,
                 message_id,
                 body,
@@ -474,7 +499,7 @@ class ETPClient:
     ) -> None:
         loop = asyncio.get_running_loop()
         header, body = await loop.run_in_executor(
-            self._executor_pool,
+            self._recv_executor_pool,
             decode_message,
             message,
             self.negotiated_compression.decompress
@@ -632,8 +657,9 @@ class ETPClient:
                 exc_info=eg,
             )
 
-        # Wait for the executor to shut down.
-        self._executor_pool.shutdown(wait=True)
+        # Wait for the executors to shut down.
+        self._send_executor_pool.shutdown(wait=True)
+        self._recv_executor_pool.shutdown(wait=True)
 
         if len(self._recv_buffer) > 0:
             logger.error(
