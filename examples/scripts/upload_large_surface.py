@@ -79,14 +79,6 @@ def get_random_grid(
     return Surface(grid=grid, array=z_values)
 
 
-surface = get_random_grid(shape=(20_000, 10_000), crs=crs, epc=epc)
-print(f"{np.size(surface.array) * surface.array.dtype.itemsize / 1e9} GB")
-
-pir = surface.grid.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
-data_arrays = {pir: surface.array}
-ml_objects = [surface.grid, crs, epc]
-
-
 async def upload_surface(
     ml_objects: list[ro.AbstractCitedDataObject],
     data_arrays: dict[str, npt.NDArray[np.float64]],
@@ -107,6 +99,12 @@ async def upload_surface(
 
 
 if __name__ == "__main__":
+    surface = get_random_grid(shape=(20_000, 10_000), crs=crs, epc=epc)
+    print(f"{np.size(surface.array) * surface.array.dtype.itemsize / 1e9} GB")
+
+    pir = surface.grid.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+    data_arrays = {pir: surface.array}
+    ml_objects = [surface.grid, crs, epc]
     t0 = time.time()
     gri_uri, crs_uri, epc_uri = asyncio.run(
         upload_surface(ml_objects, data_arrays), debug=True
