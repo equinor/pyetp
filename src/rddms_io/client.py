@@ -606,13 +606,12 @@ class RDDMSClient:
             include_edges=True,
         )
 
-        task_responses = await asyncio.gather(
-            self.etp_client.send_and_recv(gr_sources),
-            self.etp_client.send_and_recv(gr_targets),
-        )
+        async with asyncio.TaskGroup() as tg:
+            task_sources = tg.create_task(self.etp_client.send_and_recv(gr_sources))
+            task_targets = tg.create_task(self.etp_client.send_and_recv(gr_targets))
 
-        sources_responses = task_responses[0]
-        targets_responses = task_responses[1]
+        sources_responses = task_sources.result()
+        targets_responses = task_targets.result()
 
         source_edges = [
             e
@@ -743,15 +742,17 @@ class RDDMSClient:
         ml_uris = [DataObjectURI.from_uri(uri) for uri in ml_uris]
         dataspace_uris = [DataspaceURI.from_any_etp_uri(uri) for uri in ml_uris]
 
-        array_metadata = await asyncio.gather(
-            *[
-                self.list_object_array_metadata(
-                    dataspace_uri=dataspace_uri,
-                    ml_objects=[ml_object.obj],
+        async with asyncio.TaskGroup() as tg:
+            metadata_tasks = [
+                tg.create_task(
+                    self.list_object_array_metadata(
+                        dataspace_uri=dataspace_uri,
+                        ml_objects=[ml_object.obj],
+                    )
                 )
                 for dataspace_uri, ml_object in zip(dataspace_uris, ml_objects)
             ]
-        )
+        array_metadata = [t.result() for t in metadata_tasks]
 
         metadata_map: dict[str, dict[str, DataArrayMetadata]] = {}
         for am in array_metadata:
@@ -826,7 +827,9 @@ class RDDMSClient:
             )
             return {}
 
-        task_responses = await asyncio.gather(*tasks)
+        async with asyncio.TaskGroup() as tg:
+            task_handles = [tg.create_task(task) for task in tasks]
+        task_responses = [th.result() for th in task_handles]
 
         metadata_map = {}
         for uri, tr in zip(ml_uris, task_responses):
@@ -965,7 +968,9 @@ class RDDMSClient:
                 tasks.append(task)
 
             # Upload all blocks.
-            task_responses = await asyncio.gather(*tasks)
+            async with asyncio.TaskGroup() as tg:
+                task_handles = [tg.create_task(task) for task in tasks]
+            task_responses = [th.result() for th in task_handles]
 
             # Flatten list of responses.
             responses = [
@@ -1061,7 +1066,9 @@ class RDDMSClient:
             )
             tasks.append(task)
 
-        arrays = await asyncio.gather(*tasks)
+        async with asyncio.TaskGroup() as tg:
+            task_handles = [tg.create_task(task) for task in tasks]
+        arrays = [th.result() for th in task_handles]
         data_arrays = {hdf.path_in_hdf_file: arr for hdf, arr in zip(ml_hds, arrays)}
 
         return data_arrays
@@ -1170,7 +1177,9 @@ class RDDMSClient:
                 )
                 tasks.append(task)
 
-            task_responses = await asyncio.gather(*tasks)
+            async with asyncio.TaskGroup() as tg:
+                task_handles = [tg.create_task(task) for task in tasks]
+            task_responses = [th.result() for th in task_handles]
             responses = [
                 response
                 for task_response in task_responses
@@ -1403,7 +1412,9 @@ class RDDMSClient:
 
             tasks.append(self._send_put_data_objects(pdo))
 
-        task_responses = await asyncio.gather(*tasks)
+        async with asyncio.TaskGroup() as tg:
+            task_handles = [tg.create_task(task) for task in tasks]
+        task_responses = [th.result() for th in task_handles]
         responses = [
             response for task_response in task_responses for response in task_response
         ]
@@ -1444,7 +1455,9 @@ class RDDMSClient:
                 "provided objects."
             )
 
-        await asyncio.gather(*array_tasks)
+        async with asyncio.TaskGroup() as tg:
+            for array_task in array_tasks:
+                tg.create_task(array_task)
 
         logger.debug("Done uploading arrays.")
         return ml_uris
@@ -1510,16 +1523,18 @@ class RDDMSClient:
                 "'download_linked_objects=True'."
             )
 
-        models = await asyncio.gather(
-            *[
-                self._download_model(
-                    ml_uri=str(ml_uri),
-                    download_arrays=download_arrays,
-                    download_linked_objects=download_linked_objects,
+        async with asyncio.TaskGroup() as tg:
+            tasks = [
+                tg.create_task(
+                    self._download_model(
+                        ml_uri=str(ml_uri),
+                        download_arrays=download_arrays,
+                        download_linked_objects=download_linked_objects,
+                    )
                 )
                 for ml_uri in ml_uris
             ]
-        )
+        models = [t.result() for t in tasks]
 
         if populate_linked_references:
             models = [
@@ -1618,17 +1633,19 @@ class RDDMSClient:
 
             if additional_uris:
                 logger.info(f"Downloading linked objects with uris: {additional_uris}")
-                linked_models = await asyncio.gather(
-                    *[
-                        self._download_model(
-                            ml_uri=au,
-                            download_arrays=download_arrays,
-                            # TODO: Allow downloading objects at a lower depth?
-                            download_linked_objects=False,
+                async with asyncio.TaskGroup() as tg:
+                    tasks = [
+                        tg.create_task(
+                            self._download_model(
+                                ml_uri=au,
+                                download_arrays=download_arrays,
+                                # TODO: Allow downloading objects at a lower depth?
+                                download_linked_objects=False,
+                            )
                         )
                         for au in additional_uris
                     ]
-                )
+                linked_models = [t.result() for t in tasks]
 
         if not download_arrays:
             return RDDMSModel(
