@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import uuid
 
 import numpy as np
 import pytest
@@ -41,6 +42,32 @@ def test_default_citation() -> None:
 
     assert isinstance(cit.creation, XmlDateTime)
     assert cit.creation.to_datetime() == now
+
+
+@pytest.mark.parametrize(
+    "object_type", [ro.EpcExternalPartReference, ro.obj_EpcExternalPartReference]
+)
+def test_uuid_instance_is_normalized_before_serialization(
+    object_type: type[ro.EpcExternalPartReference],
+) -> None:
+    identifier = uuid.UUID("cafecafe-1234-4567-89ab-0123456789ab")
+    citation = ro.Citation(title="UUID roundtrip", originator="pyetp-tester")
+    obj = object_type(citation=citation, uuid=identifier)  # type: ignore[arg-type]
+
+    assert isinstance(obj.uuid, str)
+    assert obj.uuid == str(identifier)
+    parsed, xml = compare_serialization_parsing_roundtrip(obj)
+    assert parsed.uuid == str(identifier)  # type: ignore[union-attr]
+    assert etree.fromstring(xml).get("uuid") == str(identifier)
+
+
+def test_explicit_uuid_string_is_preserved() -> None:
+    identifier = "CAFECAFE-1234-4567-89AB-0123456789AB"
+    obj = ro.EpcExternalPartReference(
+        citation=ro.Citation(title="String UUID", originator="pyetp-tester"),
+        uuid=identifier,
+    )
+    assert obj.uuid == identifier
 
 
 def test_default_hdf5_epc_external_part_reference() -> None:
