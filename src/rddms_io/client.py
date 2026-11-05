@@ -559,7 +559,7 @@ class RDDMSClient:
         depth
             The number of links to return. Setting `depth = 1` will only return
             targets and sources that are directly linked to the start object.
-            With `depth = 2` we get links to objects that linkes to the targets
+            With `depth = 2` we get links to objects that links to the targets
             and sources of the start object. Default is `1`.
 
         Returns
