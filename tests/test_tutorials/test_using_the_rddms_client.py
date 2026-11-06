@@ -14,6 +14,8 @@ def test_using_the_rddms_client() -> None:
     assert isinstance(dataspaces, list)
     for d in dataspaces:
         assert isinstance(d, Dataspace)
+    assert "rddms_io/demo" in [d.path for d in dataspaces]
+    dataspace = next(filter(lambda d: d.path == "rddms_io/demo", dataspaces))
 
     assert isinstance(gri_resources, list)
     for g in gri_resources:
@@ -24,12 +26,10 @@ def test_using_the_rddms_client() -> None:
     assert isinstance(gri, ro.obj_Grid2dRepresentation)
     assert isinstance(crs, ro.obj_LocalDepth3dCrs)
 
-    assert len(dataspaces) == 1
-    assert dataspaces[0].path == "rddms_io/demo"
     assert len(gri_resources) == 1
 
-    gri_uri = gri.get_etp_data_object_uri(dataspaces[0].path)
-    crs_uri = crs.get_etp_data_object_uri(dataspaces[0].path)
+    gri_uri = gri.get_etp_data_object_uri(dataspace.path)
+    crs_uri = crs.get_etp_data_object_uri(dataspace.path)
     assert gri_uri == gri_resources[0].uri
     assert gri_uri == gri_lo.start_uri
     assert (

@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import datetime
 import logging
 import sys
@@ -133,6 +134,9 @@ class RDDMSClient:
 
     def __init__(self, etp_client: ETPClient) -> None:
         self.etp_client = etp_client
+        self.task_limiter_upload_array = asyncio.Semaphore(10)
+        self.task_limiter_download_array = asyncio.Semaphore(10)
+        self.task_limiter_upload_model = asyncio.Semaphore(10)
 
     async def close(self) -> None:
         """
@@ -385,7 +389,7 @@ class RDDMSClient:
                 raise ETPTransactionFailure(str(response.failure_reason))
 
             transaction_uuid = uuid.UUID(str(response.transaction_uuid.root))
-            logger.debug("Started transaction with uuid: {transaction_uuid}")
+            logger.debug(f"Started transaction with uuid: {transaction_uuid}")
             return transaction_uuid
 
         raise ETPTransactionFailure(
@@ -919,10 +923,6 @@ class RDDMSClient:
 
         # Check if we can upload the entire array in go, or if we need to
         # upload it in smaller blocks.
-
-        # TODO: Check if we should use `await` instead of `asyncio.gather`.
-        # This is to ensure that the websockets heartbeat gets to run once in a
-        # while.
         if data.nbytes > self.etp_client.max_array_size:
             tasks = []
 
@@ -932,26 +932,23 @@ class RDDMSClient:
                 data.shape, data.dtype, self.etp_client.max_array_size
             )
 
-            for starts, counts in zip(block_starts, block_counts):
-                # Create slice-objects for each block.
-                slices = tuple(
-                    map(
-                        lambda s, c: slice(s, s + c),
-                        np.array(starts).astype(int),
-                        np.array(counts).astype(int),
+            async with asyncio.TaskGroup() as tg:
+                for starts, counts in zip(block_starts, block_counts):
+                    # Create slice-objects for each block.
+                    slices = tuple(
+                        map(
+                            lambda s, c: slice(s, s + c),
+                            np.array(starts).astype(int),
+                            np.array(counts).astype(int),
+                        )
                     )
-                )
 
-                # Slice the array, and convert to the relevant ETP-array type.
-                # Note in the particular the extra `.data`-after the call. The
-                # data should not be of type `DataArray`, but `AnyArray`, so we
-                # need to fetch it from the `DataArray`.
-                etp_subarray_data = DataArray.from_numpy_array(data[slices]).data
-
-                # Create an asynchronous task to upload a block to the
-                # ETP-server.
-                task = self.etp_client.send_and_recv(
-                    PutDataSubarrays(
+                    # Slice the array, and convert to the relevant ETP-array type.
+                    # Note in particular the extra `.data`-after the call. The data
+                    # should not be of type `DataArray`, but `AnyArray`, so we need
+                    # to fetch it from the `DataArray`.
+                    etp_subarray_data = DataArray.from_numpy_array(data[slices]).data
+                    pdsa = PutDataSubarrays(
                         data_subarrays={
                             dai.path_in_resource: PutDataSubarraysType(
                                 uid=dai,
@@ -960,12 +957,16 @@ class RDDMSClient:
                                 counts=counts,
                             ),
                         },
-                    ),
-                )
-                tasks.append(task)
+                    )
 
-            # Upload all blocks.
-            task_responses = await asyncio.gather(*tasks)
+                    # Create an asynchronous task to upload a block to the
+                    # ETP-server.
+                    async with self.task_limiter_upload_array:
+                        task = self.etp_client.send_and_recv(pdsa)
+                        tasks.append(tg.create_task(task))
+
+            # Collect all results from all blocks
+            task_responses = [t.result() for t in tasks]
 
             # Flatten list of responses.
             responses = [
@@ -1138,74 +1139,56 @@ class RDDMSClient:
                     f"{metadata.logical_array_type = }, with {logical_dtype = }"
                 )
 
-            # Create a buffer for the data.
-            data = np.zeros(metadata.dimensions, dtype=transport_dtype)
-
             # Get list with starting indices in each block, and a list with the
             # number of elements along each axis for each block.
             block_starts, block_counts = get_array_block_sizes(
-                data.shape, data.dtype, self.etp_client.max_array_size
+                metadata.dimensions, transport_dtype, self.etp_client.max_array_size
             )
 
-            def data_subarrays_key(pir: str, i: int) -> str:
-                return pir + f" ({i})"
-
-            # TODO: Consider using `await` instead of `asyncio.gather` to give
-            # the websockets connection time to run the heartbeat
-            # communication.
             tasks = []
-            for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
-                task = self.etp_client.send_and_recv(
-                    GetDataSubarrays(
-                        data_subarrays={
-                            data_subarrays_key(
-                                dai.path_in_resource, i
-                            ): GetDataSubarraysType(
-                                uid=dai,
-                                starts=starts,
-                                counts=counts,
-                            ),
-                        },
-                    ),
-                )
-                tasks.append(task)
+            async with asyncio.TaskGroup() as tg:
+                for i, (starts, counts) in enumerate(zip(block_starts, block_counts)):
+                    task = self.etp_client.send_and_recv(
+                        GetDataSubarrays(
+                            data_subarrays={
+                                self.data_subarrays_key(
+                                    dai.path_in_resource, i
+                                ): GetDataSubarraysType(
+                                    uid=dai,
+                                    starts=starts,
+                                    counts=counts,
+                                ),
+                            },
+                        ),
+                    )
+                    async with self.task_limiter_download_array:
+                        tasks.append(tg.create_task(task))
 
-            task_responses = await asyncio.gather(*tasks)
+            task_responses = [t.result() for t in tasks]
             responses = [
                 response
                 for task_response in task_responses
                 for response in task_response
             ]
 
-            data_blocks = []
-            for i, response in enumerate(responses):
-                assert isinstance(response, GetDataSubarraysResponse)
-                assert (
-                    len(response.data_subarrays) == 1
-                    and data_subarrays_key(dai.path_in_resource, i)
-                    in response.data_subarrays
+            loop = asyncio.get_running_loop()
+            # Here we use a `ThreadPoolExecutor` instead of
+            # `ProcessPoolExecutor` even though the function that is called is
+            # CPU bound. The purpose is to not block the async-thread. Using
+            # threads instead of processes avoids pickling the input data and
+            # the output results from the function. The data arrays can be very
+            # large, and therefore the prohibiting factor is the memory.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                return await loop.run_in_executor(
+                    executor,
+                    self._assemble_subarray_from_blocks,
+                    responses,
+                    dai,
+                    metadata.dimensions,
+                    transport_dtype,
+                    block_starts,
+                    block_counts,
                 )
-
-                data_block = response.data_subarrays[
-                    data_subarrays_key(dai.path_in_resource, i)
-                ].to_numpy_array()
-                data_blocks.append(data_block)
-
-            for data_block, starts, counts in zip(
-                data_blocks, block_starts, block_counts
-            ):
-                # Create slice-objects for each block.
-                slices = tuple(
-                    map(
-                        lambda s, c: slice(s, s + c),
-                        np.array(starts).astype(int),
-                        np.array(counts).astype(int),
-                    )
-                )
-                data[slices] = data_block
-
-            # Return after fetching all sub arrays.
-            return data
 
         # Download the full array in one go.
         responses = await self.etp_client.send_and_recv(
@@ -1222,6 +1205,51 @@ class RDDMSClient:
         )
 
         return response.data_arrays[dai.path_in_resource].to_numpy_array()
+
+    @staticmethod
+    def data_subarrays_key(pir: str, i: int) -> str:
+        return pir + f" ({i})"
+
+    @staticmethod
+    def _assemble_subarray_from_blocks(
+        responses: list[ETPBaseProtocolModel],
+        dai: DataArrayIdentifier,
+        shape: Sequence[int],
+        dtype: npt.DTypeLike,
+        block_starts: list[list[int]],
+        block_counts: list[list[int]],
+    ) -> npt.NDArray[ETPNumpyArrayType]:
+        for response in responses:
+            assert isinstance(response, GetDataSubarraysResponse)
+
+        data_blocks = []
+        for i, response in enumerate(responses):
+            assert isinstance(response, GetDataSubarraysResponse)
+            assert (
+                len(response.data_subarrays) == 1
+                and RDDMSClient.data_subarrays_key(dai.path_in_resource, i)
+                in response.data_subarrays
+            )
+
+            data_block = response.data_subarrays[
+                RDDMSClient.data_subarrays_key(dai.path_in_resource, i)
+            ].to_numpy_array()
+            data_blocks.append(data_block)
+
+        # Create a buffer for the data.
+        data = np.zeros(shape, dtype=dtype)
+        for data_block, starts, counts in zip(data_blocks, block_starts, block_counts):
+            # Create slice-objects for each block.
+            slices = tuple(
+                map(
+                    lambda s, c: slice(s, s + c),
+                    np.array(starts).astype(int),
+                    np.array(counts).astype(int),
+                )
+            )
+            data[slices] = data_block
+
+        return data
 
     async def upload_model(
         self,
@@ -1367,43 +1395,45 @@ class RDDMSClient:
         ml_uris = []
         ml_hds = []
         tasks = []
-        for obj in ml_objects:
-            # Find all `Hdf5Dataset`-objects in the object.
-            ml_hds.extend(find_hdf5_datasets(obj))
+        async with asyncio.TaskGroup() as tg:
+            for obj in ml_objects:
+                # Find all `Hdf5Dataset`-objects in the object.
+                ml_hds.extend(find_hdf5_datasets(obj))
 
-            uri = obj.get_etp_data_object_uri(dataspace_uri)
-            ml_uris.append(uri)
-            obj_xml = serialize_resqml_v201_object(obj)
+                uri = obj.get_etp_data_object_uri(dataspace_uri)
+                ml_uris.append(uri)
+                obj_xml = serialize_resqml_v201_object(obj)
 
-            # Note that all objects passed in to this method is
-            # expected to contain a `citation`-field.
-            last_changed = obj.citation.last_update or obj.citation.creation
-            if not isinstance(last_changed, datetime.datetime):
-                last_changed = last_changed.to_datetime()
+                # Note that all objects passed in to this method is
+                # expected to contain a `citation`-field.
+                last_changed = obj.citation.last_update or obj.citation.creation
+                if not isinstance(last_changed, datetime.datetime):
+                    last_changed = last_changed.to_datetime()
 
-            dob = DataObject(
-                format="xml",
-                data=obj_xml,
-                resource=Resource(
-                    uri=uri,
-                    name=obj.citation.title,
-                    last_changed=int(last_changed.timestamp() * 1e6),
-                    store_created=now,
-                    store_last_write=now,
-                    # This is only used by WITSML channel data objects.
-                    active_status="Inactive",
-                    # Not used in the Store-protocol.
-                    source_count=None,
-                    target_count=None,
-                ),
-            )
-            pdo = PutDataObjects(
-                data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
-            )
+                dob = DataObject(
+                    format="xml",
+                    data=obj_xml,
+                    resource=Resource(
+                        uri=uri,
+                        name=obj.citation.title,
+                        last_changed=int(last_changed.timestamp() * 1e6),
+                        store_created=now,
+                        store_last_write=now,
+                        # This is only used by WITSML channel data objects.
+                        active_status="Inactive",
+                        # Not used in the Store-protocol.
+                        source_count=None,
+                        target_count=None,
+                    ),
+                )
+                pdo = PutDataObjects(
+                    data_objects={f"{dob.resource.name} -- {dob.resource.uri}": dob},
+                )
 
-            tasks.append(self._send_put_data_objects(pdo))
+                async with self.task_limiter_upload_model:
+                    tasks.append(tg.create_task(self._send_put_data_objects(pdo)))
 
-        task_responses = await asyncio.gather(*tasks)
+        task_responses = [t.result() for t in tasks]
         responses = [
             response for task_response in task_responses for response in task_response
         ]
