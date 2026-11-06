@@ -4,7 +4,6 @@ import contextlib
 import dataclasses
 import heapq
 import logging
-import multiprocessing
 import os
 import sys
 import typing as T
@@ -159,53 +158,21 @@ class ETPClient:
         else:
             max_workers = len(os.sched_getaffinity(0))
 
-        if sys.version_info >= (3, 13):
-            # This function is available from Python 3.13.
-            gil_enabled = sys._is_gil_enabled()
-        else:
-            # If we use Python < 3.13, there is no free-threaded Python build,
-            # and the GIL will be enabled.
-            gil_enabled = True
-
         # Limit the number of workers.
-        if max_workers // 2 >= 4:
-            max_send_workers = 2
-            max_recv_workers = 2
+        if max_workers // 4 >= 1:
+            max_send_workers = max_workers // 4
+            max_recv_workers = max_workers // 4
         else:
             max_send_workers = 1
             max_recv_workers = 1
 
-        self._send_executor_pool: (
-            concurrent.futures.ProcessPoolExecutor
-            | concurrent.futures.ThreadPoolExecutor
-        )
-        self._recv_executor_pool: (
-            concurrent.futures.ProcessPoolExecutor
-            | concurrent.futures.ThreadPoolExecutor
-        )
-
         # Start executor pools before the receiver task.
-        if gil_enabled:
-            # Use the 'spawn'-method for starting processes. The default (in
-            # Python version prior to 3.14) is 'fork' which can lead to
-            # deadlocks in multi-threaded programs.
-            ctx = multiprocessing.get_context("spawn")
-
-            self._send_executor_pool = concurrent.futures.ProcessPoolExecutor(
-                max_workers=max_send_workers,
-                mp_context=ctx,
-            )
-            self._recv_executor_pool = concurrent.futures.ProcessPoolExecutor(
-                max_workers=max_recv_workers,
-                mp_context=ctx,
-            )
-        else:
-            self._send_executor_pool = concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_send_workers,
-            )
-            self._recv_executor_pool = concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_recv_workers,
-            )
+        self._send_executor_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_send_workers,
+        )
+        self._recv_executor_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_recv_workers,
+        )
 
         self._recvtask = asyncio.create_task(self._receiver_loop())
 
