@@ -1171,13 +1171,9 @@ class RDDMSClient:
                 for response in task_response
             ]
 
+            # Assemble the full array from the subarrays in a separate thread
+            # to avoid blocking the event loop.
             loop = asyncio.get_running_loop()
-            # Here we use a `ThreadPoolExecutor` instead of
-            # `ProcessPoolExecutor` even though the function that is called is
-            # CPU bound. The purpose is to not block the async-thread. Using
-            # threads instead of processes avoids pickling the input data and
-            # the output results from the function. The data arrays can be very
-            # large, and therefore the prohibiting factor is the memory.
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 return await loop.run_in_executor(
                     executor,

@@ -259,7 +259,7 @@ class ETPClient:
         # do the sorting in the current event loop.
         heapq.heappush(self._send_message_id_heap, pe)
 
-        # Encode message, or messages, in a separate process to avoid blocking
+        # Encode message, or messages, in a separate thread to avoid blocking
         # the event loop.
         loop = asyncio.get_running_loop()
         try:
