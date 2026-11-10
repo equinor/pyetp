@@ -655,6 +655,7 @@ class RDDMSClient:
             filter(lambda r: r.uri == start_uri, source_resources + target_resources),
             None,
         )
+
         if self_resource is None:
             gr_self = GetResources(
                 context=ContextInfo(
