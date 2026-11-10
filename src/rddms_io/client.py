@@ -1741,6 +1741,7 @@ class RDDMSClient:
         handle_transaction: bool = True,
         debounce: bool | float = False,
         max_depth: int = 10,
+        only_self_and_sources: bool = False,
     ) -> Sequence[str]:
         """
         Method used for deleting a model starting from a single uri
@@ -1754,9 +1755,7 @@ class RDDMSClient:
             Take care when using this method. It can potentially delete the
             head of a graph in order to remove a single branch. In this case
             other branches will still live on, but will now have lost the top
-            node. Furthermore, this method will not delete any
-            `obj_EpcExternalPartReference`-objects which will be left behind on
-            the server.
+            node.
 
         !!! Warning "Stability"
 
@@ -1764,6 +1763,14 @@ class RDDMSClient:
             any of the source objects have targets that are not directly linked
             to the start object, this method will fail. If so, a more manual
             and thorough search must be done to find all connected pieces.
+
+        !!! Note "Hidden objects"
+
+            There are (at least) two objects, the
+            `obj_EpcExternalPartReference` and `obj_ActivityTemplate`, that
+            will not be picked up when searching for linked objects. This means
+            that they will not be deleted from the server (unless they are
+            explicitly listed via their uris).
 
         Parameters
         ----------
@@ -1792,10 +1799,29 @@ class RDDMSClient:
             depth, the deletion will fail. Default is `10`, which should cover
             somewhat large models.
 
+        only_self_and_sources
+            Flag to toggle if targets (objects that are referenced from the
+            `start_uri`-object) should be deleted. If a target object is the
+            target of multiple objects, e.g., two independent
+            `obj_Grid2dRepresentation`-objects point to the same
+            `obj_LocalDepth3dCrs`, that target cannot be deleted as it would
+            leave a source object with a reference to a non-existent object (it
+            is enforced by the server). Setting `only_self_and_sources = True`
+            this method will only attempt to delete the `start_uri`-object and
+            its sources. The default is `False`, i.e., delete both sources and
+            targets (and self).
+
         Returns
         -------
         Sequence[str]
             A list of ETP data object uris to the objects that were deleted.
+
+        Raises
+        ------
+        ETPTransactionFailure
+            Failed deletion will trigger an `ETPTransactionFailure`-exception.
+            Typically this occurs if the deleted objects will leave dangling
+            references behind.
 
         See Also
         --------
@@ -1821,14 +1847,23 @@ class RDDMSClient:
         )
 
         assert linked_objects.start_uri == start_uri
-        ml_uris = list(
-            # Construct set to remove any duplicate uris.
-            {
-                linked_objects.start_uri,
-                *[sr.uri for sr in linked_objects.source_resources],
-                *[tr.uri for tr in linked_objects.target_resources],
-            }
-        )
+
+        if only_self_and_sources:
+            ml_uris = list(
+                {
+                    linked_objects.start_uri,
+                    *[sr.uri for sr in linked_objects.source_resources],
+                }
+            )
+        else:
+            ml_uris = list(
+                # Construct set to remove any duplicate uris.
+                {
+                    linked_objects.start_uri,
+                    *[sr.uri for sr in linked_objects.source_resources],
+                    *[tr.uri for tr in linked_objects.target_resources],
+                }
+            )
 
         await self.delete_model(
             ml_uris=ml_uris,

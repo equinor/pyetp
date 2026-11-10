@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import collections.abc
 import pathlib
 
 import numpy as np
@@ -79,6 +80,113 @@ def get_random_surface() -> tuple[
     )
 
     return crs, epc, gri, Z
+
+
+def get_random_regular_surface_arrays(
+    crs_angle: float | np.float64 | None = None,
+    crs_offset: npt.NDArray[np.float64] | None = None,
+) -> tuple[RegularGridParameters[np.float64], npt.NDArray[np.float64]]:
+    shape = tuple(np.random.randint(10, 123, size=2).tolist())
+
+    x = np.linspace(
+        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[0]
+    )
+    y = np.linspace(
+        -20 * (np.random.random() + 0.1), 20 * (np.random.random() + 0.1), shape[1]
+    )
+    Z = np.exp(
+        -(np.linspace(-1, 1, shape[0])[:, None] ** 2)
+        - np.linspace(-1, 1, shape[1]) ** 2
+    )
+
+    origin = np.array([x[0], y[0]])
+    spacing = np.array([x[1] - x[0], y[1] - y[0]])
+
+    grid_angle = 2 * np.pi * (np.random.random() - 0.5)
+    grid_unit_vectors = RegularGridParameters.angle_to_unit_vectors(grid_angle)
+
+    crs_angle = crs_angle or (2 * np.pi * (np.random.random() - 0.5))
+
+    if crs_offset is None:
+        crs_offset = 2 * 10 * (np.random.random(2) - 0.5)
+
+    return RegularGridParameters(
+        shape=shape,
+        origin=origin,
+        spacing=spacing,
+        unit_vectors=grid_unit_vectors,
+        crs_offset=crs_offset,
+        crs_angle=crs_angle,
+    ), Z
+
+
+def get_random_surfaces_shared_crs() -> tuple[
+    ro.obj_LocalDepth3dCrs,
+    ro.obj_EpcExternalPartReference,
+    ro.obj_Grid2dRepresentation,
+    ro.obj_Grid2dRepresentation,
+    collections.abc.Mapping[str, npt.NDArray[np.float64]],
+]:
+
+    reg_1, z_1 = get_random_regular_surface_arrays()
+    reg_2, z_2 = get_random_regular_surface_arrays(
+        crs_angle=reg_1.crs_angle, crs_offset=reg_1.crs_offset
+    )
+    assert reg_1.crs_angle == reg_2.crs_angle
+    np.testing.assert_equal(reg_1.crs_offset, reg_2.crs_offset)
+
+    crs = ro.obj_LocalDepth3dCrs(
+        citation=ro.Citation(
+            title="Random crs",
+            originator="rddms-io-tester",
+        ),
+        vertical_crs=ro.VerticalUnknownCrs(unknown="MSL"),
+        projected_crs=ro.ProjectedCrsEpsgCode(epsg_code=23031),
+        areal_rotation=ro.PlaneAngleMeasure(
+            value=reg_1.crs_angle,
+            uom=ro.PlaneAngleUom.RAD,
+        ),
+        xoffset=float(reg_1.crs_offset[0]),
+        yoffset=float(reg_1.crs_offset[1]),
+    )
+
+    epc = ro.obj_EpcExternalPartReference(
+        citation=ro.Citation(title="Random epc", originator="rddms-io-tester"),
+    )
+
+    gri_1 = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Random grid 1", originator="rddms-io-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=reg_1.shape,
+        origin=reg_1.origin,
+        spacing=reg_1.spacing,
+        unit_vec_1=reg_1.unit_vectors[:, 0],
+        unit_vec_2=reg_1.unit_vectors[:, 1],
+    )
+
+    gri_2 = ro.obj_Grid2dRepresentation.from_regular_surface(
+        citation=ro.Citation(title="Random grid 2", originator="rddms-io-tester"),
+        crs=crs,
+        epc_external_part_reference=epc,
+        shape=reg_2.shape,
+        origin=reg_2.origin,
+        spacing=reg_2.spacing,
+        unit_vec_1=reg_2.unit_vectors[:, 0],
+        unit_vec_2=reg_2.unit_vectors[:, 1],
+    )
+
+    assert isinstance(gri_1.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri_1.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+    assert isinstance(gri_2.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri_2.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+
+    data_arrays = {
+        gri_1.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file: z_1,
+        gri_2.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file: z_2,
+    }
+
+    return crs, epc, gri_1, gri_2, data_arrays
 
 
 @skip_decorator
@@ -935,3 +1043,117 @@ async def test_epc_file_roundtrip(input_mesh_file: pathlib.Path) -> None:
 
         # Delete the dataspace.
         await rddms_client.delete_dataspace(dataspace_uri)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_delete_model_from_node() -> None:
+    dataspace_path = "test/delete-model-from-node"
+
+    crs, epc, gri, array = get_random_surface()
+
+    assert isinstance(gri.grid2d_patch.geometry.points, ro.Point3dZValueArray)
+    assert isinstance(gri.grid2d_patch.geometry.points.zvalues, ro.DoubleHdf5Array)
+
+    path_in_resource = gri.grid2d_patch.geometry.points.zvalues.values.path_in_hdf_file
+    data_arrays = {path_in_resource: array}
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
+
+        crs_uri, epc_uri, gri_uri = await rddms_client.upload_model(
+            dataspace_uri=dataspace_path,
+            ml_objects=[crs, epc, gri],
+            data_arrays=data_arrays,
+        )
+
+    assert type(gri).__name__ in gri_uri
+    assert type(crs).__name__ in crs_uri
+    assert type(epc).__name__ in epc_uri
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        deleted_uris = await rddms_client.delete_model_from_node(
+            start_uri=crs_uri,
+        )
+        assert gri_uri in deleted_uris
+        assert crs_uri in deleted_uris
+
+        remaining_resources = await rddms_client.list_objects_under_dataspace(
+            dataspace_uri=dataspace_path
+        )
+        remaining_uris = [rr.uri for rr in remaining_resources]
+
+        assert all(du not in remaining_uris for du in deleted_uris)
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        await rddms_client.delete_dataspace(dataspace_uri=dataspace_path)
+
+
+@skip_decorator
+@pytest.mark.asyncio
+async def test_delete_model_from_node_shared_crs() -> None:
+    dataspace_path = "test/delete-model-from-node-shared-crs"
+
+    crs, epc, gri_1, gri_2, data_arrays = get_random_surfaces_shared_crs()
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        await rddms_client.create_dataspace(dataspace_path, ignore_if_exists=True)
+
+        crs_uri, epc_uri, gri_1_uri, gri_2_uri = await rddms_client.upload_model(
+            dataspace_uri=dataspace_path,
+            ml_objects=[crs, epc, gri_1, gri_2],
+            data_arrays=data_arrays,
+        )
+
+    assert type(gri_1).__name__ in gri_1_uri
+    assert type(gri_2).__name__ in gri_2_uri
+    assert type(crs).__name__ in crs_uri
+    assert type(epc).__name__ in epc_uri
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        with pytest.raises(ETPTransactionFailure):
+            # Verify that deleting both targets and sources will fail (the crs
+            # is the target of another grid and can not be deleted).
+            deleted_uris = await rddms_client.delete_model_from_node(
+                start_uri=gri_1_uri,
+            )
+
+        # We have to close the connection for the server to drop the failed
+        # transaction.
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        deleted_uris = await rddms_client.delete_model_from_node(
+            start_uri=gri_1_uri,
+            only_self_and_sources=True,
+        )
+
+        assert gri_1_uri in deleted_uris
+        assert crs_uri not in deleted_uris
+        assert gri_2_uri not in deleted_uris
+
+        remaining_resources = await rddms_client.list_objects_under_dataspace(
+            dataspace_uri=dataspace_path
+        )
+        remaining_uris = [rr.uri for rr in remaining_resources]
+
+        assert all(du not in remaining_uris for du in deleted_uris)
+
+        # As `gri_1` has been deleted we can now delete both `gri_2` and `crs`.
+        deleted_uris = await rddms_client.delete_model_from_node(
+            start_uri=gri_2_uri,
+        )
+
+        assert crs_uri in deleted_uris
+        assert gri_2_uri in deleted_uris
+
+        remaining_resources = await rddms_client.list_objects_under_dataspace(
+            dataspace_uri=dataspace_path
+        )
+        remaining_uris = [rr.uri for rr in remaining_resources]
+
+        assert crs_uri not in remaining_uris
+        assert gri_1_uri not in remaining_uris
+        assert gri_2_uri not in remaining_uris
+
+    async with rddms_connect(uri=etp_server_url) as rddms_client:
+        await rddms_client.delete_dataspace(dataspace_uri=dataspace_path)
