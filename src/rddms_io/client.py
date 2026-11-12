@@ -563,7 +563,7 @@ class RDDMSClient:
         depth
             The number of links to return. Setting `depth = 1` will only return
             targets and sources that are directly linked to the start object.
-            With `depth = 2` we get links to objects that linkes to the targets
+            With `depth = 2` we get links to objects that links to the targets
             and sources of the start object. Default is `1`.
 
         Returns
@@ -655,6 +655,7 @@ class RDDMSClient:
             filter(lambda r: r.uri == start_uri, source_resources + target_resources),
             None,
         )
+
         if self_resource is None:
             gr_self = GetResources(
                 context=ContextInfo(
@@ -1733,6 +1734,153 @@ class RDDMSClient:
 
         if handle_transaction:
             await self.commit_transaction(transaction_uuid)
+
+    async def delete_model_from_node(
+        self,
+        start_uri: str | DataObjectURI,
+        prune_contained_objects: bool = True,
+        handle_transaction: bool = True,
+        debounce: bool | float = False,
+        max_depth: int = 10,
+        only_self_and_sources: bool = False,
+    ) -> Sequence[str]:
+        """
+        Method used for deleting a model starting from a single uri
+        `start_uri`. This method starts from `start_uri`, lists all targets and
+        sources (up to a `max_depth`), and tries to delete them in one go. The
+        purpose is to make it easier to start from "anywhere" in a model graph
+        and remove everything connected to it.
+
+        !!! Warning "Wide scope"
+
+            Take care when using this method. It can potentially delete the
+            head of a graph in order to remove a single branch. In this case
+            other branches will still live on, but will now have lost the top
+            node.
+
+        !!! Warning "Stability"
+
+            If the `max_depth`-parameter does not cover the full depth, or if
+            any of the source objects have targets that are not directly linked
+            to the start object, this method will fail. If so, a more manual
+            and thorough search must be done to find all connected pieces.
+
+        !!! Note "Hidden objects"
+
+            There are (at least) two objects, the
+            `obj_EpcExternalPartReference` and `obj_ActivityTemplate`, that
+            will not be picked up when searching for linked objects. This means
+            that they will not be deleted from the server (unless they are
+            explicitly listed via their uris).
+
+        Parameters
+        ----------
+        start_uri
+            An ETP data object uri to the node object where the deletion will
+            start.
+        prune_contained_objects
+            See section 9.3.4 in the ETP v1.2 standards documentation for an
+            accurate description of this parameter. Default is `False` meaning
+            no pruning is done.
+        handle_transaction
+            A flag to toggle if `RDDMSClient.delete_model` should start and
+            commit the transaction towards the dataspace. Default is `True`,
+            and the method will ensure that the transaction handling is done
+            correctly.
+        debounce
+            Parameter to decide if `RDDMSClient.delete_model` should retry
+            starting a transaction if it initially fails. See
+            `RDDMSClient.start_transaction` for a more in-depth explanation of
+            the parameter. Default is `False`, i.e., no debouncing will occur
+            and the method will fail if it is unable to start a transaction.
+        max_depth
+            This parameter is passed to the
+            [`RDDMSClient.list_linked_objects`][rddms_io.client.RDDMSClient.list_linked_objects]
+            as the `depth`-parameter. If there are targets beyond the maximum
+            depth, the deletion will fail. Default is `10`, which should cover
+            somewhat large models.
+
+        only_self_and_sources
+            Flag to toggle if targets (objects that are referenced from the
+            `start_uri`-object) should be deleted. If a target object is the
+            target of multiple objects, e.g., two independent
+            `obj_Grid2dRepresentation`-objects point to the same
+            `obj_LocalDepth3dCrs`, that target cannot be deleted as it would
+            leave a source object with a reference to a non-existent object (it
+            is enforced by the server). Setting `only_self_and_sources = True`
+            this method will only attempt to delete the `start_uri`-object and
+            its sources. The default is `False`, i.e., delete both sources and
+            targets (and self).
+
+        Returns
+        -------
+        Sequence[str]
+            A list of ETP data object uris to the objects that were deleted.
+
+        Raises
+        ------
+        ETPTransactionFailure
+            Failed deletion will trigger an `ETPTransactionFailure`-exception.
+            Typically this occurs if the deleted objects will leave dangling
+            references behind.
+
+        See Also
+        --------
+        [`RDDMSClient.list_linked_objects`][rddms_io.client.RDDMSClient.list_linked_objects]:
+            A search method to find linked objects starting from a single uri.
+
+        [`RDDMSClient.delete_model`][rddms_io.client.RDDMSClient.delete_model]:
+            A delete method only attempting to delete the specified uris.
+        """
+        # We start by locking the dataspace for writing to prevent new data
+        # coming in while searching for linked objects.
+        if handle_transaction:
+            dataspace_uri = DataspaceURI.from_any_etp_uri(start_uri)
+            transaction_uuid = await self.start_transaction(
+                dataspace_uri=dataspace_uri,
+                read_only=False,
+                debounce=debounce,
+            )
+
+        linked_objects = await self.list_linked_objects(
+            start_uri=start_uri,
+            depth=max_depth,
+        )
+
+        assert linked_objects.start_uri == start_uri
+
+        if only_self_and_sources:
+            ml_uris = list(
+                {
+                    linked_objects.start_uri,
+                    *[sr.uri for sr in linked_objects.source_resources],
+                }
+            )
+        else:
+            ml_uris = list(
+                # Construct set to remove any duplicate uris.
+                {
+                    linked_objects.start_uri,
+                    *[sr.uri for sr in linked_objects.source_resources],
+                    *[tr.uri for tr in linked_objects.target_resources],
+                }
+            )
+
+        await self.delete_model(
+            ml_uris=ml_uris,
+            prune_contained_objects=prune_contained_objects,
+            # Either the caller handles the transaction and debouncing, or we
+            # do in the current method.
+            handle_transaction=False,
+            debounce=False,
+        )
+
+        if handle_transaction:
+            await self.commit_transaction(transaction_uuid)
+
+        logger.info(f"The objects with the following uris have been deleted: {ml_uris}")
+
+        return ml_uris
 
     async def delete_dataspace_content(
         self,

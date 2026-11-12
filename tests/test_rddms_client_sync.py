@@ -1,11 +1,15 @@
+from collections.abc import Mapping
+
 import numpy as np
 import numpy.typing as npt
 import pytest
 
 import resqml_objects.v201 as ro
+from pyetp.errors import ETPTransactionFailure
 from rddms_io.sync_client import RDDMSClientSync
 from resqml_objects.surface_helpers import RegularGridParameters
 from tests.conftest import etp_server_url, skip_decorator
+from tests.test_rddms_client import get_random_surfaces_shared_crs
 
 
 def get_random_surface() -> tuple[
@@ -14,7 +18,7 @@ def get_random_surface() -> tuple[
         ro.obj_LocalDepth3dCrs,
         ro.obj_Grid2dRepresentation,
     ],
-    dict[str, npt.NDArray[np.float64]],
+    Mapping[str, npt.NDArray[np.float64]],
 ]:
     shape = tuple(np.random.randint(10, 123, size=2).tolist())
 
@@ -194,5 +198,43 @@ async def test_upload_and_download_surface_async() -> None:
     # Verify that all objects are deleted.
     resources = rddms_client.list_objects_under_dataspace(dataspace_path)
     assert len(resources) == 0
+
+    crs, epc, gri_1, gri_2, data_arrays = get_random_surfaces_shared_crs()
+
+    crs_uri, epc_uri, gri_1_uri, gri_2_uri = rddms_client.upload_model(
+        dataspace_uri=dataspace_path,
+        ml_objects=[crs, epc, gri_1, gri_2],
+        data_arrays=data_arrays,
+    )
+
+    with pytest.raises(ETPTransactionFailure):
+        deleted_uris = rddms_client.delete_model_from_node(
+            start_uri=gri_1_uri,
+        )
+
+    deleted_uris = rddms_client.delete_model_from_node(
+        start_uri=gri_1_uri,
+        only_self_and_sources=True,
+    )
+
+    assert gri_1_uri in deleted_uris
+    assert crs_uri not in deleted_uris
+    assert gri_2_uri not in deleted_uris
+
+    deleted_uris = rddms_client.delete_model_from_node(
+        start_uri=gri_2_uri,
+    )
+
+    assert crs_uri in deleted_uris
+    assert gri_2_uri in deleted_uris
+
+    remaining_resources = rddms_client.list_objects_under_dataspace(
+        dataspace_uri=dataspace_path
+    )
+    remaining_uris = [rr.uri for rr in remaining_resources]
+
+    assert crs_uri not in remaining_uris
+    assert gri_1_uri not in remaining_uris
+    assert gri_2_uri not in remaining_uris
 
     rddms_client.delete_dataspace(dataspace_path)
