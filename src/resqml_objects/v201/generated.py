@@ -1045,8 +1045,8 @@ class DataObjectReference:
         """
         Method that sets up a valid ETP data object uri from a
         `DataObjectReference`-instance. This is a helper function for easier
-        querying towards an ETP server when downloading parts of a model at a
-        time.
+        querying towards an ETP server when downloading referenced parts of a
+        model.
 
         Parameters
         ----------
