@@ -10298,37 +10298,57 @@ class AbstractObject_1:
                 )
 
     @classmethod
-    def get_domain_version(cls) -> str:
+    def get_domain(cls) -> str:
         namespace = getattr(cls.Meta, "namespace", None) or cls.Meta.target_namespace
 
         if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
-            return "resqml20"
+            return "resqml"
         elif namespace == "http://www.energistics.org/energyml/data/commonv2":
-            return "eml20"
+            return "eml"
 
         raise NotImplementedError(
             f"Namespace {namespace} from object {cls} is not supported"
         )
 
     @classmethod
-    def get_qualified_type(cls) -> str:
-        return cls.get_domain_version() + f".{cls.__name__}"
+    def get_domain_version(cls) -> str:
+        return "20"
 
-    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
-        qualified_type = self.get_qualified_type()
+    @classmethod
+    def get_qualified_type(cls) -> str:
+        return cls.get_domain() + cls.get_domain_version() + f".{cls.__name__}"
+
+    @classmethod
+    def get_cls_etp_data_object_uri(
+        cls,
+        dataspace_path_or_uri: str,
+        uuid: uuid_lib.UUID | str,
+        object_version: str | None = None,
+    ) -> str:
+        uuid = str(uuid_lib.UUID(str(uuid)))
+
+        qualified_type = cls.get_qualified_type()
+
         identifier = (
-            self.uuid
-            if self.object_version is None
-            else f"uuid={self.uuid},version='{self.object_version}'"
+            uuid
+            if object_version is None
+            else f"uuid={uuid},version='{object_version}'"
         )
         data_object_part = f"{qualified_type}({identifier})"
 
-        if not dataspace_path_or_uri or dataspace_path_or_uri == "eml:///":
+        if dataspace_path_or_uri == "" or dataspace_path_or_uri == "eml:///":
             return f"eml:///{data_object_part}"
         elif dataspace_path_or_uri.startswith("eml:///dataspace"):
             return f"{dataspace_path_or_uri}/{data_object_part}"
 
         return f"eml:///dataspace('{dataspace_path_or_uri}')/{data_object_part}"
+
+    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
+        return self.get_cls_etp_data_object_uri(
+            dataspace_path_or_uri=dataspace_path_or_uri,
+            uuid=self.uuid,
+            object_version=self.object_version,
+        )
 
 
 @dataclass(slots=True, kw_only=True)
