@@ -1062,36 +1062,20 @@ class DataObjectReference:
             server.
         """
 
-        domain_version = ""
-
-        if self.content_type.startswith("application/x-resqml+xml"):
-            domain_version = "resqml20"
-        elif self.content_type.startswith("application/x-eml+xml"):
-            domain_version = "eml20"
-        else:
-            raise NotImplementedError(
-                f"Qualified type for '{self.content_type}' is not implemented"
-            )
-
         m = re.search(OBJ_TYPE_PATTERN, self.content_type)
 
         if m is None:
             raise ValueError("Content type string does not contain a valid object name")
 
+        # Get class name.
         obj_type = m.group("obj_type")
+        # Get class.
+        obj: AbstractObject_1 = globals()[obj_type]
 
-        if dataspace_path_or_uri.startswith("eml:///"):
-            dataspace_uri = dataspace_path_or_uri
-        elif not dataspace_path_or_uri:
-            # Only two forward slashes (!!!) as the combination with the
-            # `data_object_part` adds an extra forward slash.
-            dataspace_uri = "eml://"
-        else:
-            dataspace_uri = f"eml:///dataspace('{dataspace_path_or_uri}')"
-
-        data_object_part = f"{domain_version}.{obj_type}({self.uuid})"
-
-        return f"{dataspace_uri}/{data_object_part}"
+        return obj.get_cls_etp_data_object_uri(
+            dataspace_path_or_uri=dataspace_path_or_uri,
+            uuid=self.uuid,
+        )
 
 
 class DataTransferSpeedUom(Enum):
