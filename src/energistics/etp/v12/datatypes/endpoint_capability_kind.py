@@ -25,8 +25,9 @@ _avro_schema: energistics.base.AvroSchemaType = {
         "SessionEstablishmentTimeoutPeriod",
         "SupportsAlternateRequestUris",
         "SupportsMessageHeaderExtensions",
-        # Extra option for the open-etp-server
+        # Extra options for the open-etp-server
         "MaxMessagePayloadUncompressedSize",
+        "supportedArrayExtensions",
     ],
     "fullName": "Energistics.Etp.v12.Datatypes.EndpointCapabilityKind",
     "depends": [],
@@ -51,10 +52,11 @@ class EndpointCapabilityKind(enum.StrEnum):
     SESSION_ESTABLISHMENT_TIMEOUT_PERIOD = "SessionEstablishmentTimeoutPeriod"
     SUPPORTS_ALTERNATE_REQUEST_URIS = "SupportsAlternateRequestUris"
     SUPPORTS_MESSAGE_HEADER_EXTENSIONS = "SupportsMessageHeaderExtensions"
-    # Extra option for the open-etp-server
+    # Extra options for the open-etp-server
     MAX_MESSAGE_PAYLOAD_UNCOMPRESSED_SIZE = "MaxMessagePayloadUncompressedSize"
+    SUPPORTED_ARRAY_EXTENSIONS = "supportedArrayExtensions"
 
-    def get_valid_type(self) -> type[bool | int | ArrayOfString]:
+    def get_valid_type(self) -> type[bool | int | str | ArrayOfString]:
         match self:
             case EndpointCapabilityKind.AUTHORIZATION_DETAILS:
                 return ArrayOfString
@@ -63,5 +65,7 @@ class EndpointCapabilityKind(enum.StrEnum):
                 | EndpointCapabilityKind.SUPPORTS_MESSAGE_HEADER_EXTENSIONS
             ):
                 return bool
+            case EndpointCapabilityKind.SUPPORTED_ARRAY_EXTENSIONS:
+                return str
 
         return int
