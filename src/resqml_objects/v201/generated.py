@@ -1050,7 +1050,7 @@ class DataObjectReference:
         # Get class name.
         obj_type = m.group("obj_type")
         # Get class.
-        obj: AbstractCitedDataObject = globals()[obj_type]
+        obj: type[AbstractCitedDataObject] = globals()[obj_type]
 
         return obj
 
