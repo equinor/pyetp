@@ -10294,8 +10294,8 @@ class AbstractObject_1:
             f"Namespace {namespace} from object {cls} is not supported"
         )
 
-    @classmethod
-    def get_domain_version(cls) -> str:
+    @staticmethod
+    def get_domain_version() -> str:
         return "20"
 
     @classmethod
