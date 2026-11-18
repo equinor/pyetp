@@ -2014,7 +2014,7 @@ class RDDMSClient:
 
     @staticmethod
     def get_data_object_reference_uri(
-        dataspace_uri: DataObjectURI | str,
+        dataspace_uri: DataspaceURI | str,
         data_object_reference: ro.DataObjectReference,
     ) -> str:
         """
@@ -2037,7 +2037,7 @@ class RDDMSClient:
 
         See Also
         --------
-        [`RDDMSClient.get_etp_data_object_uri`][rddms_io.client.get_etp_data_object_uri]:
+        [`RDDMSClient.get_etp_data_object_uri`][rddms_io.client.RDDMSClient.get_etp_data_object_uri]:
             The more general method for setting up a data object uri from an
             object type.
         """
