@@ -7,6 +7,7 @@ from examples.tutorials.using_the_rddms_client.using_the_rddms_client import (
     gri_lo,
     gri_resources,
 )
+from rddms_io import RDDMSClient
 from rddms_io.data_types import LinkedObjects
 
 
@@ -28,8 +29,12 @@ def test_using_the_rddms_client() -> None:
 
     assert len(gri_resources) == 1
 
-    gri_uri = gri.get_etp_data_object_uri(dataspace.path)
-    crs_uri = crs.get_etp_data_object_uri(dataspace.path)
+    gri_uri = RDDMSClient.get_etp_data_object_uri(
+        dataspace.path, ro.obj_Grid2dRepresentation, gri.uuid
+    )
+    crs_uri = RDDMSClient.get_etp_data_object_uri(
+        dataspace.path, ro.obj_LocalDepth3dCrs, crs.uuid
+    )
     assert gri_uri == gri_resources[0].uri
     assert gri_uri == gri_lo.start_uri
     assert (
