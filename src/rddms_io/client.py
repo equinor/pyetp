@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import datetime
+import inspect
 import logging
 import sys
 import typing
@@ -1920,6 +1921,33 @@ class RDDMSClient:
         return await self.delete_model(
             ml_uris=uris,
             debounce=debounce,
+        )
+
+    @staticmethod
+    def get_etp_data_object_uri(
+        dataspace_uri: DataspaceURI | str,
+        ml_object: ro.AbstractCitedDataObject | type[ro.AbstractCitedDataObject],
+        uuid: str | uuid.UUID,
+        object_version: str | None = None,
+    ) -> DataObjectURI:
+        dataspace = DataspaceURI.from_uri(dataspace_uri).dataspace
+        uuid = str(uuid.UUID(str(uuid)))
+        domain = ml_object.get_domain()
+        domain_version = ml_object.get_domain_version()
+
+        object_type = (
+            ml_object.__name__
+            if inspect.isclass(ml_object)
+            else type(ml_object).__name__
+        )
+
+        return DataObjectURI.from_parts(
+            dataspace=dataspace,
+            domain=domain,
+            domain_version=domain_version,
+            object_type=object_type,
+            uuid=uuid,
+            version=object_version,
         )
 
 
