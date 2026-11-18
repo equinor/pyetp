@@ -1950,6 +1950,19 @@ class RDDMSClient:
             version=object_version,
         )
 
+    @staticmethod
+    def get_data_object_reference_uri(
+        dataspace_uri: DataObjectURI | str,
+        data_object_reference: ro.DataObjectReference,
+    ) -> DataObjectURI:
+        ml_object = data_object_reference.get_referenced_object_type()
+
+        return RDDMSClient.get_etp_data_object_uri(
+            dataspace_uri=dataspace_uri,
+            ml_object=ml_object,
+            uuid=data_object_reference.uuid,
+        )
+
 
 class rddms_connect:
     """

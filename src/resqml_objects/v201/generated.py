@@ -1041,6 +1041,19 @@ class DataObjectReference:
             version_string=version_string,
         )
 
+    def get_referenced_object_type(self) -> type[AbstractCitedDataObject]:
+        m = re.search(OBJ_TYPE_PATTERN, self.content_type)
+
+        if m is None:
+            raise ValueError("Content type string does not contain a valid object name")
+
+        # Get class name.
+        obj_type = m.group("obj_type")
+        # Get class.
+        obj: AbstractCitedDataObject = globals()[obj_type]
+
+        return obj
+
     def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
         """
         Method that sets up a valid ETP data object uri from a
