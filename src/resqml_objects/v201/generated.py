@@ -1054,42 +1054,6 @@ class DataObjectReference:
 
         return obj
 
-    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
-        """
-        Method that sets up a valid ETP data object uri from a
-        `DataObjectReference`-instance. This is a helper function for easier
-        querying towards an ETP server when downloading referenced parts of a
-        model.
-
-        Parameters
-        ----------
-        dataspace_path_or_uri: str
-            Either a full dataspace uri on the form `"eml:///"` or
-            `"eml:///dataspace('foo/bar')"`, or just the dataspace path (or
-            name) – which looking at the previous two examples – is `""`
-            (empty) or "foo/bar".
-
-        Returns
-        -------
-            An ETP data object uri that be used to look up an object on an ETP
-            server.
-        """
-
-        m = re.search(OBJ_TYPE_PATTERN, self.content_type)
-
-        if m is None:
-            raise ValueError("Content type string does not contain a valid object name")
-
-        # Get class name.
-        obj_type = m.group("obj_type")
-        # Get class.
-        obj: AbstractObject_1 = globals()[obj_type]
-
-        return obj.get_cls_etp_data_object_uri(
-            dataspace_path_or_uri=dataspace_path_or_uri,
-            uuid=self.uuid,
-        )
-
 
 class DataTransferSpeedUom(Enum):
     """
@@ -10314,38 +10278,6 @@ class AbstractObject_1:
     @classmethod
     def get_qualified_type(cls) -> str:
         return cls.get_domain() + cls.get_domain_version() + f".{cls.__name__}"
-
-    @classmethod
-    def get_cls_etp_data_object_uri(
-        cls,
-        dataspace_path_or_uri: str,
-        uuid: uuid_lib.UUID | str,
-        object_version: str | None = None,
-    ) -> str:
-        uuid = str(uuid_lib.UUID(str(uuid)))
-
-        qualified_type = cls.get_qualified_type()
-
-        identifier = (
-            uuid
-            if object_version is None
-            else f"uuid={uuid},version='{object_version}'"
-        )
-        data_object_part = f"{qualified_type}({identifier})"
-
-        if dataspace_path_or_uri == "" or dataspace_path_or_uri == "eml:///":
-            return f"eml:///{data_object_part}"
-        elif dataspace_path_or_uri.startswith("eml:///dataspace"):
-            return f"{dataspace_path_or_uri}/{data_object_part}"
-
-        return f"eml:///dataspace('{dataspace_path_or_uri}')/{data_object_part}"
-
-    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
-        return self.get_cls_etp_data_object_uri(
-            dataspace_path_or_uri=dataspace_path_or_uri,
-            uuid=self.uuid,
-            object_version=self.object_version,
-        )
 
 
 @dataclass(slots=True, kw_only=True)
