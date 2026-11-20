@@ -12,7 +12,7 @@ from energistics.array_mapping import TransportArrayTypeMapping
 from energistics.uris import DataspaceURI
 from pyetp.client import ETPError
 from pyetp.errors import ETPTransactionFailure
-from rddms_io.client import rddms_connect
+from rddms_io.client import RDDMSClient, rddms_connect
 from resqml_objects.epc_readers import (
     get_arrays_and_paths_in_hdf_file,
     get_resqml_v201_objects,
@@ -265,12 +265,15 @@ async def test_upload_and_download_model() -> None:
         assert type(epc).__name__ in epc_uri
         assert type(gri).__name__ in gri_uri
 
-        assert crs_uri == crs.get_etp_data_object_uri(dataspace_uri)
-        assert crs_uri == crs.get_etp_data_object_uri(dataspace_path)
-        assert epc_uri == epc.get_etp_data_object_uri(dataspace_path)
-        assert epc_uri == epc.get_etp_data_object_uri(dataspace_path)
-        assert gri_uri == gri.get_etp_data_object_uri(dataspace_path)
-        assert gri_uri == gri.get_etp_data_object_uri(dataspace_path)
+        assert crs_uri == rddms_client.get_etp_data_object_uri(
+            dataspace_uri, crs, crs.uuid
+        )
+        assert epc_uri == rddms_client.get_etp_data_object_uri(
+            dataspace_path, epc, epc.uuid
+        )
+        assert gri_uri == RDDMSClient.get_etp_data_object_uri(
+            dataspace_path, gri, gri.uuid
+        )
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         ret_models = await rddms_client.download_models(
@@ -687,17 +690,9 @@ async def test_partial_deletion() -> None:
                 ml_uris=[crs_uri],
             )
 
-        # NOTE: This test will break if the failed deletion above stops
-        # breaking the session. In that case we should move the deletion
-        # attempt above to the session below, and remove the
-        # `EINVALID_STATE`-check.
-        with pytest.raises(ETPError):
-            try:
-                await rddms_client.list_dataspaces()
-            except ETPError as e:
-                # ETP error code 8 corresponds to `EINVALID_STATE`
-                assert e.code == 8
-                raise
+        # NOTE: The failed deletion above leaves a dangling transaction. Thus
+        # we need to drop the connection and start a new session to attempt a
+        # new deletion.
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         # We start by deleting the `obj_EpcExternalPartReference`-object. This
@@ -938,17 +933,44 @@ async def test_debouncing_on_upload() -> None:
         uris = [r.uri for r in resources]
 
         # Check that all objects were successfully uploaded.
-        assert crs_1.get_etp_data_object_uri(dataspace_uri) in uris
-        assert crs_2.get_etp_data_object_uri(dataspace_uri) in uris
-        assert crs_3.get_etp_data_object_uri(dataspace_uri) in uris
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, crs_1, crs_1.uuid)
+            in uris
+        )
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, crs_2, crs_2.uuid)
+            in uris
+        )
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, crs_3, crs_3.uuid)
+            in uris
+        )
 
-        assert epc_1.get_etp_data_object_uri(dataspace_uri) in uris
-        assert epc_2.get_etp_data_object_uri(dataspace_uri) in uris
-        assert epc_3.get_etp_data_object_uri(dataspace_uri) in uris
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, epc_1, epc_1.uuid)
+            in uris
+        )
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, epc_2, epc_2.uuid)
+            in uris
+        )
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, epc_3, epc_3.uuid)
+            in uris
+        )
 
-        assert gri_1.get_etp_data_object_uri(dataspace_uri) in uris
-        assert gri_2.get_etp_data_object_uri(dataspace_uri) in uris
-        assert gri_3.get_etp_data_object_uri(dataspace_uri) in uris
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, gri_1, gri_1.uuid)
+            in uris
+        )
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, gri_2, gri_2.uuid)
+            in uris
+        )
+        assert (
+            rddms_client.get_etp_data_object_uri(dataspace_uri, gri_3, gri_3.uuid)
+            in uris
+        )
 
         await rddms_client.delete_model(uris)
 

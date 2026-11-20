@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import datetime
+import inspect
 import logging
 import sys
 import typing
@@ -803,8 +804,9 @@ class RDDMSClient:
             obj_dais = []
             for hdf5_dataset in find_hdf5_datasets(obj):
                 path_in_resource = hdf5_dataset.path_in_hdf_file
-                epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
-                    dataspace_path_or_uri=dataspace_uri,
+                epc_uri = self.get_data_object_reference_uri(
+                    dataspace_uri=dataspace_uri,
+                    data_object_reference=hdf5_dataset.hdf_proxy,
                 )
 
                 dai = DataArrayIdentifier(
@@ -815,7 +817,12 @@ class RDDMSClient:
 
             if obj_dais:
                 ml_uris.append(
-                    obj.get_etp_data_object_uri(dataspace_path_or_uri=dataspace_uri)
+                    self.get_etp_data_object_uri(
+                        dataspace_uri=dataspace_uri,
+                        ml_object=type(obj),
+                        object_uuid=obj.uuid,
+                        object_version=obj.object_version,
+                    )
                 )
                 task = self.etp_client.send_and_recv(
                     GetDataArrayMetadata(
@@ -825,9 +832,17 @@ class RDDMSClient:
                 tasks.append(task)
 
         if not tasks:
+            obj_uris = [
+                self.get_etp_data_object_uri(
+                    dataspace_uri=dataspace_uri,
+                    ml_object=type(obj),
+                    object_uuid=obj.uuid,
+                    object_version=obj.object_version,
+                )
+                for obj in ml_objects
+            ]
             logger.info(
-                "There were no arrays connected to input objects with uris: "
-                f"{[obj.get_etp_data_object_uri(dataspace_uri) for obj in ml_objects]}"
+                f"There were no arrays connected to input objects with uris: {obj_uris}"
             )
             return {}
 
@@ -1054,8 +1069,9 @@ class RDDMSClient:
         tasks = []
         for hdf5_dataset in ml_hds:
             path_in_resource = hdf5_dataset.path_in_hdf_file
-            epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
-                dataspace_path_or_uri=dataspace_uri
+            epc_uri = self.get_data_object_reference_uri(
+                dataspace_uri=dataspace_uri,
+                data_object_reference=hdf5_dataset.hdf_proxy,
             )
             task = self.download_array(
                 epc_uri=epc_uri,
@@ -1397,7 +1413,12 @@ class RDDMSClient:
                 # Find all `Hdf5Dataset`-objects in the object.
                 ml_hds.extend(find_hdf5_datasets(obj))
 
-                uri = obj.get_etp_data_object_uri(dataspace_uri)
+                uri = self.get_etp_data_object_uri(
+                    dataspace_uri=dataspace_uri,
+                    ml_object=type(obj),
+                    object_uuid=obj.uuid,
+                    object_version=obj.object_version,
+                )
                 ml_uris.append(uri)
                 obj_xml = serialize_resqml_v201_object(obj)
 
@@ -1449,8 +1470,9 @@ class RDDMSClient:
         array_tasks = []
         for hdf5_dataset in ml_hds:
             path_in_resource = hdf5_dataset.path_in_hdf_file
-            epc_uri = hdf5_dataset.hdf_proxy.get_etp_data_object_uri(
-                dataspace_path_or_uri=dataspace_path
+            epc_uri = self.get_data_object_reference_uri(
+                dataspace_uri=dataspace_path,
+                data_object_reference=hdf5_dataset.hdf_proxy,
             )
 
             data = data_arrays[path_in_resource]
@@ -1634,7 +1656,11 @@ class RDDMSClient:
         if download_linked_objects:
             dors = find_data_object_references(ml_object)
             additional_uris = [
-                dor.get_etp_data_object_uri(dataspace_uri) for dor in dors
+                self.get_data_object_reference_uri(
+                    dataspace_uri=dataspace_uri,
+                    data_object_reference=dor,
+                )
+                for dor in dors
             ]
 
             # Remove any `EpcExternalPartReference`-objects from the extra
@@ -1920,6 +1946,108 @@ class RDDMSClient:
         return await self.delete_model(
             ml_uris=uris,
             debounce=debounce,
+        )
+
+    @staticmethod
+    def get_etp_data_object_uri(
+        dataspace_uri: DataspaceURI | str | None,
+        ml_object: ro.AbstractCitedDataObject | type[ro.AbstractCitedDataObject],
+        object_uuid: str | uuid.UUID,
+        object_version: str | None = None,
+    ) -> str:
+        """
+        Method to set up an ETP data object uri given a dataspace, a
+        RESQML-object type, and an object uuid (and an optional object
+        version).
+
+        Parameters
+        ----------
+        dataspace_uri
+            A valid ETP dataspace uri, a string that can be made into a
+            valid ETP dataspace uri, or `None` for the default namespace.
+        ml_object
+            Either an instance or a class of a RESQML-object.
+        object_uuid
+            A valid uuid as either a string or a `uuid.UUID`-object from the
+            Python standard library.
+        object_version
+            An optional string with the object version of the RESQML-object. If
+            `ml_object` is an instance it can be picked up from
+            `ml_object.object_version`. Default is `None`.
+
+        Returns
+        -------
+        str
+            A valid ETP v1.2 data object uri as a string.
+
+        See Also
+        --------
+        [`DataObjectURI`][energistics.uris.DataObjectURI]:
+            Dataclass with validation and set up methods for ETP v1.2 data
+            object uris.
+
+        [`DataspaceURI`][energistics.uris.DataspaceURI]:
+            Dataclass with validation and set up methods for ETP v1.2 dataspace
+            uris.
+        """
+        dataspace = DataspaceURI.from_any_etp_uri(dataspace_uri).dataspace
+        object_uuid = str(uuid.UUID(str(object_uuid)))
+        domain = ml_object.get_domain()
+        domain_version = ml_object.get_domain_version()
+
+        object_type = (
+            ml_object.__name__
+            if inspect.isclass(ml_object)
+            else type(ml_object).__name__
+        )
+
+        return str(
+            DataObjectURI.from_parts(
+                dataspace=dataspace,
+                domain=domain,
+                domain_version=domain_version,
+                object_type=object_type,
+                uuid=object_uuid,
+                version=object_version,
+            )
+        )
+
+    @staticmethod
+    def get_data_object_reference_uri(
+        dataspace_uri: DataspaceURI | str | None,
+        data_object_reference: ro.DataObjectReference,
+    ) -> str:
+        """
+        Method for setting up an ETP data object uri from a RESQML
+        `DataObjectReference`-object. The purpose is to make it easer to find
+        referenced objects on a remote server.
+
+        Parameters
+        ----------
+        dataspace_uri
+            A valid ETP dataspace uri, a string that can be made into a
+            valid ETP dataspace uri, or `None` for the default namespace.
+        data_object_reference
+            An instance of a RESQML v2.0.1 `DataObjectReference`.
+
+        Returns
+        -------
+        str
+            A valid ETP v1.2 data object uri as a string.
+
+        See Also
+        --------
+        [`RDDMSClient.get_etp_data_object_uri`][rddms_io.client.RDDMSClient.get_etp_data_object_uri]:
+            The more general method for setting up a data object uri from an
+            object type.
+        """
+        ml_object = data_object_reference.get_referenced_object_type()
+
+        return RDDMSClient.get_etp_data_object_uri(
+            dataspace_uri=dataspace_uri,
+            ml_object=ml_object,
+            object_uuid=data_object_reference.uuid,
+            object_version=data_object_reference.version_string,
         )
 
 

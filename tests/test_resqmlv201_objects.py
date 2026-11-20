@@ -9,6 +9,7 @@ from xsdata.models.datatype import XmlDateTime
 
 import resqml_objects.v201 as ro
 from pyetp._version import version
+from rddms_io import RDDMSClient
 from rddms_io.data_types import RDDMSModel
 from resqml_objects.parsers import parse_resqml_v201_object
 from resqml_objects.serializers import (
@@ -79,11 +80,11 @@ def test_default_hdf5_epc_external_part_reference() -> None:
 
     dataspace_path = "bar/baz"
 
-    assert dor.get_etp_data_object_uri(dataspace_path) == (
+    assert RDDMSClient.get_data_object_reference_uri(dataspace_path, dor) == (
         f"eml:///dataspace('{dataspace_path}')/eml20.EpcExternalPartReference("
         f"{dor.uuid})"
     )
-    assert obj_dor.get_etp_data_object_uri(dataspace_path) == (
+    assert RDDMSClient.get_data_object_reference_uri(dataspace_path, obj_dor) == (
         f"eml:///dataspace('{dataspace_path}')/eml20.obj_EpcExternalPartReference("
         f"{obj_dor.uuid})"
     )
@@ -179,8 +180,16 @@ def test_regular_grid_2d_representation() -> None:
     assert dor.uuid == gri.uuid
     assert dor.title == gri.citation.title
     assert (
-        dor.get_etp_data_object_uri("")
+        RDDMSClient.get_data_object_reference_uri("eml:///", dor)
         == f"eml:///resqml20.obj_Grid2dRepresentation({gri.uuid})"
+    )
+    assert (
+        RDDMSClient.get_data_object_reference_uri(None, dor)
+        == f"eml:///resqml20.obj_Grid2dRepresentation({gri.uuid})"
+    )
+    assert (
+        RDDMSClient.get_data_object_reference_uri("", dor)
+        == f"eml:///dataspace('')/resqml20.obj_Grid2dRepresentation({gri.uuid})"
     )
 
     ret_shape = (
