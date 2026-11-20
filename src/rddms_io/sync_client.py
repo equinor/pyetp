@@ -768,8 +768,8 @@ class RDDMSClientSync:
         Parameters
         ----------
         dataspace_uri
-            A valid ETP dataspace uri, or a string that can be made into a
-            valid ETP dataspace uri.
+            A valid ETP dataspace uri, a string that can be made into a
+            valid ETP dataspace uri, or `None` for the default namespace.
         ml_object
             Either an instance or a class of a RESQML-object.
         object_uuid
@@ -799,7 +799,7 @@ class RDDMSClientSync:
 
     @staticmethod
     def get_data_object_reference_uri(
-        dataspace_uri: DataspaceURI | str,
+        dataspace_uri: DataspaceURI | str | None,
         data_object_reference: ro.DataObjectReference,
     ) -> str:
         """
@@ -810,8 +810,8 @@ class RDDMSClientSync:
         Parameters
         ----------
         dataspace_uri
-            A valid ETP dataspace uri, or a string that can be made into a
-            valid ETP dataspace uri.
+            A valid ETP dataspace uri, a string that can be made into a
+            valid ETP dataspace uri, or `None` for the default namespace.
         data_object_reference
             An instance of a RESQML v2.0.1 `DataObjectReference`.
 
