@@ -690,17 +690,9 @@ async def test_partial_deletion() -> None:
                 ml_uris=[crs_uri],
             )
 
-        # NOTE: This test will break if the failed deletion above stops
-        # breaking the session. In that case we should move the deletion
-        # attempt above to the session below, and remove the
-        # `EINVALID_STATE`-check.
-        with pytest.raises(ETPError):
-            try:
-                await rddms_client.list_dataspaces()
-            except ETPError as e:
-                # ETP error code 8 corresponds to `EINVALID_STATE`
-                assert e.code == 8
-                raise
+        # NOTE: The failed deletion above leaves a dangling transaction. Thus
+        # we need to drop the connection and start a new session to attempt a
+        # new deletion.
 
     async with rddms_connect(uri=etp_server_url) as rddms_client:
         # We start by deleting the `obj_EpcExternalPartReference`-object. This
