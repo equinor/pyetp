@@ -10281,6 +10281,8 @@ class AbstractObject_1:
     )
 
     def __post_init__(self) -> None:
+        if isinstance(self.uuid, uuid_lib.UUID):
+            self.uuid = str(self.uuid)
         if not self.schema_version:
             namespace = (
                 getattr(self.Meta, "namespace", None) or self.Meta.target_namespace
