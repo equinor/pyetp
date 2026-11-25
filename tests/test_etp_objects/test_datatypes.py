@@ -1,4 +1,5 @@
 import datetime
+import logging
 import random
 import uuid
 
@@ -203,7 +204,7 @@ def test_supported_protocol() -> None:
         )
 
 
-def test_dataspace() -> None:
+def test_dataspace(caplog: pytest.LogCaptureFixture) -> None:
     now = datetime.datetime.now(datetime.UTC)
     now_stamp = int(now.timestamp() * 1e6)
 
@@ -225,20 +226,25 @@ def test_dataspace() -> None:
         == now
     )
 
-    with pytest.raises(pydantic.ValidationError):
+    with caplog.at_level(logging.INFO):
         Dataspace(
             uri=uri,
             store_last_write=now_stamp,
             store_created=now_stamp,
         )
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "INFO"
+        caplog.clear()
 
-    with pytest.raises(pydantic.ValidationError):
+    with caplog.at_level(logging.INFO):
         Dataspace(
             uri=uri,
             path="foo/baz",
             store_last_write=now_stamp,
             store_created=now_stamp,
         )
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "INFO"
 
     with pytest.raises(pydantic.ValidationError):
         Dataspace(
