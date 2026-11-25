@@ -2,6 +2,7 @@ import asyncio
 import concurrent.futures
 import datetime
 import typing
+import uuid
 from collections.abc import Coroutine, Mapping, Sequence
 
 import numpy.typing as npt
@@ -17,7 +18,7 @@ from energistics.etp.v12.datatypes.object import (
 )
 from energistics.types import ETPNumpyArrayType
 from energistics.uris import DataObjectURI, DataspaceURI
-from rddms_io.client import rddms_connect
+from rddms_io.client import RDDMSClient, rddms_connect
 from rddms_io.data_types import LinkedObjects, RDDMSModel
 
 T = typing.TypeVar("T")
@@ -751,3 +752,80 @@ class RDDMSClientSync:
                 )
 
         return run_coroutine_sync(download_models())
+
+    @staticmethod
+    def get_etp_data_object_uri(
+        dataspace_uri: DataspaceURI | str,
+        ml_object: ro.AbstractCitedDataObject | type[ro.AbstractCitedDataObject],
+        object_uuid: str | uuid.UUID,
+        object_version: str | None = None,
+    ) -> str:
+        """
+        Method to set up an ETP data object uri given a dataspace, a
+        RESQML-object type, and an object uuid (and an optional object
+        version).
+
+        Parameters
+        ----------
+        dataspace_uri
+            A valid ETP dataspace uri, a string that can be made into a
+            valid ETP dataspace uri, or `None` for the default namespace.
+        ml_object
+            Either an instance or a class of a RESQML-object.
+        object_uuid
+            A valid uuid as either a string or a `uuid.UUID`-object from the
+            Python standard library.
+        object_version
+            An optional string with the object version of the RESQML-object. If
+            `ml_object` is an instance it can be picked up from
+            `ml_object.object_version`. Default is `None`.
+
+        Returns
+        -------
+        str
+            A valid ETP v1.2 data object uri as a string.
+
+        See Also
+        --------
+        [`RDDMSClient.get_etp_data_object_uri`][rddms_io.client.RDDMSClient.get_etp_data_object_uri]:
+            The underlying method on the asynchronous client.
+        """
+        return RDDMSClient.get_etp_data_object_uri(
+            dataspace_uri=dataspace_uri,
+            ml_object=ml_object,
+            object_uuid=object_uuid,
+            object_version=object_version,
+        )
+
+    @staticmethod
+    def get_data_object_reference_uri(
+        dataspace_uri: DataspaceURI | str | None,
+        data_object_reference: ro.DataObjectReference,
+    ) -> str:
+        """
+        Method for setting up an ETP data object uri from a RESQML
+        `DataObjectReference`-object. The purpose is to make it easer to find
+        referenced objects on a remote server.
+
+        Parameters
+        ----------
+        dataspace_uri
+            A valid ETP dataspace uri, a string that can be made into a
+            valid ETP dataspace uri, or `None` for the default namespace.
+        data_object_reference
+            An instance of a RESQML v2.0.1 `DataObjectReference`.
+
+        Returns
+        -------
+        str
+            A valid ETP v1.2 data object uri as a string.
+
+        See Also
+        --------
+        [`RDDMSClient.get_data_object_reference_uri`][rddms_io.client.RDDMSClient.get_data_object_reference_uri]:
+            The underlying method on the asynchronous client.
+        """
+        return RDDMSClient.get_data_object_reference_uri(
+            dataspace_uri=dataspace_uri,
+            data_object_reference=data_object_reference,
+        )

@@ -1041,57 +1041,18 @@ class DataObjectReference:
             version_string=version_string,
         )
 
-    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
-        """
-        Method that sets up a valid ETP data object uri from a
-        `DataObjectReference`-instance. This is a helper function for easier
-        querying towards an ETP server when downloading parts of a model at a
-        time.
-
-        Parameters
-        ----------
-        dataspace_path_or_uri: str
-            Either a full dataspace uri on the form `"eml:///"` or
-            `"eml:///dataspace('foo/bar')"`, or just the dataspace path (or
-            name) – which looking at the previous two examples – is `""`
-            (empty) or "foo/bar".
-
-        Returns
-        -------
-            An ETP data object uri that be used to look up an object on an ETP
-            server.
-        """
-
-        domain_version = ""
-
-        if self.content_type.startswith("application/x-resqml+xml"):
-            domain_version = "resqml20"
-        elif self.content_type.startswith("application/x-eml+xml"):
-            domain_version = "eml20"
-        else:
-            raise NotImplementedError(
-                f"Qualified type for '{self.content_type}' is not implemented"
-            )
-
+    def get_referenced_object_type(self) -> type[AbstractCitedDataObject]:
         m = re.search(OBJ_TYPE_PATTERN, self.content_type)
 
         if m is None:
             raise ValueError("Content type string does not contain a valid object name")
 
+        # Get class name.
         obj_type = m.group("obj_type")
+        # Get class.
+        obj: type[AbstractCitedDataObject] = globals()[obj_type]
 
-        if dataspace_path_or_uri.startswith("eml:///"):
-            dataspace_uri = dataspace_path_or_uri
-        elif not dataspace_path_or_uri:
-            # Only two forward slashes (!!!) as the combination with the
-            # `data_object_part` adds an extra forward slash.
-            dataspace_uri = "eml://"
-        else:
-            dataspace_uri = f"eml:///dataspace('{dataspace_path_or_uri}')"
-
-        data_object_part = f"{domain_version}.{obj_type}({self.uuid})"
-
-        return f"{dataspace_uri}/{data_object_part}"
+        return obj
 
 
 class DataTransferSpeedUom(Enum):
@@ -10298,37 +10259,25 @@ class AbstractObject_1:
                 )
 
     @classmethod
-    def get_domain_version(cls) -> str:
+    def get_domain(cls) -> str:
         namespace = getattr(cls.Meta, "namespace", None) or cls.Meta.target_namespace
 
         if namespace == "http://www.energistics.org/energyml/data/resqmlv2":
-            return "resqml20"
+            return "resqml"
         elif namespace == "http://www.energistics.org/energyml/data/commonv2":
-            return "eml20"
+            return "eml"
 
         raise NotImplementedError(
             f"Namespace {namespace} from object {cls} is not supported"
         )
 
+    @staticmethod
+    def get_domain_version() -> str:
+        return "20"
+
     @classmethod
     def get_qualified_type(cls) -> str:
-        return cls.get_domain_version() + f".{cls.__name__}"
-
-    def get_etp_data_object_uri(self, dataspace_path_or_uri: str) -> str:
-        qualified_type = self.get_qualified_type()
-        identifier = (
-            self.uuid
-            if self.object_version is None
-            else f"uuid={self.uuid},version='{self.object_version}'"
-        )
-        data_object_part = f"{qualified_type}({identifier})"
-
-        if not dataspace_path_or_uri or dataspace_path_or_uri == "eml:///":
-            return f"eml:///{data_object_part}"
-        elif dataspace_path_or_uri.startswith("eml:///dataspace"):
-            return f"{dataspace_path_or_uri}/{data_object_part}"
-
-        return f"eml:///dataspace('{dataspace_path_or_uri}')/{data_object_part}"
+        return cls.get_domain() + cls.get_domain_version() + f".{cls.__name__}"
 
 
 @dataclass(slots=True, kw_only=True)

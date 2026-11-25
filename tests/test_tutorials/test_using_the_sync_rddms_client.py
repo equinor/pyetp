@@ -1,4 +1,5 @@
 import examples.tutorials.using_the_sync_rddms_client.using_the_sync_rddms_client as mod
+from rddms_io import RDDMSClientSync
 
 
 def test_using_the_sync_rddms_client() -> None:
@@ -6,8 +7,12 @@ def test_using_the_sync_rddms_client() -> None:
     dataspace = next(filter(lambda d: d.path == "rddms_io/sync-demo", mod.dataspaces))
     assert len(mod.gri_resources) == 1
 
-    gri_uri = mod.gri.get_etp_data_object_uri(dataspace.path)
-    crs_uri = mod.crs.get_etp_data_object_uri(dataspace.path)
+    gri_uri = RDDMSClientSync.get_etp_data_object_uri(
+        dataspace.path, mod.gri, mod.gri.uuid
+    )
+    crs_uri = RDDMSClientSync.get_etp_data_object_uri(
+        dataspace.path, mod.crs, mod.crs.uuid
+    )
     assert gri_uri == mod.gri_resources[0].uri
     assert gri_uri == mod.gri_lo.start_uri
     assert (

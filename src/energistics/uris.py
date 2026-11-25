@@ -81,17 +81,19 @@ class DataspaceURI:
         return cls(uri=uri, dataspace=dataspace)
 
     @classmethod
-    def from_any_etp_uri(cls, uri: str | typing.Self | DataObjectURI) -> DataspaceURI:
+    def from_any_etp_uri(
+        cls, uri: str | typing.Self | DataObjectURI | None
+    ) -> DataspaceURI:
         if isinstance(uri, DataspaceURI):
             return cls(**dataclasses.asdict(uri))
 
         if isinstance(uri, DataObjectURI):
             return uri.get_dataspace_uri()
 
-        if not uri.startswith("eml:/"):
+        if not uri or not uri.startswith("eml:/"):
             return cls.from_dataspace_path(uri)
 
-        if uri.endswith("')"):
+        if uri.endswith("')") or uri == "eml:///":
             return cls.from_uri(uri)
 
         return DataObjectURI.from_uri(uri).get_dataspace_uri()
