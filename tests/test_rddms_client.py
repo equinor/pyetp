@@ -236,6 +236,18 @@ async def test_create_and_delete_dataspaces() -> None:
         assert ds_1 in [d.path for d in dataspaces]
         assert ds_2 in [d.path for d in dataspaces]
 
+        with pytest.raises(ETPError):
+            # Attempt to update ACLs. This currently does not (and might never)
+            # work.
+            await rddms_client.create_dataspace(
+                ds_2,
+                legal_tags=["foo", "foo2"],
+                other_relevant_data_countries=["bar"],
+                owners=["baz"],
+                viewers=["bor"],
+                ignore_if_exists=False,
+            )
+
         await rddms_client.delete_dataspace(ds_1)
         await rddms_client.delete_dataspace(ds_2)
 
