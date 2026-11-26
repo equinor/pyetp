@@ -49,8 +49,8 @@ class Dataspace(energistics.base.ETPBaseModel):
 
         if path != self.path:
             logger.info(
-                f"The path '{path}' in the dataspace uri \"{self.uri}\" does not match "
-                f"the provided path '{self.path}'"
+                f'The path in the dataspace uri "{self.uri}" does not match the '
+                f"provided path-field '{self.path}'"
             )
 
         return self
