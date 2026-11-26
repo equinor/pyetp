@@ -1,3 +1,4 @@
+import logging
 import typing
 
 from pydantic import Field, model_validator
@@ -5,6 +6,8 @@ from pydantic import Field, model_validator
 import energistics.base
 import energistics.uris
 from energistics.etp.v12.datatypes.data_value import DataValue
+
+logger = logging.getLogger(__name__)
 
 
 @energistics.base.add_avro_metadata
@@ -45,9 +48,9 @@ class Dataspace(energistics.base.ETPBaseModel):
         path = dataspace_uri.dataspace or ""
 
         if path != self.path:
-            raise ValueError(
-                f"The path ({path}) in the dataspace uri ({self.uri}) does not match "
-                f"the provided path ({self.path})"
+            logger.info(
+                f'The path in the dataspace uri "{self.uri}" does not match the '
+                f"provided path-field '{self.path}'"
             )
 
         return self

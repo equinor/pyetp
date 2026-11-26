@@ -1,7 +1,7 @@
 import logging
 import typing
 
-from pydantic import Field, field_validator
+from pydantic import Field
 
 import energistics.base
 from energistics.etp.v12.datatypes.object import Dataspace
@@ -35,15 +35,3 @@ class GetDataspacesResponse(energistics.base.ETPBaseProtocolModel):
     }
 
     dataspaces: list[Dataspace] = Field(default_factory=list)
-
-    @field_validator("dataspaces", mode="before")
-    def keep_only_valid_items(value: typing.Any) -> list[Dataspace]:
-        assert isinstance(value, list)
-
-        valid: list[Dataspace] = []
-        for raw in value:
-            try:
-                valid.append(Dataspace.model_validate(raw))
-            except ValueError as e:
-                logger.warning(f"Dataspace failed validation: {e!s}")
-        return valid
