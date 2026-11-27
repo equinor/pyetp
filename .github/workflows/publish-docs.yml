@@ -11,7 +11,7 @@ permissions: {}
 jobs:
   build:
     name: Build
-    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@9f888bd4522bcfaf0cce912c78507079dcd0fc27 # v9.44.1
+    uses: equinor/ops-actions/.github/workflows/mkdocs.yml@bbce47a916a8ebb8e0d3464e64d353ffcc91c2fa # v9.44.2
     permissions:
       contents: read # Required to checkout the repository
     with:
@@ -23,7 +23,7 @@ jobs:
     name: Deploy
     needs: build
     if: needs.build.outputs.artifact_uploaded == 'true'
-    uses: equinor/ops-actions/.github/workflows/github-pages.yml@9f888bd4522bcfaf0cce912c78507079dcd0fc27 # v9.44.1
+    uses: equinor/ops-actions/.github/workflows/github-pages.yml@bbce47a916a8ebb8e0d3464e64d353ffcc91c2fa # v9.44.2
     permissions:
       id-token: write # Required to authenticate to GitHub Pages
       pages: write # Required to publish to GitHub Pages
